@@ -1,0 +1,36 @@
+'use client'
+
+import { useActionState } from 'react'
+import { BottomBar } from '@/components/bottom-bar'
+import { FieldError } from '@/components/field-error'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import type { ActionState } from '@/lib/action-state'
+
+export function JoinForm({ action }: { action: (prev: ActionState, fd: FormData) => Promise<ActionState> }) {
+  const [state, formAction, pending] = useActionState(action, undefined)
+  return (
+    <form action={formAction} noValidate className="mt-10">
+      <Label htmlFor="name" className="text-base">
+        Wie heißt du?
+      </Label>
+      <Input
+        id="name"
+        name="name"
+        defaultValue={state?.values?.name}
+        autoComplete="given-name"
+        autoFocus
+        maxLength={40}
+        aria-invalid={!!state?.fieldErrors?.name}
+        className="mt-3 h-14 text-lg"
+      />
+      <FieldError errors={state?.fieldErrors?.name} />
+      <BottomBar>
+        <Button type="submit" size="lg" className="h-14 w-full text-base" disabled={pending}>
+          Beitreten
+        </Button>
+      </BottomBar>
+    </form>
+  )
+}
