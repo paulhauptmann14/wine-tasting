@@ -59,8 +59,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   }
 
   // Gastgeber bewertet selbst mit und startet direkt von seiner Warteseite aus
-  await page.getByRole('link', { name: 'Teilen', exact: true }).click()
-  await page.getByRole('link', { name: 'Selbst mitbewerten' }).click()
+  await page.getByRole('link', { name: 'Zum Tasting' }).click()
   await page.getByLabel('Wie heißt du?').fill('Gastgeber')
   await page.getByRole('button', { name: 'Beitreten' }).click()
   await expect(page.getByText('Du bist Gastgeber. Starte das Tasting, sobald alle da sind.')).toBeVisible()
@@ -85,6 +84,10 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('Riesling')).toHaveCount(0)
 
   // Gastgeber geht aus der Gästeansicht zurück in die Verwaltung und beendet → Namen erscheinen bei Anna
+  await page.getByRole('link', { name: 'Verwaltung' }).click()
+  // … und kommt auch während des laufenden Tastings jederzeit zurück zu seinen Weinen
+  await page.getByRole('link', { name: 'Zum Tasting' }).click()
+  await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()
   await page.getByRole('link', { name: 'Verwaltung' }).click()
   await page.getByRole('button', { name: 'Tasting beenden & auflösen' }).click()
   await page.getByRole('button', { name: 'Beenden & auflösen' }).click()
