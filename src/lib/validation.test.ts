@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   adminLoginSchema,
+  directionSchema,
+  idSchema,
   createTastingSchema,
   joinSchema,
   parseRatingForm,
@@ -73,5 +75,17 @@ describe('parseRatingForm', () => {
     const r = parseRatingForm(fd({ c_a: '6' }), criteria)
     expect(r.ok).toBe(false)
     if (!r.ok) expect(Object.keys(r.fieldErrors).sort()).toEqual(['c_a', 'c_b'])
+  })
+})
+
+describe('bound action arguments', () => {
+  it('accepts only UUIDs as ids', () => {
+    expect(idSchema.safeParse('6f1c1a5e-1111-4222-8333-944455556666').success).toBe(true)
+    expect(idSchema.safeParse('not-a-uuid').success).toBe(false)
+    expect(idSchema.safeParse(42).success).toBe(false)
+  })
+  it('accepts only up or down as direction', () => {
+    expect(directionSchema.safeParse('up').success).toBe(true)
+    expect(directionSchema.safeParse('sideways').success).toBe(false)
   })
 })

@@ -72,6 +72,16 @@ describe('verifyAdminPin', () => {
     expect(row.pinFailedAttempts).toBe(0)
     expect(row.pinLockedUntil).toBeNull()
   })
+
+  it('counts parallel wrong attempts atomically so the lockout cannot be bypassed', async () => {
+    const t = await createTasting(db, input)
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () => verifyAdminPin(db, t.code, '0000', now)),
+    )
+    const wrong = results.filter((r) => !r.ok && r.reason === 'wrong_pin').length
+    expect(wrong).toBeLessThan(MAX_PIN_ATTEMPTS)
+    expect(await verifyAdminPin(db, t.code, '1234', minutesLater(1))).toMatchObject({ ok: false, reason: 'locked' })
+  })
 })
 
 describe('setTastingStatus', () => {

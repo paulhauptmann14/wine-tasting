@@ -96,6 +96,31 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('Endergebnis')).toBeVisible()
 })
 
+test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ page, browser }, testInfo) => {
+  await page.goto('/new')
+  await page.getByLabel('Name der Verkostung').fill('E2E Geheim')
+  await page.getByLabel('Admin-PIN').fill('1234')
+  await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
+  await page.waitForURL(/\/admin$/)
+
+  // Echte Client-Navigation des Gastgebers aufzeichnen (RSC-Anfrage mit Router-State)
+  const captured = page.waitForRequest((r) => r.headers()['rsc'] === '1' && r.url().includes('/admin/wines'))
+  await page.getByRole('link', { name: 'Weine', exact: true }).click()
+  const request = await captured
+  await page.getByLabel('Name', { exact: true }).fill('Geheimwein')
+  await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
+  await expect(page.getByText('Geheimwein', { exact: true })).toBeVisible()
+
+  const replay = async (target: Page) =>
+    (await target.request.get(request.url(), { headers: request.headers(), maxRedirects: 5 })).text()
+
+  // Gegenprobe: mit Admin-Cookie enthält die Antwort den Wein – der Test kann ein Leck also erkennen
+  expect(await replay(page)).toContain('Geheimwein')
+  // Gast ohne Admin-Cookie bekommt nur die Weiterleitung zum Login, keine Weindaten
+  const guest = await newGuest(browser, testInfo)
+  expect(await replay(guest)).not.toContain('Geheimwein')
+})
+
 test('unbekannter Code zeigt die Fehlerseite', async ({ page }) => {
   await page.goto('/tasting/222222')
   await expect(page.getByRole('heading', { name: 'Tasting nicht gefunden' })).toBeVisible()

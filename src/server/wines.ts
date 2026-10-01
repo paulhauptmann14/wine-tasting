@@ -17,6 +17,14 @@ export async function getWineByPosition(db: Db, tastingId: string, position: num
   return wine ?? null
 }
 
+export async function getWineById(db: Db, tastingId: string, wineId: string): Promise<Wine | null> {
+  const [wine] = await db
+    .select()
+    .from(wines)
+    .where(and(eq(wines.id, wineId), eq(wines.tastingId, tastingId)))
+  return wine ?? null
+}
+
 export async function addWine(db: Db, tastingId: string, input: WineInput): Promise<Wine> {
   return db.transaction(async (tx) => {
     const [{ last }] = await tx

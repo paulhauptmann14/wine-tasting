@@ -8,11 +8,11 @@ import { getCurrentParticipant, setParticipantCookie } from '@/lib/auth/particip
 import type { ActionState } from '@/lib/action-state'
 import { getTasting } from '@/lib/data'
 import { canJoin, canRate } from '@/lib/tasting/rules'
-import { formValue, joinSchema, parseRatingForm } from '@/lib/validation'
+import { formValue, idSchema, joinSchema, parseRatingForm } from '@/lib/validation'
 import { listCriteria } from '@/server/criteria'
 import { joinTasting } from '@/server/participants'
 import { saveRating } from '@/server/ratings'
-import { getWineByPosition, listWines } from '@/server/wines'
+import { getWineById, listWines } from '@/server/wines'
 
 export async function joinAction(code: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const tasting = await getTasting(code)
@@ -29,9 +29,13 @@ export async function joinAction(code: string, _prev: ActionState, formData: For
   redirect(`/tasting/${tasting.code}`)
 }
 
+/**
+ * Gebunden an die Wein-ID, nicht an die Nummer: Löscht oder verschiebt der Gastgeber
+ * währenddessen einen Wein, landen die Sterne trotzdem beim richtigen Wein.
+ */
 export async function saveRatingAction(
   code: string,
-  position: number,
+  wineId: string,
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
@@ -42,7 +46,7 @@ export async function saveRatingAction(
   if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
   if (!canRate(tasting.status)) return { message: 'Das Tasting hat noch nicht begonnen.' }
 
-  const wine = await getWineByPosition(db, tasting.id, position)
+  const wine = idSchema.safeParse(wineId).success ? await getWineById(db, tasting.id, wineId) : null
   if (!wine) return { message: 'Diesen Wein gibt es nicht mehr.' }
   const parsed = parseRatingForm(formData, await listCriteria(db, tasting.id))
   if (!parsed.ok) return { fieldErrors: parsed.fieldErrors, message: 'Bitte vergib für jedes Kriterium Sterne.' }
@@ -50,10 +54,11 @@ export async function saveRatingAction(
   await saveRating(db, { participantId: participant.id, wineId: wine.id, values: parsed.values, notes: parsed.notes })
   revalidatePath(`/tasting/${tasting.code}`, 'layout')
 
+  // Nächster Wein nach der aktuellen Reihenfolge – der gerade gespeicherte kann inzwischen eine andere Nummer haben
   const total = (await listWines(db, tasting.id)).length
   redirect(
-    position < total
-      ? `/tasting/${tasting.code}/wine/${position + 1}?saved=${position}`
-      : `/tasting/${tasting.code}?saved=${position}`,
+    wine.position < total
+      ? `/tasting/${tasting.code}/wine/${wine.position + 1}?saved=${wine.position}`
+      : `/tasting/${tasting.code}?saved=${wine.position}`,
   )
 }

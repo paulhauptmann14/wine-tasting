@@ -1,14 +1,12 @@
-import { notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { CopyLinkButton } from '@/components/admin/copy-link-button'
 import { StatusControl } from '@/components/admin/status-control'
 import { getBaseUrl } from '@/lib/base-url'
-import { getTasting } from '@/lib/data'
+import { getAdminTasting } from '@/lib/data'
 
 export default async function SharePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
-  const tasting = await getTasting(code)
-  if (!tasting) notFound()
+  const tasting = await getAdminTasting(code)
   const url = `${await getBaseUrl()}/tasting/${tasting.code}`
   // SVG wird von unserer eigenen Library aus unserer eigenen URL erzeugt
   const svg = await QRCode.toString(url, {

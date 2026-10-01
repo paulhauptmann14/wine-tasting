@@ -66,6 +66,10 @@ export const criterionNameSchema = z.object({
   name: z.string().trim().min(1, 'Bitte gib einen Namen ein.').max(40, 'Maximal 40 Zeichen.'),
 })
 
+/** Gebundene Argumente von Server Actions kommen vom Client – immer prüfen. */
+export const idSchema = z.uuid()
+export const directionSchema = z.enum(['up', 'down'])
+
 export type RatingCriterionScale = { id: string; scaleMin: number; scaleMax: number }
 export type ParsedRating =
   | { ok: true; values: Record<string, number>; notes: string | null }

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull, lte, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/types'
 import { ratingCriteria, tastings, wines } from '@/db/schema'
 import { generateCode, normalizeCode } from '@/lib/tasting/code'
@@ -54,23 +54,31 @@ export async function verifyAdminPin(
 ): Promise<AdminLoginResult> {
   const tasting = await getTastingByCode(db, code)
   if (!tasting) return { ok: false, reason: 'not_found' }
-  if (tasting.pinLockedUntil && tasting.pinLockedUntil > now) {
-    return { ok: false, reason: 'locked', lockedUntil: tasting.pinLockedUntil }
+  const byId = eq(tastings.id, tasting.id)
+  const lock = async () => {
+    const lockedUntil = new Date(now.getTime() + PIN_LOCK_MINUTES * 60_000)
+    await db.update(tastings).set({ pinFailedAttempts: 0, pinLockedUntil: lockedUntil }).where(byId)
+    return { ok: false, reason: 'locked', lockedUntil } as const
   }
 
-  const byId = eq(tastings.id, tasting.id)
+  // Versuch zuerst atomar zählen: parallele Anfragen sehen so nie denselben Zählerstand
+  const [counted] = await db
+    .update(tastings)
+    .set({ pinFailedAttempts: sql`${tastings.pinFailedAttempts} + 1` })
+    .where(and(byId, or(isNull(tastings.pinLockedUntil), lte(tastings.pinLockedUntil, now))))
+    .returning({ attempts: tastings.pinFailedAttempts })
+
+  if (!counted) {
+    const [row] = await db.select({ lockedUntil: tastings.pinLockedUntil }).from(tastings).where(byId)
+    return { ok: false, reason: 'locked', lockedUntil: row?.lockedUntil ?? now }
+  }
+  if (counted.attempts > MAX_PIN_ATTEMPTS) return lock()
+
   if (await verifyPin(pin, tasting.adminPinHash)) {
     await db.update(tastings).set({ pinFailedAttempts: 0, pinLockedUntil: null }).where(byId)
     return { ok: true, tasting }
   }
-
-  const attempts = tasting.pinFailedAttempts + 1
-  if (attempts >= MAX_PIN_ATTEMPTS) {
-    const lockedUntil = new Date(now.getTime() + PIN_LOCK_MINUTES * 60_000)
-    await db.update(tastings).set({ pinFailedAttempts: 0, pinLockedUntil: lockedUntil }).where(byId)
-    return { ok: false, reason: 'locked', lockedUntil }
-  }
-  await db.update(tastings).set({ pinFailedAttempts: attempts }).where(byId)
+  if (counted.attempts >= MAX_PIN_ATTEMPTS) return lock()
   return { ok: false, reason: 'wrong_pin' }
 }
 

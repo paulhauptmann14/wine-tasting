@@ -2,7 +2,7 @@ import { beforeEach, expect, it } from 'vitest'
 import { createTestDb } from '@/test/db'
 import { seedTasting } from '@/test/factories'
 import type { Db } from '@/db/types'
-import { addWine, deleteWine, getWineByPosition, listWines, moveWine, updateWine } from './wines'
+import { addWine, deleteWine, getWineById, getWineByPosition, listWines, moveWine, updateWine } from './wines'
 
 let db: Db
 beforeEach(async () => {
@@ -52,4 +52,12 @@ it('only touches wines of the given tasting', async () => {
   expect(await names(t.id)).toEqual(['1:A'])
   await updateWine(db, t.id, a.id, { name: 'A2', vintage: 2020, grapeVariety: null })
   expect(await names(t.id)).toEqual(['1:A2'])
+})
+
+it('finds a wine by id only within its tasting', async () => {
+  const t = await seedTasting(db)
+  const other = await seedTasting(db)
+  const a = await addWine(db, t.id, w('A'))
+  expect(await getWineById(db, t.id, a.id)).toMatchObject({ name: 'A', position: 1 })
+  expect(await getWineById(db, other.id, a.id)).toBeNull()
 })

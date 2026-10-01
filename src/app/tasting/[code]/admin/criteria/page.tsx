@@ -1,13 +1,11 @@
-import { notFound } from 'next/navigation'
 import { CriteriaManager } from '@/components/admin/criteria-manager'
 import { db } from '@/db/client'
-import { getTasting } from '@/lib/data'
+import { getAdminTasting } from '@/lib/data'
 import { listCriteria } from '@/server/criteria'
 
 export default async function CriteriaPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
-  const tasting = await getTasting(code)
-  if (!tasting) notFound()
+  const tasting = await getAdminTasting(code)
   const criteria = await listCriteria(db, tasting.id)
   return (
     <div className="grid gap-4">

@@ -1,13 +1,11 @@
-import { notFound } from 'next/navigation'
 import { db } from '@/db/client'
-import { getTasting } from '@/lib/data'
+import { getAdminTasting } from '@/lib/data'
 import { listParticipants } from '@/server/participants'
 import { listWines } from '@/server/wines'
 
 export default async function ParticipantsPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
-  const tasting = await getTasting(code)
-  if (!tasting) notFound()
+  const tasting = await getAdminTasting(code)
   const [people, wines] = await Promise.all([listParticipants(db, tasting.id), listWines(db, tasting.id)])
 
   if (people.length === 0) {
