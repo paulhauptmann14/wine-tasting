@@ -2,8 +2,20 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Dunkelmodus folgt der Systemeinstellung (auch für dark:-Klassen der shadcn-Komponenten) */
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/*
+ * Dunkelmodus: per Umschalter (data-theme auf <html>) oder – ohne Wahl – nach Systemeinstellung.
+ * Gilt auch für die dark:-Klassen der shadcn-Komponenten.
+ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -44,62 +56,44 @@
 }
 
 /*
- * Tageslicht & Bordeaux (hell) – Standard.
- * Graphit & Rosé (dunkel) – automatisch, wenn das Gerät im Dunkelmodus ist.
+ * light-dark(hell, dunkel):
+ * Hell „Tageslicht & Bordeaux“, dunkel „Graphit & Rosé“.
+ * color-scheme entscheidet, welcher Wert gilt – System oder Umschalter.
  */
 :root {
-  --wine: #8e1538;
-  --star: #f0a830;
-  --star-edge: #c27800;
+  color-scheme: light dark;
+
+  --wine: light-dark(#8e1538, #ff4f7b);
+  --star: light-dark(#f0a830, #ffc857);
+  --star-edge: light-dark(#c27800, #ffc857);
 
   --radius: 0.875rem;
-  --background: #f4f4f6;
-  --foreground: #17141b;
-  --card: #ffffff;
-  --card-foreground: #17141b;
-  --popover: #ffffff;
-  --popover-foreground: #17141b;
+  --background: light-dark(#f4f4f6, #121214);
+  --foreground: light-dark(#17141b, #f4f4f6);
+  --card: light-dark(#ffffff, #1c1c21);
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
   --primary: var(--wine);
-  --primary-foreground: #ffffff;
-  --secondary: #e8e7ed;
-  --secondary-foreground: #17141b;
-  --muted: #ecebf0;
-  --muted-foreground: #6f6a78;
-  --accent: #e8e7ed;
-  --accent-foreground: #17141b;
-  --destructive: #c0262d;
-  --border: rgb(23 20 27 / 0.1);
-  --input: rgb(23 20 27 / 0.16);
-  --ring: var(--wine);
+  --primary-foreground: light-dark(#ffffff, #121214);
+  --secondary: light-dark(#e8e7ed, #26262c);
+  --secondary-foreground: var(--foreground);
+  --muted: light-dark(#ecebf0, #1c1c21);
+  --muted-foreground: light-dark(#6f6a78, #8b8b96);
+  --accent: var(--secondary);
+  --accent-foreground: var(--foreground);
+  --destructive: light-dark(#c0262d, #ff6b6b);
+  --border: light-dark(rgb(23 20 27 / 0.1), rgb(244 244 246 / 0.1));
+  --input: light-dark(rgb(23 20 27 / 0.16), rgb(244 244 246 / 0.16));
+  --ring: light-dark(#8e1538, #ffc857);
+}
+
+:root[data-theme="light"] {
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --wine: #ff4f7b;
-    --star: #ffc857;
-    --star-edge: #ffc857;
-
-    --background: #121214;
-    --foreground: #f4f4f6;
-    --card: #1c1c21;
-    --card-foreground: #f4f4f6;
-    --popover: #1c1c21;
-    --popover-foreground: #f4f4f6;
-    --primary: var(--wine);
-    --primary-foreground: #121214;
-    --secondary: #26262c;
-    --secondary-foreground: #f4f4f6;
-    --muted: #1c1c21;
-    --muted-foreground: #8b8b96;
-    --accent: #26262c;
-    --accent-foreground: #f4f4f6;
-    --destructive: #ff6b6b;
-    --border: rgb(244 244 246 / 0.1);
-    --input: rgb(244 244 246 / 0.16);
-    --ring: var(--star);
-    color-scheme: dark;
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 @layer base {

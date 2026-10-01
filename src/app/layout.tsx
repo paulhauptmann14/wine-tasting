@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react'
 import type { Metadata, Viewport } from 'next'
+import { cookies } from 'next/headers'
 import { Bodoni_Moda, IBM_Plex_Mono, Schibsted_Grotesk } from 'next/font/google'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { THEME_COOKIE, parseTheme } from '@/lib/theme'
 import './globals.css'
 
 const bodoni = Bodoni_Moda({ subsets: ['latin'], variable: '--font-bodoni', style: ['normal', 'italic'] })
@@ -20,10 +23,17 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
 }
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  // Gespeicherte Wahl serverseitig setzen – so gibt es kein Aufblitzen der falschen Farben
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value)
   return (
-    <html lang="de" className={`${bodoni.variable} ${schibsted.variable} ${plex.variable}`}>
-      <body className="min-h-dvh bg-background font-sans text-foreground antialiased">{children}</body>
+    <html lang="de" data-theme={theme} className={`${bodoni.variable} ${schibsted.variable} ${plex.variable}`}>
+      <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
+        <div className="mx-auto flex w-full max-w-[1100px] justify-end px-2 pt-2 sm:px-4">
+          <ThemeToggle initial={theme} />
+        </div>
+        {children}
+      </body>
     </html>
   )
 }
