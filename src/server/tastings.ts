@@ -1,0 +1,99 @@
+import { eq } from 'drizzle-orm'
+import type { Db } from '@/db/types'
+import { ratingCriteria, tastings, wines } from '@/db/schema'
+import { generateCode, normalizeCode } from '@/lib/tasting/code'
+import { PRESETS, type PresetKey } from '@/lib/tasting/presets'
+import { hashPin, verifyPin } from '@/lib/auth/pin'
+import { canTransition, type TastingStatus } from '@/lib/tasting/rules'
+
+export type Tasting = typeof tastings.$inferSelect
+
+export const MAX_PIN_ATTEMPTS = 5
+export const PIN_LOCK_MINUTES = 10
+const CODE_ATTEMPTS = 5
+
+export async function createTasting(
+  db: Db,
+  input: { name: string; blindTasting: boolean; preset: PresetKey; pin: string },
+): Promise<Tasting> {
+  const adminPinHash = await hashPin(input.pin)
+  return db.transaction(async (tx) => {
+    for (let attempt = 0; attempt < CODE_ATTEMPTS; attempt++) {
+      const [tasting] = await tx
+        .insert(tastings)
+        .values({ code: generateCode(), name: input.name, blindTasting: input.blindTasting, adminPinHash })
+        .onConflictDoNothing({ target: tastings.code })
+        .returning()
+      if (!tasting) continue
+      await tx.insert(ratingCriteria).values(
+        PRESETS[input.preset].criteria.map((name, i) => ({ tastingId: tasting.id, name, position: i + 1 })),
+      )
+      return tasting
+    }
+    throw new Error('Could not generate a unique tasting code')
+  })
+}
+
+export async function getTastingByCode(db: Db, code: string): Promise<Tasting | null> {
+  const normalized = normalizeCode(code)
+  if (!normalized) return null
+  const [tasting] = await db.select().from(tastings).where(eq(tastings.code, normalized))
+  return tasting ?? null
+}
+
+export type AdminLoginResult =
+  | { ok: true; tasting: Tasting }
+  | { ok: false; reason: 'not_found' | 'wrong_pin' }
+  | { ok: false; reason: 'locked'; lockedUntil: Date }
+
+export async function verifyAdminPin(
+  db: Db,
+  code: string,
+  pin: string,
+  now: Date = new Date(),
+): Promise<AdminLoginResult> {
+  const tasting = await getTastingByCode(db, code)
+  if (!tasting) return { ok: false, reason: 'not_found' }
+  if (tasting.pinLockedUntil && tasting.pinLockedUntil > now) {
+    return { ok: false, reason: 'locked', lockedUntil: tasting.pinLockedUntil }
+  }
+
+  const byId = eq(tastings.id, tasting.id)
+  if (await verifyPin(pin, tasting.adminPinHash)) {
+    await db.update(tastings).set({ pinFailedAttempts: 0, pinLockedUntil: null }).where(byId)
+    return { ok: true, tasting }
+  }
+
+  const attempts = tasting.pinFailedAttempts + 1
+  if (attempts >= MAX_PIN_ATTEMPTS) {
+    const lockedUntil = new Date(now.getTime() + PIN_LOCK_MINUTES * 60_000)
+    await db.update(tastings).set({ pinFailedAttempts: 0, pinLockedUntil: lockedUntil }).where(byId)
+    return { ok: false, reason: 'locked', lockedUntil }
+  }
+  await db.update(tastings).set({ pinFailedAttempts: attempts }).where(byId)
+  return { ok: false, reason: 'wrong_pin' }
+}
+
+export async function updateTastingSettings(
+  db: Db,
+  tastingId: string,
+  input: { name: string; blindTasting: boolean },
+): Promise<void> {
+  await db.update(tastings).set(input).where(eq(tastings.id, tastingId))
+}
+
+export async function setTastingStatus(
+  db: Db,
+  tastingId: string,
+  to: TastingStatus,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const [tasting] = await db.select().from(tastings).where(eq(tastings.id, tastingId))
+  if (!tasting) return { ok: false, reason: 'Tasting nicht gefunden.' }
+  const check = canTransition(tasting.status, to, {
+    wineCount: await db.$count(wines, eq(wines.tastingId, tastingId)),
+    criteriaCount: await db.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId)),
+  })
+  if (!check.ok) return check
+  await db.update(tastings).set({ status: to }).where(eq(tastings.id, tastingId))
+  return { ok: true }
+}
