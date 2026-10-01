@@ -58,15 +58,21 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
     await expect(page.getByText(name, { exact: true })).toBeVisible()
   }
 
-  // Starten
-  await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
+  // Gastgeber bewertet selbst mit und startet direkt von seiner Warteseite aus
+  await page.getByRole('link', { name: 'Teilen', exact: true }).click()
+  await page.getByRole('link', { name: 'Selbst mitbewerten' }).click()
+  await page.getByLabel('Wie heißt du?').fill('Gastgeber')
+  await page.getByRole('button', { name: 'Beitreten' }).click()
+  await expect(page.getByText('Du bist Gastgeber. Starte das Tasting, sobald alle da sind.')).toBeVisible()
   await page.getByRole('button', { name: 'Tasting starten' }).click()
-  await expect(page.getByText('Läuft', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Verwaltung' })).toBeVisible()
 
-  // Zwei Gäste bewerten blind
+  // Zwei Gäste bewerten blind – ohne Zugang zur Verwaltung
   const anna = await newGuest(browser, testInfo)
   await joinAs(anna, code, 'Anna')
   await expect(anna.getByText('Riesling')).toHaveCount(0)
+  await expect(anna.getByRole('link', { name: 'Verwaltung' })).toHaveCount(0)
   await rateWines(anna, [5, 3])
 
   const ben = await newGuest(browser, testInfo)
@@ -78,7 +84,8 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('4,5').first()).toBeVisible()
   await expect(anna.getByText('Riesling')).toHaveCount(0)
 
-  // Gastgeber beendet → Namen erscheinen bei Anna per Polling
+  // Gastgeber geht aus der Gästeansicht zurück in die Verwaltung und beendet → Namen erscheinen bei Anna
+  await page.getByRole('link', { name: 'Verwaltung' }).click()
   await page.getByRole('button', { name: 'Tasting beenden & auflösen' }).click()
   await page.getByRole('button', { name: 'Beenden & auflösen' }).click()
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()

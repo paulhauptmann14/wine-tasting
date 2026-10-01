@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { saveRatingAction } from '../../actions'
+import { AdminLink } from '@/components/admin-link'
 import { GlassRing } from '@/components/glass-ring'
 import { RatingForm } from '@/components/rating-form'
 import { TastingSplit } from '@/components/tasting-split'
 import { WineList, WineRingStrip } from '@/components/wine-list'
 import { db } from '@/db/client'
+import { isAdmin } from '@/lib/auth/admin-session'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { getTasting } from '@/lib/data'
 import { wineTitle } from '@/lib/tasting/display'
@@ -25,7 +27,7 @@ export default async function WinePage({ params, searchParams }: Props) {
   if (!tasting || !Number.isInteger(position) || position < 1) notFound()
   if (tasting.code !== code) redirect(`/tasting/${tasting.code}/wine/${position}`)
 
-  const participant = await getCurrentParticipant(tasting)
+  const [participant, admin] = await Promise.all([getCurrentParticipant(tasting), isAdmin(tasting)])
   if (!participant) redirect(`/tasting/${tasting.code}`)
   if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
   if (!canRate(tasting.status)) redirect(`/tasting/${tasting.code}`)
@@ -49,9 +51,12 @@ export default async function WinePage({ params, searchParams }: Props) {
         <Link href={`/tasting/${tasting.code}`} className="inline-flex h-12 items-center hover:text-foreground lg:hidden">
           ‹ Alle Weine
         </Link>
-        <span className="ml-auto font-mono">
-          {doneCount} / {items.length}
-        </span>
+        <div className="ml-auto flex items-center gap-4">
+          {admin && <AdminLink code={tasting.code} />}
+          <span className="font-mono">
+            {doneCount} / {items.length}
+          </span>
+        </div>
       </div>
       <WineRingStrip items={items} currentPosition={position} savedPosition={savedPosition} />
 

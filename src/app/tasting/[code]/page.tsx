@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { joinAction } from './actions'
+import { AdminLink } from '@/components/admin-link'
+import { StatusControl } from '@/components/admin/status-control'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { BottomBar } from '@/components/bottom-bar'
 import { GlassRing } from '@/components/glass-ring'
@@ -10,6 +12,7 @@ import { TastingSplit } from '@/components/tasting-split'
 import { buttonVariants } from '@/components/ui/button'
 import { WineList } from '@/components/wine-list'
 import { db } from '@/db/client'
+import { isAdmin } from '@/lib/auth/admin-session'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { getTasting } from '@/lib/data'
 import { cn } from '@/lib/utils'
@@ -24,7 +27,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
   if (!tasting) notFound()
   if (tasting.code !== code) redirect(`/tasting/${tasting.code}`)
 
-  const participant = await getCurrentParticipant(tasting)
+  const [participant, admin] = await Promise.all([getCurrentParticipant(tasting), isAdmin(tasting)])
 
   if (!participant) {
     if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
@@ -41,6 +44,26 @@ export default async function TastingPage({ params, searchParams }: Props) {
   }
 
   if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
+
+  if (tasting.status === 'setup' && admin) {
+    // Der Gastgeber bewertet selbst mit – nur er kann starten, also nicht warten lassen
+    return (
+      <PageShell>
+        <div className="flex flex-col items-center pt-6 text-center lg:pt-0">
+          <GlassRing seed={tasting.name.length} state="open" size={88} />
+          <p className="mt-6 text-sm text-muted-foreground">Hallo {participant.name}</p>
+          <h1 className="mt-1 font-display text-4xl leading-tight">{tasting.name}</h1>
+          <p className="mt-4 max-w-[32ch] text-muted-foreground">
+            Du bist Gastgeber. Starte das Tasting, sobald alle da sind.
+          </p>
+        </div>
+        <div className="mt-8">
+          <StatusControl code={tasting.code} status={tasting.status} />
+        </div>
+        <AdminLink code={tasting.code} className="mt-4" />
+      </PageShell>
+    )
+  }
 
   if (tasting.status === 'setup') {
     return (
@@ -66,7 +89,10 @@ export default async function TastingPage({ params, searchParams }: Props) {
   return (
     <TastingSplit aside={<WineList items={items} savedPosition={savedPosition} />}>
       <header>
-        <p className="text-sm text-muted-foreground">Hallo {participant.name}</p>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">Hallo {participant.name}</p>
+          {admin && <AdminLink code={tasting.code} className="-my-3" />}
+        </div>
         <h1 className="mt-1 font-display text-4xl leading-tight lg:text-5xl">{tasting.name}</h1>
         <p className="mt-2 text-sm text-muted-foreground tabular-nums">
           {doneCount} von {items.length} bewertet

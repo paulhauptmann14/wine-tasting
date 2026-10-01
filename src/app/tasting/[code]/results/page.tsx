@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { AdminLink } from '@/components/admin-link'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { PageShell } from '@/components/page-shell'
 import { ResultsSection } from '@/components/results-section'
@@ -30,7 +31,10 @@ export default async function ResultsPage({ params }: { params: Promise<{ code: 
         ) : (
           <span />
         )}
-        <StatusPill status={tasting.status} />
+        <div className="flex items-center gap-4">
+          {admin && <AdminLink code={tasting.code} />}
+          <StatusPill status={tasting.status} />
+        </div>
       </div>
       <h1 className="mt-4 font-display text-4xl leading-tight lg:text-5xl">{tasting.name}</h1>
       <ResultsSection tasting={tasting} isAdmin={admin} />
