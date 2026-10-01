@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canJoin, canRate, canSeeResults, canSeeWineNames, canTransition } from './rules'
+import { canEditStructure, canJoin, canRate, canSeeResults, canSeeWineNames, canTransition } from './rules'
 
 describe('participant permissions', () => {
   it('lets guests join until the tasting is finished', () => {
@@ -50,5 +50,13 @@ describe('canTransition', () => {
     expect(canTransition('setup', 'active', { wineCount: 1, criteriaCount: 0 })).toEqual({
       ok: false, reason: 'Leg zuerst mindestens ein Bewertungskriterium an.',
     })
+  })
+})
+
+describe('canEditStructure', () => {
+  it('allows reordering, deleting and criteria changes only during setup', () => {
+    expect(canEditStructure('setup')).toBe(true)
+    expect(canEditStructure('active')).toBe(false)
+    expect(canEditStructure('finished')).toBe(false)
   })
 })

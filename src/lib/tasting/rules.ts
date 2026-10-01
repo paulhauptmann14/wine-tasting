@@ -12,6 +12,14 @@ export const STATUS_HINTS: Record<TastingStatus, string> = {
   finished: 'Bewertungen sind gesperrt, alle Weine sind aufgelöst.',
 }
 
+/**
+ * Weine umsortieren/löschen und Kriterien hinzufügen/entfernen/verschieben nur in der Vorbereitung:
+ * sonst bezieht sich „Wein #3“ plötzlich auf eine andere Flasche oder alle Bewertungen werden unvollständig.
+ */
+export const canEditStructure = (status: TastingStatus) => status === 'setup'
+export const STRUCTURE_LOCK_HINT =
+  'Das Tasting läuft. Zum Umsortieren oder Löschen zurück in die Vorbereitung.'
+
 export const canJoin = (status: TastingStatus) => status !== 'finished'
 export const canRate = (status: TastingStatus) => status === 'active'
 export const canSeeResults = (status: TastingStatus, isAdmin: boolean) => isAdmin || status !== 'setup'

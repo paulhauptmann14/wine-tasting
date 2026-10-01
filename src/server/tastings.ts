@@ -95,13 +95,15 @@ export async function setTastingStatus(
   tastingId: string,
   to: TastingStatus,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const [tasting] = await db.select().from(tastings).where(eq(tastings.id, tastingId))
-  if (!tasting) return { ok: false, reason: 'Tasting nicht gefunden.' }
-  const check = canTransition(tasting.status, to, {
-    wineCount: await db.$count(wines, eq(wines.tastingId, tastingId)),
-    criteriaCount: await db.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId)),
+  return db.transaction(async (tx) => {
+    const [tasting] = await tx.select().from(tastings).where(eq(tastings.id, tastingId)).for('update')
+    if (!tasting) return { ok: false, reason: 'Tasting nicht gefunden.' } as const
+    const check = canTransition(tasting.status, to, {
+      wineCount: await tx.$count(wines, eq(wines.tastingId, tastingId)),
+      criteriaCount: await tx.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId)),
+    })
+    if (!check.ok) return check
+    await tx.update(tastings).set({ status: to }).where(eq(tastings.id, tastingId))
+    return { ok: true } as const
   })
-  if (!check.ok) return check
-  await db.update(tastings).set({ status: to }).where(eq(tastings.id, tastingId))
-  return { ok: true }
 }

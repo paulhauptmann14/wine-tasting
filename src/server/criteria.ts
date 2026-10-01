@@ -1,6 +1,7 @@
 import { and, asc, eq, max } from 'drizzle-orm'
 import type { Db } from '@/db/types'
 import { ratingCriteria } from '@/db/schema'
+import { assertStructureEditable } from './structure'
 
 export type Criterion = typeof ratingCriteria.$inferSelect
 
@@ -17,6 +18,7 @@ export async function listCriteria(db: Db, tastingId: string): Promise<Criterion
 
 export async function addCriterion(db: Db, tastingId: string, name: string): Promise<Criterion> {
   return db.transaction(async (tx) => {
+    await assertStructureEditable(tx, tastingId)
     const [{ last }] = await tx
       .select({ last: max(ratingCriteria.position) })
       .from(ratingCriteria)
@@ -45,6 +47,7 @@ export async function deleteCriterion(
   criterionId: string,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   return db.transaction(async (tx) => {
+    await assertStructureEditable(tx, tastingId)
     const ids = (await listCriteria(tx, tastingId)).map((c) => c.id)
     if (!ids.includes(criterionId)) return { ok: true } as const
     if (ids.length === 1) return { ok: false, reason: 'Mindestens ein Kriterium wird gebraucht.' } as const
@@ -62,6 +65,7 @@ export async function moveCriterion(
   direction: 'up' | 'down',
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    await assertStructureEditable(tx, tastingId)
     const ids = (await listCriteria(tx, tastingId)).map((c) => c.id)
     const from = ids.indexOf(criterionId)
     const to = direction === 'up' ? from - 1 : from + 1

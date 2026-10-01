@@ -2,6 +2,7 @@ import { and, asc, eq, max } from 'drizzle-orm'
 import type { Db } from '@/db/types'
 import { wines } from '@/db/schema'
 import type { WineInput } from '@/lib/validation'
+import { assertStructureEditable } from './structure'
 
 export type Wine = typeof wines.$inferSelect
 
@@ -70,6 +71,7 @@ async function orderedIds(tx: Db, tastingId: string): Promise<string[]> {
 
 export async function deleteWine(db: Db, tastingId: string, wineId: string): Promise<void> {
   await db.transaction(async (tx) => {
+    await assertStructureEditable(tx, tastingId)
     const deleted = await tx
       .delete(wines)
       .where(and(eq(wines.id, wineId), eq(wines.tastingId, tastingId)))
@@ -86,6 +88,7 @@ export async function moveWine(
   direction: 'up' | 'down',
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    await assertStructureEditable(tx, tastingId)
     const ids = await orderedIds(tx, tastingId)
     const from = ids.indexOf(wineId)
     const to = direction === 'up' ? from - 1 : from + 1

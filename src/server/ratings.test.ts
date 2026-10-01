@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestDb } from '@/test/db'
 import { seedTasting } from '@/test/factories'
 import type { Db } from '@/db/types'
-import { ratings } from '@/db/schema'
+import { ratings, tastings } from '@/db/schema'
+import { eq } from 'drizzle-orm'
 import { computeResults } from '@/lib/tasting/results'
 import { addCriterion, listCriteria } from './criteria'
 import { joinTasting } from './participants'
@@ -43,6 +44,8 @@ describe('getParticipantProgress', () => {
     const { t, gesamt, wine, participant } = await setup()
     await saveRating(db, { participantId: participant.id, wineId: wine.id, values: { [gesamt.id]: 4 }, notes: null })
     expect((await getParticipantProgress(db, t.id, participant.id)).get(wine.id)).toBe('complete')
+    // Gastgeber geht zurück in die Vorbereitung und ergänzt ein Kriterium
+    await db.update(tastings).set({ status: 'setup' }).where(eq(tastings.id, t.id))
     await addCriterion(db, t.id, 'Abgang')
     expect((await getParticipantProgress(db, t.id, participant.id)).get(wine.id)).toBe('incomplete')
   })

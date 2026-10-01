@@ -1,6 +1,6 @@
-import { and, asc, count, eq, gt } from 'drizzle-orm'
+import { and, asc, count, eq, gt, sql } from 'drizzle-orm'
 import type { Db } from '@/db/types'
-import { participants, ratings, sessions } from '@/db/schema'
+import { participants, ratingCriteria, ratingValues, ratings, sessions } from '@/db/schema'
 import { generateSessionToken, hashToken } from '@/lib/auth/tokens'
 
 export const SESSION_TTL_DAYS = 30
@@ -38,16 +38,25 @@ export async function getParticipantBySessionToken(
   return row ?? null
 }
 
+/** Zählt nur vollständige Bewertungen – wie die Fortschrittsanzeige der Gäste. */
 export async function listParticipants(db: Db, tastingId: string) {
+  const criteriaCount = await db.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId))
+  const complete = db
+    .select({ ratingId: ratingValues.ratingId })
+    .from(ratingValues)
+    .groupBy(ratingValues.ratingId)
+    .having(sql`count(*) >= ${criteriaCount}`)
+    .as('complete')
   return db
     .select({
       id: participants.id,
       name: participants.name,
       createdAt: participants.createdAt,
-      ratingCount: count(ratings.id),
+      ratingCount: count(complete.ratingId),
     })
     .from(participants)
     .leftJoin(ratings, eq(ratings.participantId, participants.id))
+    .leftJoin(complete, eq(complete.ratingId, ratings.id))
     .where(eq(participants.tastingId, tastingId))
     .groupBy(participants.id)
     .orderBy(asc(participants.createdAt))

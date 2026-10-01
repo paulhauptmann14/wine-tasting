@@ -1,6 +1,7 @@
 import { CriteriaManager } from '@/components/admin/criteria-manager'
 import { db } from '@/db/client'
 import { getAdminTasting } from '@/lib/data'
+import { canEditStructure } from '@/lib/tasting/rules'
 import { listCriteria } from '@/server/criteria'
 
 export default async function CriteriaPage({ params }: { params: Promise<{ code: string }> }) {
@@ -12,6 +13,7 @@ export default async function CriteriaPage({ params }: { params: Promise<{ code:
       <p className="text-sm text-muted-foreground">Jedes Kriterium wird mit 1–5 Sternen bewertet.</p>
       <CriteriaManager
         code={tasting.code}
+        locked={!canEditStructure(tasting.status)}
         criteria={criteria.map(({ id, name, position }) => ({ id, name, position }))}
       />
     </div>

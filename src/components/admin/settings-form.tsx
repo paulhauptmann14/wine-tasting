@@ -8,7 +8,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 
-export function SettingsForm({ code, name, blindTasting }: { code: string; name: string; blindTasting: boolean }) {
+export function SettingsForm({
+  code,
+  name,
+  blindTasting,
+  blindLocked,
+}: {
+  code: string
+  name: string
+  blindTasting: boolean
+  blindLocked: boolean
+}) {
   const [state, action, pending] = useActionState(updateSettingsAction.bind(null, code), undefined)
   return (
     <form action={action} noValidate className="grid gap-6">
@@ -27,9 +37,13 @@ export function SettingsForm({ code, name, blindTasting }: { code: string; name:
       <div className="flex items-center justify-between gap-4">
         <div>
           <Label htmlFor="settings-blind">Blindverkostung</Label>
-          <p className="mt-1 text-sm text-muted-foreground">Namen bleiben für Gäste bis zum Ende verborgen.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {blindLocked
+              ? 'Lässt sich nur in der Vorbereitung ändern – sonst wären die Namen sofort aufgelöst.'
+              : 'Namen bleiben für Gäste bis zum Ende verborgen.'}
+          </p>
         </div>
-        <Switch id="settings-blind" name="blindTasting" defaultChecked={blindTasting} />
+        <Switch id="settings-blind" name="blindTasting" defaultChecked={blindTasting} disabled={blindLocked} />
       </div>
       <div className="flex items-center gap-4">
         <Button type="submit" size="lg" className="h-12" disabled={pending}>

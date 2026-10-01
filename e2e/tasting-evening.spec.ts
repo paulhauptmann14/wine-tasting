@@ -85,6 +85,10 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
 
   // Gastgeber geht aus der Gästeansicht zurück in die Verwaltung und beendet → Namen erscheinen bei Anna
   await page.getByRole('link', { name: 'Verwaltung' }).click()
+  // Während das Tasting läuft, sind Umsortieren und Löschen gesperrt
+  await page.getByRole('link', { name: 'Weine', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Wein #1 löschen' })).toBeDisabled()
+  await expect(page.getByText('Das Tasting läuft. Zum Umsortieren oder Löschen zurück in die Vorbereitung.')).toBeVisible()
   // … und kommt auch während des laufenden Tastings jederzeit zurück zu seinen Weinen
   await page.getByRole('link', { name: 'Zum Tasting' }).click()
   await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()

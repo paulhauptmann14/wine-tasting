@@ -1,7 +1,10 @@
 import { beforeEach, expect, it } from 'vitest'
 import { createTestDb } from '@/test/db'
 import { seedTasting } from '@/test/factories'
+import { StructureLockedError } from './structure'
 import type { Db } from '@/db/types'
+import { eq } from 'drizzle-orm'
+import { tastings } from '@/db/schema'
 import { addWine, deleteWine, getWineById, getWineByPosition, listWines, moveWine, updateWine } from './wines'
 
 let db: Db
@@ -61,3 +64,21 @@ it('finds a wine by id only within its tasting', async () => {
   expect(await getWineById(db, t.id, a.id)).toMatchObject({ name: 'A', position: 1 })
   expect(await getWineById(db, other.id, a.id)).toBeNull()
 })
+
+it('refuses to delete or move wines once the tasting has started', async () => {
+  const t = await seedTasting(db)
+  const a = await addWine(db, t.id, w('A'))
+  await addWine(db, t.id, w('B'))
+  const active = await seedTastingStatus(t.id, 'active')
+  await expect(deleteWine(db, active, a.id)).rejects.toThrow(StructureLockedError)
+  await expect(moveWine(db, active, a.id, 'down')).rejects.toThrow(StructureLockedError)
+  // Hinzufügen und Bearbeiten bleiben erlaubt
+  await addWine(db, active, w('C'))
+  await updateWine(db, active, a.id, w('A2'))
+  expect(await names(t.id)).toEqual(['1:A2', '2:B', '3:C'])
+})
+
+async function seedTastingStatus(tastingId: string, status: 'active' | 'finished') {
+  await db.update(tastings).set({ status }).where(eq(tastings.id, tastingId))
+  return tastingId
+}

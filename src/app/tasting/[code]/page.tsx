@@ -88,6 +88,8 @@ export default async function TastingPage({ params, searchParams }: Props) {
 
   return (
     <TastingSplit aside={<WineList items={items} savedPosition={savedPosition} />}>
+      {/* Neue Weine und das Ende des Tastings erscheinen ohne Neuladen */}
+      <AutoRefresh />
       <header>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">Hallo {participant.name}</p>

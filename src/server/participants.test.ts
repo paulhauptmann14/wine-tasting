@@ -2,7 +2,8 @@ import { beforeEach, expect, it } from 'vitest'
 import { createTestDb } from '@/test/db'
 import { seedTasting } from '@/test/factories'
 import type { Db } from '@/db/types'
-import { ratings, sessions, wines } from '@/db/schema'
+import { ratingCriteria, ratingValues, ratings, sessions, wines } from '@/db/schema'
+import { eq } from 'drizzle-orm'
 import { getParticipantBySessionToken, joinTasting, listParticipants } from './participants'
 
 let db: Db
@@ -37,12 +38,22 @@ it('allows duplicate names as separate participants', async () => {
   expect(a.participant.id).not.toBe(b.participant.id)
 })
 
-it('lists participants in join order with rating counts', async () => {
-  const t = await seedTasting(db)
-  const [wine] = await db.insert(wines).values({ tastingId: t.id, position: 1, name: 'R' }).returning()
+it('lists participants in join order counting only complete ratings', async () => {
+  const t = await seedTasting(db, { preset: 'simple' })
+  const [gesamt] = await db.select().from(ratingCriteria).where(eq(ratingCriteria.tastingId, t.id))
+  const [w1, w2] = await db
+    .insert(wines)
+    .values([
+      { tastingId: t.id, position: 1, name: 'R' },
+      { tastingId: t.id, position: 2, name: 'S' },
+    ])
+    .returning()
   const anna = await joinTasting(db, t.id, 'Anna', now)
   await joinTasting(db, t.id, 'Ben', new Date(now.getTime() + 1000))
-  await db.insert(ratings).values({ participantId: anna.participant.id, wineId: wine.id })
+  const [complete] = await db.insert(ratings).values({ participantId: anna.participant.id, wineId: w1.id }).returning()
+  await db.insert(ratingValues).values({ ratingId: complete.id, criterionId: gesamt.id, value: 4 })
+  // Bewertung ohne Werte zählt nicht – so wie in der Gäste-Ansicht
+  await db.insert(ratings).values({ participantId: anna.participant.id, wineId: w2.id })
   const list = await listParticipants(db, t.id)
   expect(list.map((p) => [p.name, p.ratingCount])).toEqual([['Anna', 1], ['Ben', 0]])
 })

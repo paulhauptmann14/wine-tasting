@@ -10,6 +10,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ActionState } from '@/lib/action-state'
+import { STRUCTURE_LOCK_HINT } from '@/lib/tasting/rules'
 import { cn } from '@/lib/utils'
 
 type WineRowData = { id: string; position: number; name: string; vintage: number | null; grapeVariety: string | null }
@@ -88,7 +89,19 @@ function WineForm({
   )
 }
 
-function WineRow({ code, wine, isFirst, isLast }: { code: string; wine: WineRowData; isFirst: boolean; isLast: boolean }) {
+function WineRow({
+  code,
+  wine,
+  isFirst,
+  isLast,
+  locked,
+}: {
+  code: string
+  wine: WineRowData
+  isFirst: boolean
+  isLast: boolean
+  locked: boolean
+}) {
   const [editing, setEditing] = useState(false)
   const subtitle = [wine.vintage, wine.grapeVariety].filter(Boolean).join(' · ')
   const iconButton = cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-12')
@@ -105,12 +118,12 @@ function WineRow({ code, wine, isFirst, isLast }: { code: string; wine: WineRowD
         </div>
         <div className="-mr-2 ml-auto flex shrink-0">
           <form action={moveWineAction.bind(null, code, wine.id, 'up')}>
-            <button type="submit" disabled={isFirst} aria-label={`Wein #${wine.position} nach oben`} className={iconButton}>
+            <button type="submit" disabled={locked || isFirst} aria-label={`Wein #${wine.position} nach oben`} className={iconButton}>
               <ArrowUp className="size-5" />
             </button>
           </form>
           <form action={moveWineAction.bind(null, code, wine.id, 'down')}>
-            <button type="submit" disabled={isLast} aria-label={`Wein #${wine.position} nach unten`} className={iconButton}>
+            <button type="submit" disabled={locked || isLast} aria-label={`Wein #${wine.position} nach unten`} className={iconButton}>
               <ArrowDown className="size-5" />
             </button>
           </form>
@@ -127,6 +140,7 @@ function WineRow({ code, wine, isFirst, isLast }: { code: string; wine: WineRowD
             action={deleteWineAction.bind(null, code, wine.id)}
             trigger={<Trash2 className="size-5" />}
             triggerLabel={`Wein #${wine.position} löschen`}
+            disabled={locked}
             triggerClassName={iconButton}
             title={`Wein #${wine.position} löschen?`}
             description="Alle Bewertungen dieses Weins werden ebenfalls gelöscht. Die folgenden Weine rücken eine Nummer nach vorn."
@@ -148,15 +162,23 @@ function WineRow({ code, wine, isFirst, isLast }: { code: string; wine: WineRowD
   )
 }
 
-export function WineManager({ code, wines }: { code: string; wines: WineRowData[] }) {
+export function WineManager({ code, wines, locked }: { code: string; wines: WineRowData[]; locked: boolean }) {
   return (
     <div className="grid grid-cols-1 gap-8">
+      {locked && <p className="rounded-2xl bg-card px-4 py-3 text-sm text-muted-foreground">{STRUCTURE_LOCK_HINT}</p>}
       {wines.length === 0 ? (
         <p className="text-muted-foreground">Noch keine Weine. Füg den ersten hinzu.</p>
       ) : (
         <ol className="grid grid-cols-1 gap-2">
           {wines.map((wine, i) => (
-            <WineRow key={wine.id} code={code} wine={wine} isFirst={i === 0} isLast={i === wines.length - 1} />
+            <WineRow
+              key={wine.id}
+              code={code}
+              wine={wine}
+              isFirst={i === 0}
+              isLast={i === wines.length - 1}
+              locked={locked}
+            />
           ))}
         </ol>
       )}
