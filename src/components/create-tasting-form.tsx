@@ -52,7 +52,7 @@ export function CreateTastingForm() {
           {PRESET_KEYS.map((key) => (
             <label
               key={key}
-              className="flex min-h-14 cursor-pointer flex-col justify-center rounded-xl border border-border bg-background/40 px-4 py-3 transition-colors has-[:checked]:border-stroh has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
+              className="flex min-h-14 cursor-pointer flex-col justify-center rounded-xl border border-border bg-background/40 px-4 py-3 transition-colors has-[:checked]:border-wine has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
             >
               <input type="radio" name="preset" value={key} defaultChecked={preset === key} className="sr-only" />
               <span className="font-medium">{PRESETS[key].label}</span>

@@ -66,7 +66,7 @@ export function StarRating({ name, label, value, onChange, min = 1, max = 5, inv
               <svg
                 viewBox="0 0 24 24"
                 aria-hidden
-                className={cn('size-8 transition-colors', filled ? 'fill-stroh stroke-stroh' : 'fill-none stroke-mauve/70')}
+                className={cn('size-8 transition-colors', filled ? 'fill-star stroke-star-edge' : 'fill-none stroke-muted-foreground/70')}
                 strokeWidth={1.5}
                 strokeLinejoin="round"
               >

@@ -2,7 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Dunkelmodus folgt der Systemeinstellung (auch für dark:-Klassen der shadcn-Komponenten) */
+@custom-variant dark (@media (prefers-color-scheme: dark));
 
 @theme inline {
   --color-background: var(--background);
@@ -24,9 +25,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --color-granat: var(--granat);
-  --color-stroh: var(--stroh);
-  --color-mauve: var(--mauve);
+  --color-wine: var(--wine);
+  --color-star: var(--star);
+  --color-star-edge: var(--star-edge);
 
   --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-bodoni), ui-serif, Georgia, serif;
@@ -42,35 +43,63 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Eine Abendpalette, aus dem Wein abgeleitet – bewusst nur dunkel. */
+/*
+ * Tageslicht & Bordeaux (hell) – Standard.
+ * Graphit & Rosé (dunkel) – automatisch, wenn das Gerät im Dunkelmodus ist.
+ */
 :root {
-  --trester: #23131b;
-  --kelch: #321d27;
-  --kalk: #f2eae4;
-  --mauve: #a88f9a;
-  --stroh: #e6cf86;
-  --granat: #9e2a43;
+  --wine: #8e1538;
+  --star: #f0a830;
+  --star-edge: #c27800;
 
   --radius: 0.875rem;
-  --background: var(--trester);
-  --foreground: var(--kalk);
-  --card: var(--kelch);
-  --card-foreground: var(--kalk);
-  --popover: var(--kelch);
-  --popover-foreground: var(--kalk);
-  --primary: var(--granat);
-  --primary-foreground: var(--kalk);
-  --secondary: #3d2531;
-  --secondary-foreground: var(--kalk);
-  --muted: #2b1821;
-  --muted-foreground: var(--mauve);
-  --accent: #3d2531;
-  --accent-foreground: var(--kalk);
-  --destructive: #e0705f;
-  --border: rgb(242 234 228 / 0.12);
-  --input: rgb(242 234 228 / 0.16);
-  --ring: var(--stroh);
-  color-scheme: dark;
+  --background: #f4f4f6;
+  --foreground: #17141b;
+  --card: #ffffff;
+  --card-foreground: #17141b;
+  --popover: #ffffff;
+  --popover-foreground: #17141b;
+  --primary: var(--wine);
+  --primary-foreground: #ffffff;
+  --secondary: #e8e7ed;
+  --secondary-foreground: #17141b;
+  --muted: #ecebf0;
+  --muted-foreground: #6f6a78;
+  --accent: #e8e7ed;
+  --accent-foreground: #17141b;
+  --destructive: #c0262d;
+  --border: rgb(23 20 27 / 0.1);
+  --input: rgb(23 20 27 / 0.16);
+  --ring: var(--wine);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --wine: #ff4f7b;
+    --star: #ffc857;
+    --star-edge: #ffc857;
+
+    --background: #121214;
+    --foreground: #f4f4f6;
+    --card: #1c1c21;
+    --card-foreground: #f4f4f6;
+    --popover: #1c1c21;
+    --popover-foreground: #f4f4f6;
+    --primary: var(--wine);
+    --primary-foreground: #121214;
+    --secondary: #26262c;
+    --secondary-foreground: #f4f4f6;
+    --muted: #1c1c21;
+    --muted-foreground: #8b8b96;
+    --accent: #26262c;
+    --accent-foreground: #f4f4f6;
+    --destructive: #ff6b6b;
+    --border: rgb(244 244 246 / 0.1);
+    --input: rgb(244 244 246 / 0.16);
+    --ring: var(--star);
+    color-scheme: dark;
+  }
 }
 
 @layer base {

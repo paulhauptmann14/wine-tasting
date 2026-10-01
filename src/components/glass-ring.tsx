@@ -34,21 +34,21 @@ export function GlassRing({
       aria-hidden={label ? undefined : true}
     >
       <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full overflow-visible">
-        {state === 'done' && <circle cx="50" cy="50" r="38" className="ring-fill fill-granat/15" />}
+        {state === 'done' && <circle cx="50" cy="50" r="38" className="ring-fill fill-wine/15" />}
         <path
           d={ringPath(seed, 40)}
           pathLength={1}
           fill="none"
           strokeLinecap="round"
           className={cn(
-            state === 'open' && 'stroke-mauve/50 [stroke-dasharray:0.02_0.025] [stroke-width:2.5]',
-            state === 'incomplete' && 'stroke-stroh/80 [stroke-dasharray:0.02_0.025] [stroke-width:3]',
-            state === 'done' && 'stroke-granat [stroke-width:6]',
+            state === 'open' && 'stroke-muted-foreground/50 [stroke-dasharray:0.02_0.025] [stroke-width:2.5]',
+            state === 'incomplete' && 'stroke-star-edge [stroke-dasharray:0.02_0.025] [stroke-width:3]',
+            state === 'done' && 'stroke-wine [stroke-width:6]',
             animation === 'draw' && state === 'done' && 'ring-draw',
           )}
         />
         {state === 'done' && (
-          <path d={ringPath(seed + 7, 36.5)} fill="none" className="stroke-granat/45 [stroke-width:1.5]" />
+          <path d={ringPath(seed + 7, 36.5)} fill="none" className="stroke-wine/45 [stroke-width:1.5]" />
         )}
       </svg>
       {children && <span className="relative leading-none">{children}</span>}
