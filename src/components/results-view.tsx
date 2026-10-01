@@ -56,8 +56,8 @@ export function ResultsView({ results, status }: { results: Results; status: Tas
   const byPosition = [...results.wines].sort((a, b) => a.position - b.position)
 
   return (
-    <div className="mt-10 grid gap-14">
-      <ol aria-label="Podest" className="grid gap-6 lg:flex lg:items-end lg:justify-center lg:gap-12">
+    <div className="mt-10 grid grid-cols-1 gap-14">
+      <ol aria-label="Podest" className="grid grid-cols-1 gap-6 lg:flex lg:items-end lg:justify-center lg:gap-12">
         {podium.map((wine, i) => (
           <li key={wine.wineId} className={cn('flex items-center gap-5 lg:flex-col lg:gap-4', PODIUM_ORDER[i])}>
             <GlassRing
@@ -82,7 +82,7 @@ export function ResultsView({ results, status }: { results: Results; status: Tas
       </ol>
 
       {rest.length > 0 && (
-        <ol aria-label="Weitere Plätze" className="grid gap-1">
+        <ol aria-label="Weitere Plätze" className="grid grid-cols-1 gap-1">
           {rest.map((wine, i) => (
             <li key={wine.wineId} className="flex items-center gap-4 rounded-2xl px-3 py-2">
               <span className="w-8 text-right text-sm text-muted-foreground tabular-nums">{wine.rank ?? '–'}</span>

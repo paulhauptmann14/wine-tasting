@@ -8,7 +8,7 @@ type ListProps = { items: WineListItem[]; currentPosition?: number; savedPositio
 
 export function WineList({ items, currentPosition, savedPosition }: ListProps) {
   return (
-    <ol className="grid gap-1">
+    <ol className="grid grid-cols-1 gap-1">
       {items.map((item) => (
         <li key={item.position}>
           <Link
@@ -39,7 +39,7 @@ export function WineList({ items, currentPosition, savedPosition }: ListProps) {
 /** Mobil auf der Bewertungsseite: alle Weine als Ringe zum Springen. */
 export function WineRingStrip({ items, currentPosition, savedPosition }: ListProps) {
   return (
-    <nav aria-label="Weine" className="-mx-4 flex gap-1 overflow-x-auto px-4 py-1 lg:hidden">
+    <nav aria-label="Weine" className="-mx-4 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-1 lg:hidden">
       {items.map((item) => (
         <Link
           key={item.position}
