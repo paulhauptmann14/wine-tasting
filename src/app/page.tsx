@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { GlassRing } from '@/components/glass-ring'
+import { CornerStain } from '@/components/corner-stain'
 import { JoinByCodeForm } from '@/components/join-by-code-form'
 import { PageShell } from '@/components/page-shell'
 
@@ -10,8 +10,7 @@ export default function HomePage() {
   return (
     <PageShell>
       <div className="relative">
-        {/* Abdruck eines abgestellten Glases am Rand des Bogens */}
-        <GlassRing seed={5} size={200} className="pointer-events-none absolute -top-4 -right-28 lg:-top-24 lg:-right-28" />
+        <CornerStain seed={5} />
         <p className="relative font-display text-lg font-medium">Wine Tasting</p>
 
         <section aria-labelledby="join-heading" className="relative mt-24 lg:mt-20">

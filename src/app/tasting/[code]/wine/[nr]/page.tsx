@@ -60,12 +60,13 @@ export default async function WinePage({ params, searchParams }: Props) {
       </div>
       <WineRingStrip items={items} currentPosition={position} savedPosition={savedPosition} />
 
-      <header className="mt-6 flex items-center gap-5">
-        <GlassRing seed={position} size={88}>
-          <span className="font-display text-3xl">{position}</span>
+      <header className="mt-6 flex items-center gap-4">
+        <GlassRing seed={position} size={96} className="-ml-2">
+          <span className="font-display text-4xl font-medium">{position}</span>
         </GlassRing>
         <div className="min-w-0">
-          <h1 className="font-display text-3xl leading-tight lg:text-4xl">{title}</h1>
+          {!showName && <p className="text-sm text-muted-foreground">Blind verkostet</p>}
+          <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight lg:text-4xl">{title}</h1>
           {subtitle && <p className="mt-1 text-muted-foreground">{subtitle}</p>}
         </div>
       </header>

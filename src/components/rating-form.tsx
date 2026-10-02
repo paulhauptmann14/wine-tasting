@@ -24,22 +24,26 @@ export function RatingForm({ action, criteria, initialValues, initialNotes, isLa
   const [notes, setNotes] = useState(initialNotes)
 
   return (
-    <form action={formAction} noValidate className="mt-8 grid gap-6">
-      {criteria.map((c) => (
-        <StarRating
-          key={c.id}
-          name={`c_${c.id}`}
-          label={c.name}
-          min={c.scaleMin}
-          max={c.scaleMax}
-          value={values[c.id] ?? null}
-          onChange={(v) => setValues((prev) => ({ ...prev, [c.id]: v }))}
-          invalid={!!state?.fieldErrors?.[`c_${c.id}`] && values[c.id] === undefined}
-        />
-      ))}
+    <form action={formAction} noValidate className="mt-8 grid gap-8">
+      <div className="border-t border-border">
+        {criteria.map((c) => (
+          <StarRating
+            key={c.id}
+            name={`c_${c.id}`}
+            label={c.name}
+            min={c.scaleMin}
+            max={c.scaleMax}
+            value={values[c.id] ?? null}
+            onChange={(v) => setValues((prev) => ({ ...prev, [c.id]: v }))}
+            invalid={!!state?.fieldErrors?.[`c_${c.id}`] && values[c.id] === undefined}
+          />
+        ))}
+      </div>
 
       <div>
-        <Label htmlFor="notes">Was schmeckst du?</Label>
+        <Label htmlFor="notes" className="text-sm font-normal text-muted-foreground">
+          Was schmeckst du?
+        </Label>
         <Textarea
           id="notes"
           name="notes"
@@ -48,7 +52,7 @@ export function RatingForm({ action, criteria, initialValues, initialNotes, isLa
           maxLength={1000}
           rows={3}
           placeholder="Fruchtig, etwas Säure, grüner Apfel …"
-          className="mt-2 text-base"
+          className="mt-2 bg-card text-base"
         />
       </div>
 

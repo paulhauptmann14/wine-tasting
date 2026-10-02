@@ -11,7 +11,7 @@ import type { ActionState } from '@/lib/action-state'
 export function JoinForm({ action }: { action: (prev: ActionState, fd: FormData) => Promise<ActionState> }) {
   const [state, formAction, pending] = useActionState(action, undefined)
   return (
-    <form action={formAction} noValidate className="mt-10">
+    <form action={formAction} noValidate className="relative mt-10">
       <Label htmlFor="name" className="text-base">
         Wie heißt du?
       </Label>
@@ -23,7 +23,7 @@ export function JoinForm({ action }: { action: (prev: ActionState, fd: FormData)
         autoFocus
         maxLength={40}
         aria-invalid={!!state?.fieldErrors?.name}
-        className="mt-3 h-14 text-lg"
+        className="mt-2 h-14 border-foreground/40 bg-card text-lg"
       />
       <FieldError errors={state?.fieldErrors?.name} />
       <BottomBar>

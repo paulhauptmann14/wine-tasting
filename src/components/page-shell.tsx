@@ -7,7 +7,7 @@ export function PageShell({ children, width = 'narrow' }: { children: ReactNode;
     <main
       className={cn(
         'mx-auto w-full max-w-[480px] px-4 pt-6 pb-32 sm:px-6 lg:pb-12',
-        width === 'narrow' && 'lg:mt-16 lg:mb-16 lg:overflow-hidden lg:rounded-3xl lg:bg-card lg:p-10',
+        width === 'narrow' && 'lg:mt-16 lg:mb-16 lg:overflow-hidden lg:rounded-2xl lg:bg-card lg:p-10',
         width === 'wide' && 'lg:max-w-[960px] lg:pt-12',
       )}
     >

@@ -35,16 +35,18 @@ export function StarRating({ name, label, value, onChange, min = 1, max = 5, inv
   }
 
   return (
-    <div className="grid gap-1.5">
-      <span id={labelId} className="text-sm font-medium">
+    // Eine Zeile des Probierbogens: Kriterium links, Sterne rechts, feine Linie darunter
+    <div className="flex flex-wrap items-center justify-between gap-x-3 border-b border-border py-1">
+      <span id={labelId} className={cn('text-[15px]', invalid && 'text-destructive')}>
         {label}
+        {invalid && <span className="sr-only"> – bitte Sterne vergeben</span>}
       </span>
       <div
         role="radiogroup"
         aria-labelledby={labelId}
         aria-invalid={invalid || undefined}
         onKeyDown={onKeyDown}
-        className={cn('-ml-2 flex w-fit rounded-xl', invalid && 'ring-1 ring-destructive/70')}
+        className="-mr-2 flex"
       >
         {steps.map((n) => {
           const filled = value !== null && n <= value
@@ -66,7 +68,7 @@ export function StarRating({ name, label, value, onChange, min = 1, max = 5, inv
               <svg
                 viewBox="0 0 24 24"
                 aria-hidden
-                className={cn('size-8 transition-colors', filled ? 'fill-star stroke-star-edge' : 'fill-none stroke-muted-foreground/70')}
+                className={cn('size-7 transition-colors', filled ? 'fill-star stroke-star-edge' : 'fill-none stroke-muted-foreground/70')}
                 strokeWidth={1.5}
                 strokeLinejoin="round"
               >

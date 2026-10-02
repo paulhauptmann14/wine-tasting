@@ -5,7 +5,7 @@ import { AdminLink } from '@/components/admin-link'
 import { StatusControl } from '@/components/admin/status-control'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { BottomBar } from '@/components/bottom-bar'
-import { GlassRing } from '@/components/glass-ring'
+import { CornerStain } from '@/components/corner-stain'
 import { JoinForm } from '@/components/join-form'
 import { PageShell } from '@/components/page-shell'
 import { TastingSplit } from '@/components/tasting-split'
@@ -33,12 +33,14 @@ export default async function TastingPage({ params, searchParams }: Props) {
     if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
     return (
       <PageShell>
-        <div className="flex flex-col items-center pt-6 text-center lg:pt-0">
-          <GlassRing seed={tasting.name.length} size={88} />
-          <p className="mt-6 text-sm text-muted-foreground">Du bist eingeladen zu</p>
-          <h1 className="mt-1 font-display text-4xl leading-tight">{tasting.name}</h1>
+        <div className="relative">
+          <CornerStain seed={tasting.name.length} />
+          <p className="relative pt-28 text-sm text-muted-foreground lg:pt-16">Du bist eingeladen zu</p>
+          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight">
+            {tasting.name}
+          </h1>
+          <JoinForm action={joinAction.bind(null, tasting.code)} />
         </div>
-        <JoinForm action={joinAction.bind(null, tasting.code)} />
       </PageShell>
     )
   }
@@ -49,11 +51,13 @@ export default async function TastingPage({ params, searchParams }: Props) {
     // Der Gastgeber bewertet selbst mit – nur er kann starten, also nicht warten lassen
     return (
       <PageShell>
-        <div className="flex flex-col items-center pt-6 text-center lg:pt-0">
-          <GlassRing seed={tasting.name.length} state="open" size={88} />
-          <p className="mt-6 text-sm text-muted-foreground">Hallo {participant.name}</p>
-          <h1 className="mt-1 font-display text-4xl leading-tight">{tasting.name}</h1>
-          <p className="mt-4 max-w-[32ch] text-muted-foreground">
+        <div className="relative">
+          <CornerStain seed={tasting.name.length} />
+          <p className="relative pt-28 text-sm text-muted-foreground lg:pt-16">Hallo {participant.name}</p>
+          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight">
+            {tasting.name}
+          </h1>
+          <p className="relative mt-4 max-w-[34ch] text-muted-foreground">
             Du bist Gastgeber. Starte das Tasting, sobald alle da sind.
           </p>
         </div>
@@ -69,12 +73,14 @@ export default async function TastingPage({ params, searchParams }: Props) {
     return (
       <PageShell>
         <AutoRefresh />
-        <div className="flex flex-col items-center pt-6 text-center lg:pt-0">
-          <GlassRing seed={tasting.name.length} state="open" size={88} />
-          <p className="mt-6 text-sm text-muted-foreground">Hallo {participant.name}</p>
-          <h1 className="mt-1 font-display text-4xl leading-tight">{tasting.name}</h1>
-          <p className="mt-4 max-w-[32ch] text-muted-foreground">
-            Gleich geht&apos;s los. Sobald der Gastgeber startet, kannst du hier bewerten.
+        <div className="relative">
+          <CornerStain seed={tasting.name.length} />
+          <p className="relative pt-28 text-sm text-muted-foreground lg:pt-16">Hallo {participant.name}</p>
+          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight">
+            {tasting.name}
+          </h1>
+          <p className="relative mt-4 max-w-[34ch] text-muted-foreground">
+            Du bist dabei. Sobald der Gastgeber startet, erscheinen hier die Weine.
           </p>
         </div>
       </PageShell>
@@ -95,7 +101,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
           <p className="text-sm text-muted-foreground">Hallo {participant.name}</p>
           {admin && <AdminLink code={tasting.code} className="-my-3" />}
         </div>
-        <h1 className="mt-1 font-display text-4xl leading-tight lg:text-5xl">{tasting.name}</h1>
+        <h1 className="mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight lg:text-5xl">{tasting.name}</h1>
         <p className="mt-2 text-sm text-muted-foreground tabular-nums">
           {doneCount} von {items.length} bewertet
         </p>
@@ -116,11 +122,14 @@ export default async function TastingPage({ params, searchParams }: Props) {
               {doneCount === 0 ? `Mit ${next.title} anfangen` : `Weiter mit ${next.title}`}
             </Link>
           )}
+          {/* Solange noch Weine offen sind, ist das Ergebnis nur ein Nebenweg */}
           <Link
             href={`/tasting/${tasting.code}/results`}
             className={cn(
-              buttonVariants({ size: 'lg', variant: next ? 'secondary' : 'default' }),
-              'h-14 text-base lg:px-8',
+              next
+                ? 'inline-flex h-12 items-center justify-center font-medium underline decoration-border decoration-2 underline-offset-[6px] hover:decoration-wine lg:justify-start lg:px-4'
+                : buttonVariants({ size: 'lg' }),
+              !next && 'h-14 text-base lg:px-8',
             )}
           >
             Ergebnisse ansehen

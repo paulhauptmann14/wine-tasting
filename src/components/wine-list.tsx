@@ -1,20 +1,21 @@
 import Link from 'next/link'
 import { GlassRing } from '@/components/glass-ring'
+import { cn } from '@/lib/utils'
 import type { RingState, WineListItem } from '@/server/participant-view'
 
-const STATE_TEXT: Record<RingState, string> = { open: 'Noch offen', incomplete: 'Bitte ergänzen', done: 'Bewertet' }
+const STATE_TEXT: Record<RingState, string> = { open: 'offen', incomplete: 'ergänzen', done: 'bewertet' }
 
 type ListProps = { items: WineListItem[]; currentPosition?: number; savedPosition?: number }
 
 export function WineList({ items, currentPosition, savedPosition }: ListProps) {
   return (
-    <ol className="grid grid-cols-1 gap-1">
+    <ol className="grid grid-cols-1 border-t border-border">
       {items.map((item) => (
-        <li key={item.position}>
+        <li key={item.position} className="border-b border-border">
           <Link
             href={item.href}
             aria-current={item.position === currentPosition ? 'page' : undefined}
-            className="flex min-h-16 items-center gap-4 rounded-2xl px-3 py-2 outline-none hover:bg-card focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card"
+            className="group -mx-2 flex min-h-[4.5rem] items-center gap-4 rounded-lg px-2 py-2 outline-none hover:bg-card focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card"
           >
             <GlassRing
               seed={item.position}
@@ -22,12 +23,19 @@ export function WineList({ items, currentPosition, savedPosition }: ListProps) {
               size={52}
               animation={item.position === savedPosition ? 'draw' : undefined}
             >
-              <span className="font-display text-lg">{item.position}</span>
+              <span className="font-display text-lg font-medium">{item.position}</span>
             </GlassRing>
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-medium">{item.title}</span>
+              <span className="block truncate font-display text-[17px] font-medium">{item.title}</span>
               {item.subtitle && <span className="block truncate text-sm text-muted-foreground">{item.subtitle}</span>}
-              <span className="block text-xs text-muted-foreground">{STATE_TEXT[item.state]}</span>
+            </span>
+            <span
+              className={cn(
+                'shrink-0 text-xs',
+                item.state === 'done' ? 'text-muted-foreground' : 'font-medium text-foreground',
+              )}
+            >
+              {STATE_TEXT[item.state]}
             </span>
           </Link>
         </li>
@@ -54,7 +62,7 @@ export function WineRingStrip({ items, currentPosition, savedPosition }: ListPro
             size={40}
             animation={item.position === savedPosition ? 'draw' : undefined}
           >
-            <span className="font-display text-sm">{item.position}</span>
+            <span className="font-display text-sm font-medium">{item.position}</span>
           </GlassRing>
         </Link>
       ))}
