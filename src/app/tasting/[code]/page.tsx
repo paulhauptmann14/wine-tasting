@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { joinAction } from './actions'
 import { AdminLink } from '@/components/admin-link'
+import { TastingCode } from '@/components/tasting-code'
 import { StatusControl } from '@/components/admin/status-control'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { BottomBar } from '@/components/bottom-bar'
@@ -41,7 +42,10 @@ export default async function TastingPage({ params, searchParams }: Props) {
           </h1>
           <JoinForm action={joinAction.bind(null, tasting.code)} />
         </div>
-        <AdminLink code={tasting.code} className="mt-6" />
+        <div className="mt-6 flex items-center gap-6">
+          <TastingCode code={tasting.code} />
+          <AdminLink code={tasting.code} />
+        </div>
       </PageShell>
     )
   }
@@ -84,7 +88,10 @@ export default async function TastingPage({ params, searchParams }: Props) {
             Du bist dabei. Sobald der Gastgeber startet, erscheinen hier die Weine.
           </p>
         </div>
-        <AdminLink code={tasting.code} className="mt-6" />
+        <div className="mt-6 flex items-center gap-6">
+          <TastingCode code={tasting.code} />
+          <AdminLink code={tasting.code} />
+        </div>
       </PageShell>
     )
   }
@@ -100,8 +107,11 @@ export default async function TastingPage({ params, searchParams }: Props) {
       <AutoRefresh />
       <header>
         <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">Hallo {participant.name}</p>
-          <AdminLink code={tasting.code} className="-my-3" />
+          <p className="min-w-0 truncate text-sm text-muted-foreground">Hallo {participant.name}</p>
+          <div className="-my-3 flex shrink-0 items-center gap-6">
+            <TastingCode code={tasting.code} />
+            <AdminLink code={tasting.code} />
+          </div>
         </div>
         <h1 className="mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight lg:text-5xl">{tasting.name}</h1>
         <p className="mt-2 text-sm text-muted-foreground tabular-nums">

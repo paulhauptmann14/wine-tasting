@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Wine } from 'lucide-react'
 import { notFound, redirect } from 'next/navigation'
 import { AdminNav } from '@/components/admin/admin-nav'
+import { TastingCode } from '@/components/tasting-code'
 import { buttonVariants } from '@/components/ui/button'
 import { requireAdmin } from '@/lib/auth/admin-session'
 import { getTasting } from '@/lib/data'
@@ -26,7 +27,7 @@ export default async function AdminLayout({
     <div className="mx-auto w-full max-w-[1100px] px-4 pt-4 pb-24 sm:px-6 lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-x-12 lg:pt-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 lg:col-span-2 lg:mb-10">
         <div className="min-w-0">
-          <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground">{tasting.code}</p>
+          <TastingCode code={tasting.code} />
           <div className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
             <h1 className="font-display text-3xl leading-tight lg:text-4xl">{tasting.name}</h1>
             <span className="rounded-md bg-card px-2 py-0.5 text-xs font-medium">
