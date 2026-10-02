@@ -46,7 +46,7 @@ export function SettingsForm({
         <Switch id="settings-blind" name="blindTasting" defaultChecked={blindTasting} disabled={blindLocked} />
       </div>
       <div className="flex items-center gap-4">
-        <Button type="submit" size="lg" className="h-12" disabled={pending}>
+        <Button type="submit" size="lg" variant="outline" className="h-12" disabled={pending}>
           Änderungen speichern
         </Button>
         {state?.ok && (

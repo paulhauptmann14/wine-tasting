@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { asc, eq } from 'drizzle-orm'
 import { createTestDb } from '@/test/db'
 import type { Db } from '@/db/types'
-import { ratingCriteria, tastings, wines } from '@/db/schema'
+import { participants, ratingCriteria, tastings, wines } from '@/db/schema'
 import {
   MAX_PIN_ATTEMPTS,
   createTasting,
+  deleteTasting,
   getTastingByCode,
   setTastingStatus,
   updateTastingSettings,
@@ -112,5 +113,20 @@ describe('updateTastingSettings', () => {
     const t = await createTasting(db, input)
     await updateTastingSettings(db, t.id, { name: 'Neu', blindTasting: false })
     expect(await getTastingByCode(db, t.code)).toMatchObject({ name: 'Neu', blindTasting: false })
+  })
+})
+
+describe('deleteTasting', () => {
+  it('removes the tasting with everything that belongs to it', async () => {
+    const t = await createTasting(db, input)
+    const other = await createTasting(db, input)
+    await db.insert(wines).values({ tastingId: t.id, position: 1, name: 'Riesling' })
+    await db.insert(participants).values({ tastingId: t.id, name: 'Anna' })
+    await deleteTasting(db, t.id)
+    expect(await getTastingByCode(db, t.code)).toBeNull()
+    expect(await db.select().from(wines)).toEqual([])
+    expect(await db.select().from(participants)).toEqual([])
+    expect(await db.select().from(ratingCriteria).where(eq(ratingCriteria.tastingId, t.id))).toEqual([])
+    expect(await getTastingByCode(db, other.code)).not.toBeNull()
   })
 })

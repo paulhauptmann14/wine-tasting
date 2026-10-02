@@ -125,6 +125,44 @@ test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ pag
   expect(await replay(guest)).not.toContain('Geheimwein')
 })
 
+test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, browser }, testInfo) => {
+  await page.goto('/new')
+  await page.getByLabel('Name der Verkostung').fill('E2E Aufräumen')
+  await page.getByLabel('Admin-PIN').fill('1234')
+  await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
+  await page.waitForURL(/\/admin$/)
+  const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
+  await page.getByRole('link', { name: 'Weine', exact: true }).click()
+  await page.getByLabel('Name', { exact: true }).fill('Silvaner')
+  await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
+  await expect(page.getByText('Silvaner', { exact: true })).toBeVisible()
+
+  const guest = await newGuest(browser, testInfo)
+  await guest.goto(`/tasting/${code}`)
+  await guest.getByLabel('Wie heißt du?').fill('Doppelt')
+  await guest.getByRole('button', { name: 'Beitreten' }).click()
+  await expect(guest.getByText('Hallo Doppelt')).toBeVisible()
+
+  // Fortschritt pro Gast und Entfernen mit Rückfrage
+  await page.getByRole('link', { name: 'Teilnehmer', exact: true }).click()
+  await expect(page.getByRole('img', { name: 'Wein #1: offen' })).toBeVisible()
+  await page.getByRole('button', { name: 'Doppelt entfernen' }).click()
+  await page.getByRole('button', { name: 'Entfernen', exact: true }).click()
+  await expect(page.getByText('Noch niemand da.', { exact: false })).toBeVisible()
+  await guest.reload()
+  await expect(guest.getByLabel('Wie heißt du?')).toBeVisible()
+
+  // Löschen erst nach Eingabe des Codes
+  await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
+  const deleteButton = page.getByRole('button', { name: 'Endgültig löschen' })
+  await expect(deleteButton).toBeDisabled()
+  await page.getByLabel(/Zur Bestätigung den Code/).fill(code.toLowerCase())
+  await deleteButton.click()
+  await page.waitForURL((url) => url.pathname === '/')
+  await page.goto(`/tasting/${code}`)
+  await expect(page.getByRole('heading', { name: 'Tasting nicht gefunden' })).toBeVisible()
+})
+
 test('unbekannter Code zeigt die Fehlerseite', async ({ page }) => {
   await page.goto('/tasting/222222')
   await expect(page.getByRole('heading', { name: 'Tasting nicht gefunden' })).toBeVisible()

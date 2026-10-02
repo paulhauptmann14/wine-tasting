@@ -1,3 +1,4 @@
+import { DeleteTasting } from '@/components/admin/delete-tasting'
 import { SettingsForm } from '@/components/admin/settings-form'
 import { StatusControl } from '@/components/admin/status-control'
 import { getAdminTasting } from '@/lib/data'
@@ -15,6 +16,7 @@ export default async function GeneralPage({ params }: { params: Promise<{ code: 
         blindTasting={tasting.blindTasting}
         blindLocked={!canEditStructure(tasting.status)}
       />
+      <DeleteTasting code={tasting.code} />
     </div>
   )
 }

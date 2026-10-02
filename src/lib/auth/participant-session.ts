@@ -21,3 +21,7 @@ export async function getCurrentParticipant(tasting: { id: string; code: string 
   if (!token) return null
   return getParticipantBySessionToken(db, tasting.id, token)
 }
+
+export async function clearParticipantCookie(code: string): Promise<void> {
+  ;(await cookies()).delete(cookieName(code))
+}

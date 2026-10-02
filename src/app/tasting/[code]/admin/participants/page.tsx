@@ -1,28 +1,65 @@
+import { Trash2 } from 'lucide-react'
+import { ConfirmSubmit } from '@/components/admin/confirm-submit'
+import { AutoRefresh } from '@/components/auto-refresh'
+import { GlassRing } from '@/components/glass-ring'
+import { buttonVariants } from '@/components/ui/button'
 import { db } from '@/db/client'
 import { getAdminTasting } from '@/lib/data'
-import { listParticipants } from '@/server/participants'
-import { listWines } from '@/server/wines'
+import { cn } from '@/lib/utils'
+import { listParticipantProgress } from '@/server/participants'
+import type { RingState } from '@/server/participant-view'
+import { removeParticipantAction } from '../actions'
+
+const STATE_TEXT: Record<RingState, string> = { open: 'offen', incomplete: 'ergänzen', done: 'bewertet' }
 
 export default async function ParticipantsPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
   const tasting = await getAdminTasting(code)
-  const [people, wines] = await Promise.all([listParticipants(db, tasting.id), listWines(db, tasting.id)])
+  const people = await listParticipantProgress(db, tasting.id)
+  const iconButton = cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-12 shrink-0')
 
   if (people.length === 0) {
     return (
-      <p className="text-muted-foreground">Noch niemand da. Teile den QR-Code, damit deine Gäste beitreten können.</p>
+      <>
+        {tasting.status !== 'finished' && <AutoRefresh />}
+        <p className="text-muted-foreground">Noch niemand da. Teile den QR-Code, damit deine Gäste beitreten können.</p>
+      </>
     )
   }
   return (
-    <ul className="grid grid-cols-1 border-t border-border">
-      {people.map((p) => (
-        <li key={p.id} className="flex min-h-14 items-center justify-between gap-4 border-b border-border py-2">
-          <span className="truncate font-medium">{p.name}</span>
-          <span className="shrink-0 font-mono text-sm text-muted-foreground">
-            {p.ratingCount} / {wines.length} bewertet
-          </span>
-        </li>
-      ))}
-    </ul>
+    <>
+      {tasting.status !== 'finished' && <AutoRefresh />}
+      <ul className="grid grid-cols-1 border-t border-border">
+        {people.map((p) => (
+          <li key={p.id} className="border-b border-border py-2">
+            <div className="flex items-center gap-3">
+              <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
+              <span className="shrink-0 font-mono text-sm text-muted-foreground">
+                {p.doneCount} / {p.wines.length}
+              </span>
+              <ConfirmSubmit
+                action={removeParticipantAction.bind(null, tasting.code, p.id)}
+                trigger={<Trash2 className="size-5" />}
+                triggerLabel={`${p.name} entfernen`}
+                triggerClassName={iconButton}
+                title={`${p.name} entfernen?`}
+                description="Die Bewertungen dieser Person werden gelöscht und zählen nicht mehr im Ergebnis. Sie kann danach neu beitreten."
+                confirmLabel="Entfernen"
+              />
+            </div>
+            {/* Ein kleiner Ring pro Wein: wer fehlt noch wo? */}
+            <ol aria-label={`Fortschritt von ${p.name}`} className="-mt-1 flex flex-wrap gap-1 pb-1">
+              {p.wines.map((state, i) => (
+                <li key={i}>
+                  <GlassRing seed={i + 1} state={state} size={28} label={`Wein #${i + 1}: ${STATE_TEXT[state]}`}>
+                    <span className="text-[10px] font-medium">{i + 1}</span>
+                  </GlassRing>
+                </li>
+              ))}
+            </ol>
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }

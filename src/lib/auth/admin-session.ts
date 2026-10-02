@@ -28,3 +28,7 @@ export async function isAdmin(tasting: { id: string; code: string }): Promise<bo
 export async function requireAdmin(tasting: { id: string; code: string }): Promise<void> {
   if (!(await isAdmin(tasting))) redirect(`/manage?code=${tasting.code}`)
 }
+
+export async function clearAdminCookie(code: string): Promise<void> {
+  ;(await cookies()).delete(cookieName(code))
+}

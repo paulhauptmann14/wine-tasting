@@ -107,3 +107,8 @@ export async function setTastingStatus(
     return { ok: true } as const
   })
 }
+
+/** Löscht das Tasting; Weine, Gäste, Sessions, Kriterien und Bewertungen fallen per Cascade weg. */
+export async function deleteTasting(db: Db, tastingId: string): Promise<void> {
+  await db.delete(tastings).where(eq(tastings.id, tastingId))
+}

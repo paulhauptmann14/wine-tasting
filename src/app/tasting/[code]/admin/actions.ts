@@ -1,10 +1,14 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { db } from '@/db/client'
+import { clearAdminCookie } from '@/lib/auth/admin-session'
+import { clearParticipantCookie } from '@/lib/auth/participant-session'
 import type { ActionState } from '@/lib/action-state'
 import { getAdminTasting } from '@/lib/data'
+import { normalizeCode } from '@/lib/tasting/code'
 import { canEditStructure } from '@/lib/tasting/rules'
 import {
   criterionNameSchema,
@@ -16,7 +20,8 @@ import {
 } from '@/lib/validation'
 import { addCriterion, deleteCriterion, moveCriterion, renameCriterion } from '@/server/criteria'
 import { StructureLockedError } from '@/server/structure'
-import { setTastingStatus, updateTastingSettings } from '@/server/tastings'
+import { removeParticipant } from '@/server/participants'
+import { deleteTasting, setTastingStatus, updateTastingSettings } from '@/server/tastings'
 import { addWine, deleteWine, moveWine, updateWine } from '@/server/wines'
 
 const refresh = (code: string) => revalidatePath(`/tasting/${code}`, 'layout')
@@ -144,4 +149,24 @@ export async function moveCriterionAction(code: string, criterionId: string, dir
   if (!idSchema.safeParse(criterionId).success || !directionSchema.safeParse(direction).success) return
   await unlessLocked(() => moveCriterion(db, tasting.id, criterionId, direction))
   refresh(tasting.code)
+}
+
+export async function removeParticipantAction(code: string, participantId: string): Promise<void> {
+  const tasting = await getAdminTasting(code)
+  if (!idSchema.safeParse(participantId).success) return
+  await removeParticipant(db, tasting.id, participantId)
+  refresh(tasting.code)
+}
+
+/** Löschen nur mit eingetipptem Code – so etwas passiert nicht aus Versehen. */
+export async function deleteTastingAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
+  const tasting = await getAdminTasting(code)
+  const confirm = formValue(fd, 'confirm')
+  if (normalizeCode(confirm) !== tasting.code) {
+    return { fieldErrors: { confirm: ['Gib zur Bestätigung den Code des Tastings ein.'] }, values: { confirm } }
+  }
+  await deleteTasting(db, tasting.id)
+  await clearAdminCookie(tasting.code)
+  await clearParticipantCookie(tasting.code)
+  redirect('/')
 }
