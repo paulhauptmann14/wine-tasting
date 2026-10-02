@@ -76,7 +76,7 @@ function CriterionRow({
   const [editing, setEditing] = useState(false)
   const iconButton = cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-12')
   return (
-    <li className="rounded-2xl bg-card p-4">
+    <li className="border-b border-border py-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="w-6 text-right text-sm text-muted-foreground">{criterion.position}</span>
         <p className="min-w-40 flex-1 truncate font-medium">{criterion.name}</p>
@@ -113,7 +113,7 @@ function CriterionRow({
         </div>
       </div>
       {editing && (
-        <div className="mt-4 border-t border-border pt-4">
+        <div className="mt-3 pb-2">
           <NameForm
             action={renameCriterionAction.bind(null, code, criterion.id)}
             initial={criterion.name}
@@ -138,8 +138,8 @@ export function CriteriaManager({
 }) {
   return (
     <div className="grid grid-cols-1 gap-8">
-      {locked && <p className="rounded-2xl bg-card px-4 py-3 text-sm text-muted-foreground">{STRUCTURE_LOCK_HINT}</p>}
-      <ol className="grid grid-cols-1 gap-2">
+      {locked && <p className="border-l-2 border-wine pl-3 text-sm text-muted-foreground">{STRUCTURE_LOCK_HINT}</p>}
+      <ol className="grid grid-cols-1 border-t border-border">
         {criteria.map((c, i) => (
           <CriterionRow
             key={c.id}
@@ -153,7 +153,7 @@ export function CriteriaManager({
         ))}
       </ol>
       {!locked && (
-        <section className="rounded-2xl border border-dashed border-border p-4">
+        <section>
           <NameForm action={addCriterionAction.bind(null, code)} label="Kriterium hinzufügen" submitLabel="Hinzufügen" />
           <p className="mt-3 text-sm text-muted-foreground">
             Neue Kriterien gelten auch für bereits abgegebene Bewertungen – deine Gäste werden gebeten, sie zu ergänzen.

@@ -21,7 +21,7 @@ export default async function SharePage({ params }: { params: Promise<{ code: st
       <div
         role="img"
         aria-label={`QR-Code für ${url}`}
-        className="mx-auto w-full max-w-[280px] rounded-3xl bg-white p-4 lg:max-w-[360px] [&>svg]:h-auto [&>svg]:w-full"
+        className="mx-auto w-full max-w-[280px] rounded-xl bg-white p-4 lg:max-w-[360px] [&>svg]:h-auto [&>svg]:w-full"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
       <div className="grid gap-6">

@@ -14,9 +14,9 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
     )
   }
   return (
-    <ul className="grid grid-cols-1 gap-2">
+    <ul className="grid grid-cols-1 border-t border-border">
       {people.map((p) => (
-        <li key={p.id} className="flex items-center justify-between gap-4 rounded-2xl bg-card px-4 py-3">
+        <li key={p.id} className="flex min-h-14 items-center justify-between gap-4 border-b border-border py-2">
           <span className="truncate font-medium">{p.name}</span>
           <span className="shrink-0 font-mono text-sm text-muted-foreground">
             {p.ratingCount} / {wines.length} bewertet

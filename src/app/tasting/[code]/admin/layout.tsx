@@ -29,7 +29,7 @@ export default async function AdminLayout({
           <p className="font-mono text-xs tracking-[0.3em] text-muted-foreground">{tasting.code}</p>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
             <h1 className="font-display text-3xl leading-tight lg:text-4xl">{tasting.name}</h1>
-            <span className="rounded-full bg-card px-3 py-1 text-xs font-medium">
+            <span className="rounded-md bg-card px-2 py-0.5 text-xs font-medium">
               {STATUS_LABELS[tasting.status]}
             </span>
           </div>

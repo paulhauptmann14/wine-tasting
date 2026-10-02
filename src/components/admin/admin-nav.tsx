@@ -18,7 +18,7 @@ export function AdminNav({ code }: { code: string }) {
   return (
     <nav
       aria-label="Verwaltung"
-      className="-mx-4 mb-8 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 lg:mx-0 lg:mb-0 lg:flex-col lg:px-0"
+      className="-mx-4 mb-8 flex gap-6 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 lg:mx-0 lg:mb-0 lg:flex-col lg:gap-0 lg:border-b-0 lg:px-0"
     >
       {TABS.map((tab) => {
         const href = base + tab.path
@@ -27,7 +27,7 @@ export function AdminNav({ code }: { code: string }) {
             key={tab.label}
             href={href}
             aria-current={pathname === href ? 'page' : undefined}
-            className="flex h-12 shrink-0 items-center rounded-full px-4 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card aria-[current=page]:text-foreground lg:rounded-xl"
+            className="-mb-px flex h-12 shrink-0 items-center border-b-2 border-transparent text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:underline aria-[current=page]:border-wine aria-[current=page]:font-medium aria-[current=page]:text-foreground lg:mb-0 lg:border-b-0 lg:border-l-2 lg:pl-4"
           >
             {tab.label}
           </Link>

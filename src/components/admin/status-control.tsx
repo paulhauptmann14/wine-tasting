@@ -33,7 +33,7 @@ function StatusButton({
 export function StatusControl({ code, status }: { code: string; status: TastingStatus }) {
   const [state, action, pending] = useActionState(setStatusAction.bind(null, code), undefined)
   return (
-    <section aria-labelledby="status-heading" className="rounded-2xl bg-card p-5">
+    <section aria-labelledby="status-heading" className="rounded-xl bg-card p-5">
       <p id="status-heading" className="text-sm text-muted-foreground">
         Status
       </p>

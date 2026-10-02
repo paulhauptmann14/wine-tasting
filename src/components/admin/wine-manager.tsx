@@ -107,7 +107,7 @@ function WineRow({
   const iconButton = cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-12')
 
   return (
-    <li className="rounded-2xl bg-card p-4">
+    <li className="border-b border-border py-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <GlassRing seed={wine.position} size={48}>
           <span className="font-display text-lg">{wine.position}</span>
@@ -149,7 +149,7 @@ function WineRow({
         </div>
       </div>
       {editing && (
-        <div className="mt-4 border-t border-border pt-4">
+        <div className="mt-3 pb-2">
           <WineForm
             action={updateWineAction.bind(null, code, wine.id)}
             initial={wine}
@@ -165,11 +165,11 @@ function WineRow({
 export function WineManager({ code, wines, locked }: { code: string; wines: WineRowData[]; locked: boolean }) {
   return (
     <div className="grid grid-cols-1 gap-8">
-      {locked && <p className="rounded-2xl bg-card px-4 py-3 text-sm text-muted-foreground">{STRUCTURE_LOCK_HINT}</p>}
+      {locked && <p className="border-l-2 border-wine pl-3 text-sm text-muted-foreground">{STRUCTURE_LOCK_HINT}</p>}
       {wines.length === 0 ? (
         <p className="text-muted-foreground">Noch keine Weine. Füg den ersten hinzu.</p>
       ) : (
-        <ol className="grid grid-cols-1 gap-2">
+        <ol className="grid grid-cols-1 border-t border-border">
           {wines.map((wine, i) => (
             <WineRow
               key={wine.id}
@@ -182,8 +182,8 @@ export function WineManager({ code, wines, locked }: { code: string; wines: Wine
           ))}
         </ol>
       )}
-      <section aria-labelledby="add-wine-heading" className="rounded-2xl border border-dashed border-border p-4">
-        <h2 id="add-wine-heading" className="mb-4 font-medium">
+      <section aria-labelledby="add-wine-heading">
+        <h2 id="add-wine-heading" className="mb-4 font-display text-xl font-medium">
           Wein #{wines.length + 1} hinzufügen
         </h2>
         <WineForm action={addWineAction.bind(null, code)} submitLabel="Wein hinzufügen" />
