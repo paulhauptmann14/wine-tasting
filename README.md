@@ -117,6 +117,8 @@ Die App braucht nur Node.js, PostgreSQL und die Umgebungsvariablen oben. Es gibt
    - `APP_URL` = `https://<deine-domain>` (für die QR-Codes)
 5. Deployen. Bei jeder Schemaänderung vor dem Deploy Schritt 3 wiederholen.
 
+Die Server-Funktionen laufen in **Dublin** (`dub1`, festgelegt in `vercel.json`), nah an einer Supabase-Datenbank in `eu-west-1`. Liegt die Datenbank in einer anderen Region, dort die passende Vercel-Region eintragen (z. B. `fra1` für Frankfurt).
+
 Supabase pausiert Free-Projekte nach längerer Inaktivität – vor einem Tasting-Abend einmal die App öffnen bzw. das Projekt im Dashboard wieder aktivieren. Alle Tabellen haben Row Level Security ohne Policies, die öffentliche Supabase-API gibt also nichts preis.
 
 ### Variante B: Docker, z. B. auf dem Raspberry Pi
