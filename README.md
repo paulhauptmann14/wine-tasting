@@ -99,27 +99,57 @@ e2e/                Playwright-Tests
 
 ## Deployment
 
-Die App braucht nur Node.js, eine PostgreSQL-Datenbank und die Umgebungsvariablen oben. Das Ziel ist noch nicht festgelegt; beide Varianten sind möglich:
+Die App braucht nur Node.js, PostgreSQL und die Umgebungsvariablen oben. Es gibt zwei vorbereitete Wege; der Code ist für beide derselbe.
 
-### Variante A: Vercel + Supabase
+### Variante A: Vercel + Supabase (empfohlen)
 
-1. Supabase-Projekt anlegen (z. B. Region Frankfurt, Free Plan).
-2. Unter *Project Settings → Database* die Verbindungs-URLs kopieren:
-   - **Transaction Pooler** (Port 6543) → `DATABASE_URL` in Vercel
-   - **Session Pooler** (Port 5432) → nur lokal für Migrationen
-3. Migrationen ausführen:
+1. **Supabase-Projekt** anlegen (Free Plan, Region z. B. Frankfurt).
+2. Unter *Project Settings → Database → Connection string* zwei URLs kopieren:
+   - **Transaction Pooler** (Port 6543) → wird `DATABASE_URL` in Vercel
+   - **Session Pooler** (Port 5432) → nur für Migrationen
+3. **Migrationen** von deinem Rechner aus anwenden:
    ```bash
-   MIGRATION_DATABASE_URL="<session-pooler-url>" npm run db:migrate
+   MIGRATION_DATABASE_URL="<session-pooler-url>" npm run db:migrate:prod
    ```
-4. Repository in Vercel importieren, `DATABASE_URL`, `SESSION_SECRET` und optional `APP_URL` setzen, deployen.
+4. **Vercel:** Repository importieren (Framework wird erkannt) und unter *Settings → Environment Variables* setzen:
+   - `DATABASE_URL` = Transaction-Pooler-URL
+   - `SESSION_SECRET` = Ausgabe von `openssl rand -base64 48`
+   - `APP_URL` = `https://<deine-domain>` (für die QR-Codes)
+5. Deployen. Bei jeder Schemaänderung vor dem Deploy Schritt 3 wiederholen.
 
-Hinweis: Supabase pausiert Free-Projekte nach längerer Inaktivität – vor einem Tasting-Abend einmal prüfen.
+Supabase pausiert Free-Projekte nach längerer Inaktivität – vor einem Tasting-Abend einmal die App öffnen bzw. das Projekt im Dashboard wieder aktivieren. Alle Tabellen haben Row Level Security ohne Policies, die öffentliche Supabase-API gibt also nichts preis.
 
-### Variante B: Raspberry Pi
+### Variante B: Docker, z. B. auf dem Raspberry Pi
 
-- Raspberry Pi 4 (≥ 4 GB) oder Pi 5 mit 64-Bit-OS und Docker
-- App und Postgres als Container (Next.js mit `output: 'standalone'`), Datenbank-Volume auf einer **SSD**, nicht auf der SD-Karte
-- Erreichbarkeit mit HTTPS über **Cloudflare Tunnel** – nötig, weil die Cookies in Produktion nur über HTTPS gesetzt werden; keine Portfreigabe am Router
-- Regelmäßige Backups mit `pg_dump`
+Voraussetzungen: Raspberry Pi 4 (≥ 4 GB) oder Pi 5 mit 64-Bit-OS, Docker mit Compose-Plugin, die Datenbank auf einer **SSD** (nicht auf der SD-Karte). Für den Zugriff von außen eine Domain bei Cloudflare.
 
-Die genaue Anleitung für die gewählte Variante folgt, sobald die Entscheidung gefallen ist.
+```bash
+git clone <repo> wine-tasting && cd wine-tasting
+cp .env.production.example .env.production   # Werte eintragen, DB_DATA_DIR auf die SSD zeigen lassen
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+Der Stack besteht aus:
+
+| Dienst | Aufgabe |
+|---|---|
+| `db` | Postgres 17, Daten in `DB_DATA_DIR` |
+| `migrate` | wendet beim Start einmal alle Migrationen an und beendet sich |
+| `app` | Next.js-Standalone-Server, nur lokal auf `127.0.0.1:APP_PORT` erreichbar |
+| `tunnel` | optional: Cloudflare Tunnel für HTTPS von außen, ohne Portfreigabe |
+
+**Von außen erreichbar machen (HTTPS):** In Cloudflare *Zero Trust → Networks → Tunnels* einen Tunnel anlegen, als Public Hostname z. B. `wein.example.de` → `http://app:3000` eintragen, das Token in `.env.production` als `TUNNEL_TOKEN` setzen, `APP_URL=https://wein.example.de` setzen und mit Profil starten:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production --profile tunnel up -d --build
+```
+
+HTTPS ist nötig: In Produktion setzt die App ihre Cookies nur über sichere Verbindungen. Über eine reine LAN-Adresse (`http://192.168…`) funktionieren Beitreten und Admin-Login deshalb nicht.
+
+**Update:** `git pull` und denselben `up -d --build`-Befehl erneut ausführen – Migrationen laufen automatisch.
+
+**Backup** der Datenbank:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production exec db pg_dump -U wine wine_tasting > backup-$(date +%F).sql
+```

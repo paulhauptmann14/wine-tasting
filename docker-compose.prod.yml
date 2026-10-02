@@ -1,0 +1,64 @@
+# Produktion mit Docker, z. B. auf dem Raspberry Pi.
+#   cp .env.production.example .env.production   # Werte eintragen
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+# Mit Cloudflare Tunnel (HTTPS von außen, ohne Portfreigabe):
+#   docker compose -f docker-compose.prod.yml --env-file .env.production --profile tunnel up -d --build
+
+name: wine-tasting
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wine
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD setzen}
+      POSTGRES_DB: wine_tasting
+    volumes:
+      # Auf dem Pi auf die SSD zeigen lassen, nicht auf die SD-Karte
+      - ${DB_DATA_DIR:-./data/postgres}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wine -d wine_tasting"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Läuft bei jedem Start einmal und beendet sich danach
+  migrate:
+    build:
+      context: .
+      target: build
+    command: ["node", "scripts/migrate.mjs"]
+    environment:
+      DATABASE_URL: postgres://wine:${POSTGRES_PASSWORD}@db:5432/wine_tasting
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://wine:${POSTGRES_PASSWORD}@db:5432/wine_tasting
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET setzen (mind. 32 Zeichen)}
+      APP_URL: ${APP_URL:-}
+    ports:
+      # Nur lokal am Gerät erreichbar; von außen kommt man über den Tunnel (HTTPS)
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      # Kein ${…:?}: Compose würde es auch ohne aktives Tunnel-Profil verlangen
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - app
+    profiles: ["tunnel"]

@@ -45,6 +45,7 @@ next-env.d.ts
 
 # Env-Beispiel wird versioniert
 !.env.example
+!.env.production.example
 
 # Playwright
 /test-results/
@@ -53,3 +54,6 @@ next-env.d.ts
 AGENTS.md
 CLAUDE.md
 .claude/
+
+# Docker-Produktionsdaten (Postgres-Volume)
+/data/

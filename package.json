@@ -12,7 +12,8 @@
     "e2e": "playwright test",
     "db:up": "docker compose up -d",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:migrate:prod": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
