@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
 import { IBM_Plex_Mono, IBM_Plex_Serif, Schibsted_Grotesk } from 'next/font/google'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { VercelAnalytics } from '@/components/vercel-analytics'
 import { THEME_COOKIE, parseTheme } from '@/lib/theme'
 import './globals.css'
 
@@ -35,6 +36,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         </div>
         {/* Eigene Hülle statt overflow am body: das würde an den Viewport weitergereicht */}
         <div className="overflow-x-clip">{children}</div>
+        {/* Nur auf Vercel – im Docker-Betrieb gibt es den Analytics-Endpunkt nicht */}
+        {process.env.VERCEL === '1' && <VercelAnalytics />}
       </body>
     </html>
   )
