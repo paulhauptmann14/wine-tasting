@@ -107,7 +107,7 @@ Die App braucht nur Node.js, PostgreSQL und die Umgebungsvariablen oben. Es gibt
 2. Unter *Project Settings → Database → Connection string* zwei URLs kopieren:
    - **Transaction Pooler** (Port 6543) → wird `DATABASE_URL` in Vercel
    - **Session Pooler** (Port 5432) → nur für Migrationen
-3. **Migrationen** von deinem Rechner aus anwenden:
+3. **Migrationen** beim ersten Mal von deinem Rechner aus anwenden:
    ```bash
    MIGRATION_DATABASE_URL="<session-pooler-url>" npm run db:migrate:prod
    ```
@@ -115,7 +115,10 @@ Die App braucht nur Node.js, PostgreSQL und die Umgebungsvariablen oben. Es gibt
    - `DATABASE_URL` = Transaction-Pooler-URL
    - `SESSION_SECRET` = Ausgabe von `openssl rand -base64 48`
    - `APP_URL` = `https://<deine-domain>` (für die QR-Codes)
-5. Deployen. Bei jeder Schemaänderung vor dem Deploy Schritt 3 wiederholen.
+   - `MIGRATION_DATABASE_URL` = Session-Pooler-URL – **nur für Production**, nicht für Preview
+5. Deployen. Danach wendet jeder Production-Deploy neue Migrationen vor dem Build selbst an (`buildCommand` in `vercel.json`); schlägt das fehl, bricht der Deploy ab und die alte Version bleibt online. Preview-Deploys ohne die Variable überspringen den Schritt.
+
+Weil die Migration vor dem Umschalten läuft, arbeitet die alte Version kurz mit dem neuen Schema. Migrationen deshalb nur additiv halten; Spalten löschen oder umbenennen in zwei Deploys aufteilen.
 
 Die Server-Funktionen laufen in **Dublin** (`dub1`, festgelegt in `vercel.json`), nah an einer Supabase-Datenbank in `eu-west-1`. Liegt die Datenbank in einer anderen Region, dort die passende Vercel-Region eintragen (z. B. `fra1` für Frankfurt).
 
