@@ -2,9 +2,15 @@ import Link from 'next/link'
 import { CornerStain } from '@/components/corner-stain'
 import { GlassRing } from '@/components/glass-ring'
 import { JoinByCodeForm } from '@/components/join-by-code-form'
+import { cn } from '@/lib/utils'
 
 const textLink =
   'inline-flex h-12 items-center font-medium underline decoration-border decoration-2 underline-offset-[6px] outline-none hover:decoration-wine focus-visible:decoration-wine'
+/** Laptop: die Gastgeber-Wege als große Zeilen statt kleiner Textlinks */
+const hostLink = cn(
+  textLink,
+  'group lg:h-16 lg:w-full lg:justify-between lg:border-b lg:border-border lg:font-display lg:text-2xl lg:no-underline lg:hover:text-wine lg:focus-visible:text-wine',
+)
 
 /** Ablauf eines Abends – nur auf breiten Bildschirmen, dort sitzt meist der Gastgeber. */
 const STEPS = [
@@ -13,6 +19,17 @@ const STEPS = [
   'Alle bewerten mit Sternen, die Ergebnisse laufen live mit',
   'Am Ende auflösen – mit Podest und Notizen',
 ]
+
+function Arrow() {
+  return (
+    <span
+      aria-hidden
+      className="hidden text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-wine motion-reduce:transition-none lg:inline"
+    >
+      →
+    </span>
+  )
+}
 
 export default function HomePage() {
   return (
@@ -50,21 +67,23 @@ export default function HomePage() {
             <h2 id="host-heading" className="text-sm text-muted-foreground">
               Du lädst selbst ein?
             </h2>
-            <div className="mt-1 flex flex-wrap gap-x-8">
-              <Link href="/new" className={textLink}>
+            <div className="mt-1 flex flex-wrap gap-x-8 lg:mt-3 lg:flex-col lg:border-t lg:border-border">
+              <Link href="/new" className={hostLink}>
                 Tasting erstellen
+                <Arrow />
               </Link>
-              <Link href="/manage" className={textLink}>
+              <Link href="/manage" className={hostLink}>
                 Tasting verwalten
+                <Arrow />
               </Link>
             </div>
 
-            <div className="mt-12 hidden lg:block">
+            <div className="mt-14 hidden lg:block">
               <h3 className="text-sm text-muted-foreground">So läuft ein Abend</h3>
-              <ol className="mt-3 border-t border-border">
+              <ol className="mt-2 grid gap-1.5 text-sm text-muted-foreground">
                 {STEPS.map((step, i) => (
-                  <li key={step} className="flex gap-4 border-b border-border py-3">
-                    <span className="w-4 shrink-0 font-display text-muted-foreground">{i + 1}</span>
+                  <li key={step} className="flex gap-3">
+                    <span className="w-3 shrink-0">{i + 1}</span>
                     <span>{step}</span>
                   </li>
                 ))}
