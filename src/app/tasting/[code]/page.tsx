@@ -37,7 +37,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
         <div className="relative">
           <CornerStain seed={tasting.name.length} />
           <p className="relative pt-28 text-sm text-muted-foreground lg:pt-16">Du bist eingeladen zu</p>
-          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight">
+          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight lg:text-6xl lg:leading-[1.02]">
             {tasting.name}
           </h1>
           <JoinForm action={joinAction.bind(null, tasting.code)} />
@@ -59,7 +59,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
         <div className="relative">
           <CornerStain seed={tasting.name.length} />
           <p className="relative pt-28 text-sm text-muted-foreground lg:pt-16">Hallo {participant.name}</p>
-          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight">
+          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight lg:text-6xl lg:leading-[1.02]">
             {tasting.name}
           </h1>
           <p className="relative mt-4 max-w-[34ch] text-muted-foreground">
@@ -81,7 +81,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
         <div className="relative">
           <CornerStain seed={tasting.name.length} />
           <p className="relative pt-28 text-sm text-muted-foreground lg:pt-16">Hallo {participant.name}</p>
-          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight">
+          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight lg:text-6xl lg:leading-[1.02]">
             {tasting.name}
           </h1>
           <p className="relative mt-4 max-w-[34ch] text-muted-foreground">

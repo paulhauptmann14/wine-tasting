@@ -23,7 +23,7 @@ export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
           autoComplete="off"
           maxLength={6}
           aria-invalid={!!errors.code}
-          className="mt-2 h-12 font-mono text-lg tracking-[0.3em] uppercase"
+          className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.3em] uppercase"
         />
         <FieldError errors={errors.code} />
       </div>
@@ -38,7 +38,7 @@ export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
           maxLength={12}
           autoFocus={!!defaultCode}
           aria-invalid={!!errors.pin}
-          className="mt-2 h-12 font-mono text-lg tracking-[0.4em]"
+          className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.4em]"
         />
         <FieldError errors={errors.pin} />
       </div>
@@ -48,7 +48,7 @@ export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
         </p>
       )}
       <BottomBar>
-        <Button type="submit" size="lg" className="h-14 w-full text-base" disabled={pending}>
+        <Button type="submit" size="lg" className="h-14 w-full text-base lg:w-auto lg:px-10" disabled={pending}>
           Weiter
         </Button>
       </BottomBar>

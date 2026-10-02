@@ -23,11 +23,11 @@ export function JoinForm({ action }: { action: (prev: ActionState, fd: FormData)
         autoFocus
         maxLength={40}
         aria-invalid={!!state?.fieldErrors?.name}
-        className="mt-2 h-14 border-foreground/40 bg-card text-lg"
+        className="mt-2 h-14 border-foreground/40 bg-card text-lg lg:max-w-md"
       />
       <FieldError errors={state?.fieldErrors?.name} />
       <BottomBar>
-        <Button type="submit" size="lg" className="h-14 w-full text-base" disabled={pending}>
+        <Button type="submit" size="lg" className="h-14 w-full text-base lg:w-auto lg:px-10" disabled={pending}>
           Beitreten
         </Button>
       </BottomBar>

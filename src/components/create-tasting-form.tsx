@@ -26,7 +26,7 @@ export function CreateTastingForm() {
           placeholder="Weinabend 2026"
           maxLength={60}
           aria-invalid={!!errors.name}
-          className="mt-2 h-12 text-base"
+          className="mt-2 h-12 lg:bg-card text-base"
         />
         <FieldError errors={errors.name} />
       </div>
@@ -52,7 +52,7 @@ export function CreateTastingForm() {
           {PRESET_KEYS.map((key) => (
             <label
               key={key}
-              className="flex min-h-14 cursor-pointer flex-col justify-center rounded-xl border border-border bg-background/40 px-4 py-3 transition-colors has-[:checked]:border-wine has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
+              className="flex min-h-14 cursor-pointer flex-col justify-center rounded-xl border border-border bg-background/40 px-4 py-3 lg:bg-card transition-colors has-[:checked]:border-wine has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
             >
               <input type="radio" name="preset" value={key} defaultChecked={preset === key} className="sr-only" />
               <span className="font-medium">{PRESETS[key].label}</span>
@@ -73,14 +73,14 @@ export function CreateTastingForm() {
           autoComplete="new-password"
           maxLength={12}
           aria-invalid={!!errors.pin}
-          className="mt-2 h-12 font-mono text-lg tracking-[0.4em]"
+          className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.4em]"
         />
         <p className="mt-1.5 text-sm text-muted-foreground">4–12 Ziffern. Damit verwaltest du das Tasting später.</p>
         <FieldError errors={errors.pin} />
       </div>
 
       <BottomBar>
-        <Button type="submit" size="lg" className="h-14 w-full text-base" disabled={pending}>
+        <Button type="submit" size="lg" className="h-14 w-full text-base lg:w-auto lg:px-10" disabled={pending}>
           {pending ? 'Wird erstellt …' : 'Verkostung erstellen'}
         </Button>
       </BottomBar>
