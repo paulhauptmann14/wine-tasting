@@ -32,7 +32,7 @@ export function SettingsForm({
       if (result?.ok) {
         setBlindNote({ text: 'Gespeichert.', error: false })
       } else {
-        // Zurück auf den gespeicherten Stand, damit der Schalter nichts Falsches anzeigt
+        // Revert to the saved state so the switch doesn't show something wrong
         setBlind(!next)
         setBlindNote({ text: result?.message ?? 'Konnte nicht gespeichert werden.', error: true })
       }

@@ -3,8 +3,8 @@ import { Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /**
- * Weg in die Verwaltung, für alle sichtbar: Ist das Gerät nicht angemeldet, leitet die Admin-Seite
- * zur PIN-Abfrage mit vorausgefülltem Code weiter. So kommt der Gastgeber auch vom Gäste-Handy hinein.
+ * Way into the admin area, visible to everyone: if the device isn't signed in, the admin page
+ * redirects to the PIN prompt with the code prefilled. So the host can get in from a guest phone too.
  */
 export function AdminLink({ code, className }: { code: string; className?: string }) {
   return (

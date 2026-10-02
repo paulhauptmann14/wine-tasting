@@ -53,7 +53,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
   if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
 
   if (tasting.status === 'setup' && admin) {
-    // Der Gastgeber bewertet selbst mit – nur er kann starten, also nicht warten lassen
+    // The host rates along – only they can start, so don't make them wait
     return (
       <PageShell>
         <div className="relative">
@@ -103,7 +103,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
 
   return (
     <TastingSplit aside={<WineList items={items} savedPosition={savedPosition} />}>
-      {/* Neue Weine und das Ende des Tastings erscheinen ohne Neuladen */}
+      {/* New wines and the end of the tasting appear without reloading */}
       <AutoRefresh />
       <header>
         <div className="flex items-center justify-between gap-4">
@@ -134,7 +134,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
               {doneCount === 0 ? `Mit ${next.title} anfangen` : `Weiter mit ${next.title}`}
             </Link>
           )}
-          {/* Solange noch Weine offen sind, ist das Ergebnis nur ein Nebenweg */}
+          {/* While wines are still open, the results are only a side path */}
           <Link
             href={`/tasting/${tasting.code}/results`}
             className={cn(

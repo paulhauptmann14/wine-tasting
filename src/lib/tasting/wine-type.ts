@@ -1,4 +1,4 @@
-/** Weinarten für die Angabe beim Wein, in Anzeigereihenfolge. */
+/** Wine types for the wine details, in display order. */
 export const WINE_TYPE_KEYS = ['red', 'white', 'rose', 'sparkling'] as const
 export type WineType = (typeof WINE_TYPE_KEYS)[number]
 

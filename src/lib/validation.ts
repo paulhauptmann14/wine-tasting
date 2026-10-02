@@ -46,7 +46,7 @@ const optionalText = (max: number) =>
     .max(max, `Maximal ${max} Zeichen.`)
     .transform((v) => (v === '' ? null : v))
 
-/** Auswahlfeld mit „keine Angabe“ (leerer Wert → null). */
+/** Select field with "keine Angabe" (empty value → null). */
 const optionalChoice = <const T extends readonly [string, ...string[]]>(keys: T, error: string) =>
   z
     .string()
@@ -77,7 +77,7 @@ export const criterionNameSchema = z.object({
   name: z.string().trim().min(1, 'Bitte gib einen Namen ein.').max(40, 'Maximal 40 Zeichen.'),
 })
 
-/** Gebundene Argumente von Server Actions kommen vom Client – immer prüfen. */
+/** Bound arguments of server actions come from the client – always validate. */
 export const idSchema = z.uuid()
 export const directionSchema = z.enum(['up', 'down'])
 
@@ -86,7 +86,7 @@ export type ParsedRating =
   | { ok: true; values: Record<string, number>; notes: string | null }
   | { ok: false; fieldErrors: Record<string, string[]> }
 
-/** Formularfelder: `c_<criterionId>` je Kriterium, `notes` optional. */
+/** Form fields: `c_<criterionId>` per criterion, `notes` optional. */
 export function parseRatingForm(fd: FormData, criteria: RatingCriterionScale[]): ParsedRating {
   const values: Record<string, number> = {}
   const fieldErrors: Record<string, string[]> = {}

@@ -9,7 +9,7 @@ import { canTransition, type TastingStatus } from '@/lib/tasting/rules'
 export type Tasting = typeof tastings.$inferSelect
 
 export const MAX_PIN_ATTEMPTS = 5
-export const PIN_LOCK_MINUTES = 10
+const PIN_LOCK_MINUTES = 10
 const CODE_ATTEMPTS = 5
 
 export async function createTasting(
@@ -61,7 +61,7 @@ export async function verifyAdminPin(
     return { ok: false, reason: 'locked', lockedUntil } as const
   }
 
-  // Versuch zuerst atomar zählen: parallele Anfragen sehen so nie denselben Zählerstand
+  // Count the attempt atomically first: parallel requests never see the same counter value
   const [counted] = await db
     .update(tastings)
     .set({ pinFailedAttempts: sql`${tastings.pinFailedAttempts} + 1` })
@@ -108,7 +108,7 @@ export async function setTastingStatus(
   })
 }
 
-/** Löscht das Tasting; Weine, Gäste, Sessions, Kriterien und Bewertungen fallen per Cascade weg. */
+/** Deletes the tasting; wines, guests, sessions, criteria and ratings go away via cascade. */
 export async function deleteTasting(db: Db, tastingId: string): Promise<void> {
   await db.delete(tastings).where(eq(tastings.id, tastingId))
 }

@@ -1,6 +1,6 @@
 /**
- * Leicht unregelmäßiger, geschlossener Kreis – der Abdruck eines Weinglases.
- * Deterministisch pro `seed`, damit Server und Client denselben Ring zeichnen.
+ * Slightly irregular closed circle – the stain of a wine glass.
+ * Deterministic per `seed` so server and client draw the same ring.
  */
 export function ringPath(seed: number, r: number, center = 50, steps = 48): string {
   const points: string[] = []

@@ -9,7 +9,7 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
-    // Nutzt das installierte Google Chrome – kein Browser-Download nötig
+    // Uses the installed Google Chrome – no browser download needed
     channel: 'chrome',
   },
   projects: [

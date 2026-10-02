@@ -33,7 +33,7 @@ export type WineResult = {
 
 export type Results = {
   criteria: { id: string; name: string }[]
-  /** Gerankte Weine absteigend, danach unbewertete nach Position. */
+  /** Ranked wines descending, then unrated ones by position. */
   wines: WineResult[]
 }
 

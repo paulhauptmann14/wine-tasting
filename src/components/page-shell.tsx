@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
-/** narrow: Formulare und Einstiege – ab lg als zentrierte Karte. wide: Ergebnisse. */
+/** narrow: forms and entry pages – a centered card from lg. wide: results. */
 export function PageShell({ children, width = 'narrow' }: { children: ReactNode; width?: 'narrow' | 'wide' }) {
   return (
     <main

@@ -35,7 +35,7 @@ export default async function AdminLayout({
             </span>
           </div>
         </div>
-        {/* Gastgeber kann jederzeit selbst ins Tasting – beitreten, bewerten oder Ergebnisse ansehen */}
+        {/* The host can enter the tasting at any time – join, rate or view results */}
         <Link
           href={`/tasting/${tasting.code}`}
           className={cn(buttonVariants({ variant: 'secondary', size: 'lg' }), 'h-12 w-full gap-2 sm:w-auto')}

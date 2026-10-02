@@ -48,8 +48,8 @@ export async function updateWine(db: Db, tastingId: string, wineId: string, inpu
 }
 
 /**
- * Vergibt Positionen 1..n in der gegebenen Reihenfolge. Läuft über negative Zwischenwerte,
- * damit UNIQUE(tasting_id, position) bei keinem Zwischenschritt verletzt wird.
+ * Assigns positions 1..n in the given order. Goes through negative intermediate values
+ * so UNIQUE(tasting_id, position) is never violated in between.
  */
 async function renumber(tx: Db, orderedIds: string[]): Promise<void> {
   for (const [i, id] of orderedIds.entries()) {

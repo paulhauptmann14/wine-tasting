@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page, type TestInfo } from '@playwright/test'
 
-/** Eigener Browser-Kontext pro Gast – mit dem Gerät des aktuellen Projekts (Handy/Laptop). */
+/** Separate browser context per guest, using the current project's device (phone/laptop). */
 async function newGuest(browser: Browser, testInfo: TestInfo): Promise<Page> {
   const u = testInfo.project.use
   const context = await browser.newContext({
@@ -37,7 +37,7 @@ async function rateWines(page: Page, scores: number[], notes: string[] = []) {
 }
 
 test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, testInfo) => {
-  // Gastgeber erstellt das Tasting (Blindverkostung ist vorausgewählt)
+  // Host creates the tasting (blind tasting is preselected)
   await page.goto('/')
   await page.getByRole('link', { name: 'Tasting erstellen' }).click()
   await page.getByLabel('Name der Verkostung').fill('E2E Weinabend')
@@ -47,7 +47,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await page.waitForURL(/\/tasting\/[2-9A-HJ-NP-Z]{6}\/admin$/)
   const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
 
-  // Weine anlegen
+  // Add wines
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
   for (const [name, wineType, vintage, sweetness] of [
     ['Riesling', 'Weißwein', '2022', 'trocken'],
@@ -61,7 +61,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
     await expect(page.getByText(name, { exact: true })).toBeVisible()
   }
 
-  // Gastgeber bewertet selbst mit und startet direkt von seiner Warteseite aus
+  // Host rates along and starts right from their waiting page
   await page.getByRole('link', { name: 'Zum Tasting' }).click()
   await page.getByLabel('Wie heißt du?').fill('Gastgeber')
   await page.getByRole('button', { name: 'Beitreten' }).click()
@@ -70,7 +70,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()
   await expect(page.getByRole('link', { name: 'Verwaltung' })).toBeVisible()
 
-  // Zwei Gäste bewerten blind – die Verwaltung verlangt von ihnen die PIN
+  // Two guests rate blind – the admin area asks them for the PIN
   const anna = await newGuest(browser, testInfo)
   await joinAs(anna, code, 'Anna')
   await expect(anna.getByText('Riesling')).toHaveCount(0)
@@ -86,20 +86,20 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await joinAs(ben, code, 'Ben')
   await rateWines(ben, [4, 2])
 
-  // Live-Ergebnisse ohne Namen
+  // Live results without names
   await anna.goto(`/tasting/${code}/results`)
   await expect(anna.getByText('4,5').first()).toBeVisible()
   await expect(anna.getByText('Riesling')).toHaveCount(0)
-  // Notizen erst am Ende
+  // Notes only at the end
   await expect(anna.getByText('Pfirsich, sehr frisch')).toHaveCount(0)
 
-  // Gastgeber geht aus der Gästeansicht zurück in die Verwaltung und beendet → Namen erscheinen bei Anna
+  // Host goes from the guest view back to the admin area and finishes → names appear for Anna
   await page.getByRole('link', { name: 'Verwaltung' }).click()
-  // Während das Tasting läuft, sind Umsortieren und Löschen gesperrt
+  // While the tasting is running, reordering and deleting are locked
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Wein #1 löschen' })).toBeDisabled()
   await expect(page.getByText('Das Tasting läuft. Zum Umsortieren oder Löschen zurück in die Vorbereitung.')).toBeVisible()
-  // … und kommt auch während des laufenden Tastings jederzeit zurück zu seinen Weinen
+  // … and can get back to their wines at any time during the tasting
   await page.getByRole('link', { name: 'Zum Tasting' }).click()
   await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()
   await page.getByRole('link', { name: 'Verwaltung' }).click()
@@ -108,7 +108,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()
   await expect(anna.getByText('Riesling').first()).toBeVisible({ timeout: 12_000 })
   await expect(anna.getByText('Weißwein · 2022 · trocken').first()).toBeVisible()
-  // … und die Notizen, ohne Namen
+  // … and the notes, without names
   const notes = anna.getByRole('region', { name: 'Notizen' })
   await expect(notes.getByText('„Pfirsich, sehr frisch“')).toBeVisible()
   await expect(notes.getByText('Anna')).toHaveCount(0)
@@ -122,7 +122,7 @@ test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ pag
   await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
   await page.waitForURL(/\/admin$/)
 
-  // Echte Client-Navigation des Gastgebers aufzeichnen (RSC-Anfrage mit Router-State)
+  // Record a real client navigation by the host (RSC request with router state)
   const captured = page.waitForRequest((r) => r.headers()['rsc'] === '1' && r.url().includes('/admin/wines'))
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
   const request = await captured
@@ -133,9 +133,9 @@ test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ pag
   const replay = async (target: Page) =>
     (await target.request.get(request.url(), { headers: request.headers(), maxRedirects: 5 })).text()
 
-  // Gegenprobe: mit Admin-Cookie enthält die Antwort den Wein – der Test kann ein Leck also erkennen
+  // Control: with the admin cookie the response contains the wine – so the test can detect a leak
   expect(await replay(page)).toContain('Geheimwein')
-  // Gast ohne Admin-Cookie bekommt nur die Weiterleitung zum Login, keine Weindaten
+  // A guest without the admin cookie only gets the login redirect, no wine data
   const guest = await newGuest(browser, testInfo)
   expect(await replay(guest)).not.toContain('Geheimwein')
 })
@@ -153,7 +153,7 @@ test('Gastgeber kommt vom Gäste-Gerät mit der PIN in die Verwaltung', async ({
   await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
   await page.getByRole('button', { name: 'Tasting starten' }).click()
 
-  // Das Gäste-Handy ist mitten im Tasting und kennt die PIN
+  // The guest phone is in the middle of the tasting and knows the PIN
   const phone = await newGuest(browser, testInfo)
   await joinAs(phone, code, 'Paul')
   await phone.getByRole('link', { name: 'Verwaltung' }).click()
@@ -185,7 +185,7 @@ test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, bro
   await guest.getByRole('button', { name: 'Beitreten' }).click()
   await expect(guest.getByText('Hallo Doppelt')).toBeVisible()
 
-  // Fortschritt pro Gast und Entfernen mit Rückfrage
+  // Progress per guest and removal with confirmation
   await page.getByRole('link', { name: 'Teilnehmer', exact: true }).click()
   await expect(page.getByRole('img', { name: 'Wein #1: offen' })).toBeVisible()
   await page.getByRole('button', { name: 'Doppelt entfernen' }).click()
@@ -194,7 +194,7 @@ test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, bro
   await guest.reload()
   await expect(guest.getByLabel('Wie heißt du?')).toBeVisible()
 
-  // Blindverkostung speichert beim Umschalten sofort – ohne extra Button
+  // Blind tasting saves instantly when toggled – no extra button
   await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
   const blindSwitch = page.getByRole('switch', { name: 'Blindverkostung' })
   await expect(blindSwitch).toBeChecked()
@@ -203,7 +203,7 @@ test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, bro
   await page.reload()
   await expect(page.getByRole('switch', { name: 'Blindverkostung' })).not.toBeChecked()
 
-  // Löschen erst nach Eingabe des Codes
+  // Deleting only after typing the code
   const deleteButton = page.getByRole('button', { name: 'Endgültig löschen' })
   await expect(deleteButton).toBeDisabled()
   await page.getByLabel(/Zur Bestätigung den Code/).fill(code.toLowerCase())

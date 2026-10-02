@@ -1,4 +1,4 @@
-/** Rückgabe von Server Actions, die mit useActionState genutzt werden. */
+/** Return value of server actions used with useActionState. */
 export type ActionState =
   | {
       ok?: boolean

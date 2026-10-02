@@ -6,13 +6,13 @@ import { cn } from '@/lib/utils'
 
 const textLink =
   'inline-flex h-12 items-center font-medium underline decoration-border decoration-2 underline-offset-[6px] outline-none hover:decoration-wine focus-visible:decoration-wine'
-/** Laptop: die Gastgeber-Wege als große Zeilen statt kleiner Textlinks */
+/** Laptop: host actions as large rows instead of small text links */
 const hostLink = cn(
   textLink,
   'group lg:h-16 lg:w-full lg:justify-between lg:border-b lg:border-border lg:font-display lg:text-2xl lg:no-underline lg:hover:text-wine lg:focus-visible:text-wine',
 )
 
-/** Ablauf eines Abends – nur auf breiten Bildschirmen, dort sitzt meist der Gastgeber. */
+/** How an evening works – wide screens only, that's usually where the host sits. */
 const STEPS = [
   'Weine und Kriterien eintragen',
   'Gäste scannen den QR-Code oder tippen den Code',
@@ -33,13 +33,13 @@ function Arrow() {
 
 export default function HomePage() {
   return (
-    // Handy: schmaler Bogen. Laptop: aufgeschlagen in zwei Spalten statt einer Karte in der Mitte
+    // Phone: narrow sheet. Laptop: opened up into two columns instead of a centered card
     <main className="mx-auto w-full max-w-[480px] px-4 pt-6 pb-32 sm:px-6 lg:max-w-[1100px] lg:pt-4 lg:pb-16">
       <div className="relative">
         <div className="lg:hidden">
           <CornerStain seed={5} />
         </div>
-        {/* Großer Abdruck unter der Kopfzeile, am rechten Bildschirmrand angeschnitten */}
+        {/* Large stain below the header, cropped at the right edge of the screen */}
         <GlassRing
           seed={5}
           size={300}

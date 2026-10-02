@@ -22,7 +22,7 @@ function WineIdentity({ wine, revealed, delayMs, size = 'md' }: { wine: WineResu
           {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
         </>
       ) : (
-        // Blind und noch nicht aufgelöst: die Nummer ist der Name
+        // Blind and not yet revealed: the number is the name
         <p className={nameClass}>{wine.label}</p>
       )}
       <p className="mt-1 text-xs text-muted-foreground">
@@ -32,7 +32,7 @@ function WineIdentity({ wine, revealed, delayMs, size = 'md' }: { wine: WineResu
   )
 }
 
-/** Note im Glasrand; der Ring selbst ist dekorativ, daher eigener Text für Screenreader. */
+/** Score inside the glass ring; the ring itself is decorative, hence separate text for screen readers. */
 function ScoreRing({ wine, size, revealed, delayMs }: { wine: WineResult; size: number; revealed: boolean; delayMs: number }) {
   return (
     <div className="relative shrink-0">
@@ -51,7 +51,7 @@ function ScoreRing({ wine, size, revealed, delayMs }: { wine: WineResult; size: 
   )
 }
 
-/** Notizen der Gäste ohne Namen, je Wein in Reihenfolge des Abends. */
+/** Guests' notes without names, per wine in the order of the evening. */
 function WineNotes({ wines, notes }: { wines: WineResult[]; notes: Record<string, string[]> }) {
   const withNotes = wines.filter((w) => notes[w.wineId]?.length)
   if (withNotes.length === 0) return null
@@ -110,7 +110,7 @@ export function ResultsView({
   return (
     <div className="mt-10 grid grid-cols-1 gap-12">
       <ol aria-label="Podest" className="grid grid-cols-1 gap-10">
-        {/* Platz 1 groß, mit Namen daneben – die anderen bewusst kleiner */}
+        {/* First place large, with the name beside it – the others deliberately smaller */}
         <li className="flex items-center gap-5">
           <ScoreRing wine={winner} size={152} revealed={revealed} delayMs={500} />
           <div className="min-w-0">

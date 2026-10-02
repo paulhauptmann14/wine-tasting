@@ -7,7 +7,7 @@ import { VercelAnalytics } from '@/components/vercel-analytics'
 import { THEME_COOKIE, parseTheme } from '@/lib/theme'
 import './globals.css'
 
-// Aufrechte, ruhige Serife für Titel, Weinnamen und Noten – bildet mit Plex Mono eine Familie
+// Upright, calm serif for titles, wine names and scores – forms a family with Plex Mono
 const plexSerif = IBM_Plex_Serif({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-plex-serif' })
 const schibsted = Schibsted_Grotesk({ subsets: ['latin'], variable: '--font-schibsted' })
 const plex = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' })
@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  // Gespeicherte Wahl serverseitig setzen – so gibt es kein Aufblitzen der falschen Farben
+  // Apply the saved choice on the server – avoids a flash of the wrong colors
   const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value)
   return (
     <html lang="de" data-theme={theme} className={`${plexSerif.variable} ${schibsted.variable} ${plex.variable}`}>
@@ -34,9 +34,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <div className="mx-auto flex w-full max-w-[1100px] justify-end px-2 pt-2 sm:px-4">
           <ThemeToggle initial={theme} />
         </div>
-        {/* Eigene Hülle statt overflow am body: das würde an den Viewport weitergereicht */}
+        {/* Own wrapper instead of overflow on body: that would propagate to the viewport */}
         <div className="overflow-x-clip">{children}</div>
-        {/* Nur auf Vercel – im Docker-Betrieb gibt es den Analytics-Endpunkt nicht */}
+        {/* Vercel only – the analytics endpoint doesn't exist when running in Docker */}
         {process.env.VERCEL === '1' && <VercelAnalytics />}
       </body>
     </html>

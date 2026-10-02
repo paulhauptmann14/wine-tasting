@@ -1,6 +1,6 @@
 import { GlassRing } from '@/components/glass-ring'
 
-/** Abdruck eines abgestellten Glases, angeschnitten an der oberen rechten Ecke des Bogens. */
+/** Stain of a glass set down, cropped at the top right corner of the sheet. */
 export function CornerStain({ seed }: { seed: number }) {
   return (
     <GlassRing

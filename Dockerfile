@@ -1,4 +1,4 @@
-# Wine Tasting – Produktions-Image (läuft auf amd64 und arm64, z. B. Raspberry Pi 4/5)
+# Wine Tasting – production image (runs on amd64 and arm64, e.g. Raspberry Pi 4/5)
 
 FROM node:24-alpine3.24 AS deps
 WORKDIR /app
@@ -12,7 +12,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# Schlanke Laufzeit: nur der Standalone-Server von Next.js
+# Slim runtime: only the Next.js standalone server
 FROM node:24-alpine3.24 AS runner
 WORKDIR /app
 ENV NODE_ENV=production \

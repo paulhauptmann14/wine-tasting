@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-/** Lädt Server-Daten neu, solange der Tab sichtbar ist (Live-Ergebnisse). */
+/** Reloads server data while the tab is visible (live results). */
 export function AutoRefresh({ intervalMs = 5000 }: { intervalMs?: number }) {
   const router = useRouter()
   useEffect(() => {

@@ -44,7 +44,7 @@ describe('getParticipantProgress', () => {
     const { t, gesamt, wine, participant } = await setup()
     await saveRating(db, { participantId: participant.id, wineId: wine.id, values: { [gesamt.id]: 4 }, notes: null })
     expect((await getParticipantProgress(db, t.id, participant.id)).get(wine.id)).toBe('complete')
-    // Gastgeber geht zurück in die Vorbereitung und ergänzt ein Kriterium
+    // Host goes back to setup and adds a criterion
     await db.update(tastings).set({ status: 'setup' }).where(eq(tastings.id, t.id))
     await addCriterion(db, t.id, 'Abgang')
     expect((await getParticipantProgress(db, t.id, participant.id)).get(wine.id)).toBe('incomplete')

@@ -28,7 +28,7 @@ const refresh = (code: string) => revalidatePath(`/tasting/${code}`, 'layout')
 const statusSchema = z.enum(['setup', 'active', 'finished'])
 const INVALID: ActionState = { message: 'Ungültige Anfrage. Bitte lade die Seite neu.' }
 
-/** Gesperrte Strukturänderungen (Tasting läuft) still ignorieren – die UI deaktiviert die Buttons ohnehin. */
+/** Silently ignore locked structure changes (tasting running) – the UI disables the buttons anyway. */
 async function unlessLocked(change: () => Promise<unknown>): Promise<void> {
   try {
     await change()
@@ -39,7 +39,7 @@ async function unlessLocked(change: () => Promise<unknown>): Promise<void> {
 
 export async function updateSettingsAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const tasting = await getAdminTasting(code)
-  // Nur der Name – die Blindverkostung speichert ihr Schalter sofort selbst (updateBlindTastingAction)
+  // Name only – the blind tasting switch saves itself instantly (updateBlindTastingAction)
   const raw = { name: formValue(fd, 'name'), blindTasting: tasting.blindTasting }
   const parsed = settingsSchema.safeParse(raw)
   if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values: { name: raw.name } }
@@ -48,7 +48,7 @@ export async function updateSettingsAction(code: string, _prev: ActionState, fd:
   return { ok: true, message: 'Gespeichert.' }
 }
 
-/** Schalter speichert sofort. Nur in der Vorbereitung – sonst würden die Namen mitten im Tasting aufgelöst. */
+/** The switch saves instantly. Setup only – otherwise names would be revealed mid-tasting. */
 export async function updateBlindTastingAction(code: string, blindTasting: unknown): Promise<ActionState> {
   const tasting = await getAdminTasting(code)
   const parsed = z.boolean().safeParse(blindTasting)
@@ -153,7 +153,7 @@ export async function renameCriterionAction(
 export async function deleteCriterionAction(code: string, criterionId: string): Promise<void> {
   const tasting = await getAdminTasting(code)
   if (!idSchema.safeParse(criterionId).success) return
-  // Das letzte Kriterium verweigert der Service; die UI deaktiviert den Button dann ohnehin
+  // The service refuses to delete the last criterion; the UI disables the button then anyway
   await unlessLocked(() => deleteCriterion(db, tasting.id, criterionId))
   refresh(tasting.code)
 }
@@ -172,7 +172,7 @@ export async function removeParticipantAction(code: string, participantId: strin
   refresh(tasting.code)
 }
 
-/** Löschen nur mit eingetipptem Code – so etwas passiert nicht aus Versehen. */
+/** Deleting requires typing the code – so it can't happen by accident. */
 export async function deleteTastingAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const tasting = await getAdminTasting(code)
   const confirm = formValue(fd, 'confirm')

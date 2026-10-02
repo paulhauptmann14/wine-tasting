@@ -10,7 +10,7 @@ type WineLike = {
   wineType: WineType | null
 }
 
-/** „Weißwein · 2022 · Riesling · trocken“ – oder null, wenn nichts angegeben ist. */
+/** "Weißwein · 2022 · Riesling · trocken" – or null if nothing is set. */
 export function wineDetails(wine: Omit<WineLike, 'position' | 'name'>): string | null {
   const wineType = wine.wineType ? WINE_TYPE_LABELS[wine.wineType] : null
   const sweetness = wine.sweetness ? SWEETNESS_LABELS[wine.sweetness] : null

@@ -1,11 +1,11 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Eigenständiger Server für das Docker-Image (Raspberry Pi); stört das Deployment auf Vercel nicht
+  // Standalone server for the Docker image (Raspberry Pi); doesn't affect the Vercel deployment
   output: 'standalone',
-  // Dev-Server auch aus dem Heimnetz erreichbar machen (z. B. Handy über http://192.168.x.y:3000).
-  // Ohne diesen Eintrag blockiert Next.js die Hot-Reload-Verbindung, die Seite wird nicht
-  // hydriert und kein Button reagiert. `*` steht für genau ein Segment der Adresse.
+  // Make the dev server reachable from the home network too (e.g. phone via http://192.168.x.y:3000).
+  // Without this entry Next.js blocks the hot-reload connection, the page doesn't hydrate
+  // and no button responds. `*` matches exactly one segment of the address.
   allowedDevOrigins: ['192.168.*.*', '10.*.*.*', '172.*.*.*', '*.local'],
 }
 

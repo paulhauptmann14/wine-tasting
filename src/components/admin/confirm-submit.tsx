@@ -25,7 +25,7 @@ type ConfirmSubmitProps = {
   disabled?: boolean
 }
 
-/** Bestätigungsdialog vor unumkehrbaren Aktionen (Löschen, Tasting beenden). */
+/** Confirmation dialog before irreversible actions (deleting, finishing the tasting). */
 export function ConfirmSubmit({
   action,
   trigger,

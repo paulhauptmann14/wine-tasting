@@ -1,6 +1,6 @@
 import { validateEnv } from '@/lib/env'
 
-/** Läuft einmal beim Serverstart – fehlende Konfiguration fällt sofort auf, nicht erst beim ersten Login. */
+/** Runs once at server start – missing configuration shows up immediately, not at the first login. */
 export function register() {
   const errors = validateEnv(process.env)
   if (errors.length > 0) {

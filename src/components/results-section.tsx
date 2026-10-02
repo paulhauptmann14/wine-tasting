@@ -11,10 +11,10 @@ export async function ResultsSection({ tasting, isAdmin }: { tasting: Tasting; i
   }
   const [input, notes] = await Promise.all([
     loadResultsInput(db, tasting.id),
-    // Notizen werden vor dem Ende gar nicht erst geladen
+    // Notes aren't loaded at all before the end
     canSeeNotes(tasting.status) ? listWineNotes(db, tasting.id) : undefined,
   ])
-  // Namen entscheidet der Server – Gäste sehen Blindweine erst bei „finished“
+  // The server decides about names – guests only see blind wines once "finished"
   const results = computeResults({
     ...input,
     revealNames: canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin }),

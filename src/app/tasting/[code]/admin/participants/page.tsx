@@ -47,7 +47,7 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
                 confirmLabel="Entfernen"
               />
             </div>
-            {/* Ein kleiner Ring pro Wein: wer fehlt noch wo? */}
+            {/* One small ring per wine: who is still missing where? */}
             <ol aria-label={`Fortschritt von ${p.name}`} className="-mt-1 flex flex-wrap gap-1 pb-1">
               {p.wines.map((state, i) => (
                 <li key={i}>

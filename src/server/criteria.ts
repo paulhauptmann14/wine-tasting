@@ -51,7 +51,7 @@ export async function deleteCriterion(
     const ids = (await listCriteria(tx, tastingId)).map((c) => c.id)
     if (!ids.includes(criterionId)) return { ok: true } as const
     if (ids.length === 1) return { ok: false, reason: 'Mindestens ein Kriterium wird gebraucht.' } as const
-    // rating_value-Zeilen fallen per ON DELETE CASCADE weg
+    // rating_value rows go away via ON DELETE CASCADE
     await tx.delete(ratingCriteria).where(scoped(tastingId, criterionId))
     await renumber(tx, ids.filter((id) => id !== criterionId))
     return { ok: true } as const

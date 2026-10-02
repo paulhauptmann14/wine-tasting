@@ -9,7 +9,7 @@ type GlassRingProps = {
   size?: number
   animation?: 'draw' | 'soak'
   delayMs?: number
-  /** Ohne Label ist der Ring dekorativ (aria-hidden). */
+  /** Without a label the ring is decorative (aria-hidden). */
   label?: string
   className?: string
   children?: ReactNode
@@ -35,8 +35,8 @@ export function GlassRing({
     >
       <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full overflow-visible">
         {state === 'done' ? (
-          // Abdruck eines Weinglases: blasse Füllung, feiner geschlossener Innenrand,
-          // kräftiger Rand mit Lücke und eine dunklere „Lippe“ – je Wein anders gedreht
+          // Stain of a wine glass: pale fill, fine closed inner rim,
+          // bold rim with a gap and a darker "lip" – rotated differently per wine
           <g transform={`rotate(${(seed * 47) % 360} 50 50)`}>
             <path d={ringPath(seed, 38)} className="ring-fill fill-wine/[0.07]" />
             <path d={ringPath(seed + 7, 37)} fill="none" className="stroke-wine/30 [stroke-width:1]" />
@@ -47,7 +47,7 @@ export function GlassRing({
               strokeLinecap="round"
               className={cn('stroke-wine/85 [stroke-dasharray:0.82_1] [stroke-width:4.5]', animation === 'draw' && 'ring-draw')}
             />
-            {/* Gleicher Pfad wie der Rand, nur ein Stück davon dicker: der Wein sammelt sich an einer Seite */}
+            {/* Same path as the rim, with one part thicker: the wine pools on one side */}
             <path
               d={ringPath(seed + 3, 40.5)}
               pathLength={1}

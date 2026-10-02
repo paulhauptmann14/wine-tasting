@@ -15,7 +15,7 @@ export function JoinByCodeForm({
 }: {
   className?: string
   defaultCode?: string
-  /** row: ab lg Feld und Button nebeneinander (Startseite am Laptop) */
+  /** row: from lg, field and button side by side (home page on laptop) */
   layout?: 'stack' | 'row'
 }) {
   const [state, action, pending] = useActionState(goToTastingAction, undefined)

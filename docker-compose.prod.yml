@@ -1,7 +1,7 @@
-# Produktion mit Docker, z. B. auf dem Raspberry Pi.
-#   cp .env.production.example .env.production   # Werte eintragen
+# Production with Docker, e.g. on the Raspberry Pi.
+#   cp .env.production.example .env.production   # fill in the values
 #   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
-# Mit Cloudflare Tunnel (HTTPS von außen, ohne Portfreigabe):
+# With Cloudflare Tunnel (HTTPS from outside, no port forwarding):
 #   docker compose -f docker-compose.prod.yml --env-file .env.production --profile tunnel up -d --build
 
 name: wine-tasting
@@ -15,7 +15,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD setzen}
       POSTGRES_DB: wine_tasting
     volumes:
-      # Auf dem Pi auf die SSD zeigen lassen, nicht auf die SD-Karte
+      # On the Pi, point this at the SSD, not the SD card
       - ${DB_DATA_DIR:-./data/postgres}:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U wine -d wine_tasting"]
@@ -23,7 +23,7 @@ services:
       timeout: 5s
       retries: 10
 
-  # Läuft bei jedem Start einmal und beendet sich danach
+  # Runs once on every start and exits afterwards
   migrate:
     build:
       context: .
@@ -46,7 +46,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET setzen (mind. 32 Zeichen)}
       APP_URL: ${APP_URL:-}
     ports:
-      # Nur lokal am Gerät erreichbar; von außen kommt man über den Tunnel (HTTPS)
+      # Only reachable locally on the device; from outside, access goes through the tunnel (HTTPS)
       - "127.0.0.1:${APP_PORT:-3000}:3000"
     depends_on:
       migrate:
@@ -57,7 +57,7 @@ services:
     restart: unless-stopped
     command: ["tunnel", "--no-autoupdate", "run"]
     environment:
-      # Kein ${…:?}: Compose würde es auch ohne aktives Tunnel-Profil verlangen
+      # No ${…:?}: Compose would require it even without the tunnel profile active
       TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
     depends_on:
       - app

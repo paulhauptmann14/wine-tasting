@@ -5,13 +5,13 @@ import { db } from '@/db/client'
 import { requireAdmin } from '@/lib/auth/admin-session'
 import { getTastingByCode, type Tasting } from '@/server/tastings'
 
-/** Einmal pro Request – Layout und Seite teilen sich den Lookup. */
+/** Once per request – layout and page share the lookup. */
 export const getTasting = cache((code: string) => getTastingByCode(db, code))
 
 /**
- * Tasting laden UND Admin-Zugriff prüfen – in jeder Admin-Seite und -Action aufrufen.
- * Das Layout allein schützt nicht: Next rendert Seiten-Segmente auch per RSC-Anfrage,
- * ohne das Layout erneut auszuführen.
+ * Load the tasting AND check admin access – call this in every admin page and action.
+ * The layout alone doesn't protect: Next also renders page segments via RSC requests
+ * without running the layout again.
  */
 export async function getAdminTasting(code: string): Promise<Tasting> {
   const tasting = await getTasting(code)

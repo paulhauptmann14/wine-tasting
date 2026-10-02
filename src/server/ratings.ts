@@ -42,7 +42,7 @@ export async function getRating(db: Db, participantId: string, wineId: string) {
   }
 }
 
-/** Werte gelöschter Kriterien fallen per Cascade weg – die Anzahl reicht für die Vollständigkeit. */
+/** Values of deleted criteria go away via cascade – the count is enough to check completeness. */
 export async function getParticipantProgress(
   db: Db,
   tastingId: string,

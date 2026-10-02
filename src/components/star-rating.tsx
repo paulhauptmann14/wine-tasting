@@ -35,7 +35,7 @@ export function StarRating({ name, label, value, onChange, min = 1, max = 5, inv
   }
 
   return (
-    // Eine Zeile des Probierbogens: Kriterium links, Sterne rechts, feine Linie darunter
+    // One row of the tasting sheet: criterion left, stars right, fine rule below
     <div className="flex flex-wrap items-center justify-between gap-x-3 border-b border-border py-1">
       <span id={labelId} className={cn('text-[15px]', invalid && 'text-destructive')}>
         {label}

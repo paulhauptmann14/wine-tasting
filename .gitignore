@@ -43,7 +43,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Env-Beispiel wird versioniert
+# The env example is versioned
 !.env.example
 !.env.production.example
 
@@ -55,5 +55,5 @@ AGENTS.md
 CLAUDE.md
 .claude/
 
-# Docker-Produktionsdaten (Postgres-Volume)
+# Docker production data (Postgres volume)
 /data/

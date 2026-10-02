@@ -8,7 +8,7 @@ export default defineConfig({
   schema: './src/db/schema.ts',
   out: './drizzle',
   dbCredentials: {
-    // Für Supabase-Migrationen MIGRATION_DATABASE_URL auf den Session-Pooler setzen (siehe README)
+    // For Supabase migrations, point MIGRATION_DATABASE_URL at the session pooler (see README)
     url: process.env.MIGRATION_DATABASE_URL ?? process.env.DATABASE_URL!,
   },
 })

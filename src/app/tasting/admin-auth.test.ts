@@ -2,8 +2,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
 
-// Layouts schützen Seiten nicht: Next rendert Seiten-Segmente auch per RSC-Anfrage,
-// ohne das Layout erneut auszuführen. Jede Admin-Seite muss selbst prüfen.
+// Layouts don't protect pages: Next also renders page segments via RSC requests
+// without running the layout again. Every admin page has to check on its own.
 const adminDir = join(process.cwd(), 'src/app/tasting/[code]/admin')
 
 function pages(dir: string): string[] {

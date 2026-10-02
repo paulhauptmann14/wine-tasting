@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto'
 
-/** Ohne 0/O und 1/I, damit sich Codes eindeutig vorlesen lassen. */
+/** Without 0/O and 1/I so codes can be read aloud unambiguously. */
 export const CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
 export const CODE_LENGTH = 6
 const CODE_PATTERN = /^[2-9A-HJ-NP-Z]{6}$/

@@ -38,8 +38,8 @@ export async function loadResultsInput(db: Db, tastingId: string): Promise<Omit<
 }
 
 /**
- * Notizen je Wein, bewusst ohne Bezug zur Person. Sortiert nach der zufälligen Bewertungs-ID,
- * damit auch die Reihenfolge nicht verrät, wer was geschrieben hat.
+ * Notes per wine, deliberately without any reference to the author. Sorted by the random rating ID
+ * so the order doesn't reveal who wrote what either.
  */
 export async function listWineNotes(db: Db, tastingId: string): Promise<Record<string, string[]>> {
   const rows = await db

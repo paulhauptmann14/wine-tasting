@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { getSessionSecret } from '@/lib/env'
 import { signAdminToken, verifyAdminToken } from './admin-token'
 
-export const ADMIN_TTL_DAYS = 7
+const ADMIN_TTL_DAYS = 7
 const cookieName = (code: string) => `wt_a_${code}`
 
 export async function setAdminCookie(code: string, tastingId: string): Promise<void> {

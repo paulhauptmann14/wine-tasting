@@ -1,6 +1,6 @@
 type EnvInput = Record<string, string | undefined>
 
-/** Liefert alle Konfigurationsfehler; leer heißt: alles in Ordnung. */
+/** Returns all configuration errors; empty means everything is fine. */
 export function validateEnv(env: EnvInput): string[] {
   const errors: string[] = []
   if (!env.DATABASE_URL) errors.push('DATABASE_URL fehlt')

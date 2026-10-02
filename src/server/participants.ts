@@ -4,7 +4,7 @@ import { participants, ratingCriteria, ratingValues, ratings, sessions, wines } 
 import { generateSessionToken, hashToken } from '@/lib/auth/tokens'
 import type { RingState } from './participant-view'
 
-export const SESSION_TTL_DAYS = 30
+const SESSION_TTL_DAYS = 30
 
 export async function joinTasting(db: Db, tastingId: string, name: string, now: Date = new Date()) {
   const token = generateSessionToken()
@@ -39,7 +39,7 @@ export async function getParticipantBySessionToken(
   return row ?? null
 }
 
-/** Zählt nur vollständige Bewertungen – wie die Fortschrittsanzeige der Gäste. */
+/** Counts only complete ratings – like the guests' progress display. */
 export async function listParticipants(db: Db, tastingId: string) {
   const criteriaCount = await db.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId))
   const complete = db
@@ -63,7 +63,7 @@ export async function listParticipants(db: Db, tastingId: string) {
     .orderBy(asc(participants.createdAt))
 }
 
-/** Entfernt einen Gast samt Sessions und Bewertungen (Cascade). Nur innerhalb des eigenen Tastings. */
+/** Removes a guest including sessions and ratings (cascade). Only within the own tasting. */
 export async function removeParticipant(db: Db, tastingId: string, participantId: string): Promise<boolean> {
   const removed = await db
     .delete(participants)
@@ -72,7 +72,7 @@ export async function removeParticipant(db: Db, tastingId: string, participantId
   return removed.length > 0
 }
 
-/** Fortschritt pro Gast und Wein (nach Position) – für die Übersicht des Gastgebers. */
+/** Progress per guest and wine (by position) – for the host's overview. */
 export async function listParticipantProgress(db: Db, tastingId: string) {
   const [people, wineRows, criteriaCount, valueCounts] = await Promise.all([
     db

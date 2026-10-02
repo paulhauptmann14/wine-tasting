@@ -13,8 +13,8 @@ export const STATUS_HINTS: Record<TastingStatus, string> = {
 }
 
 /**
- * Weine umsortieren/löschen und Kriterien hinzufügen/entfernen/verschieben nur in der Vorbereitung:
- * sonst bezieht sich „Wein #3“ plötzlich auf eine andere Flasche oder alle Bewertungen werden unvollständig.
+ * Reordering/deleting wines and adding/removing/moving criteria only during setup:
+ * otherwise "Wein #3" suddenly refers to a different bottle or all ratings become incomplete.
  */
 export const canEditStructure = (status: TastingStatus) => status === 'setup'
 export const STRUCTURE_LOCK_HINT =
@@ -23,7 +23,7 @@ export const STRUCTURE_LOCK_HINT =
 export const canJoin = (status: TastingStatus) => status !== 'finished'
 export const canRate = (status: TastingStatus) => status === 'active'
 export const canSeeResults = (status: TastingStatus, isAdmin: boolean) => isAdmin || status !== 'setup'
-/** Notizen erst am Ende – vorher würden sie Blindweine verraten und die anderen beeinflussen. */
+/** Notes only at the end – before that they would give away blind wines and influence the others. */
 export const canSeeNotes = (status: TastingStatus) => status === 'finished'
 
 export function canSeeWineNames(input: {

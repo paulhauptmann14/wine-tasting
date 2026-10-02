@@ -10,7 +10,7 @@ export class StructureLockedError extends Error {
   }
 }
 
-/** Im Service geprüft, damit kein Aufrufer die Sperre umgehen kann. */
+/** Checked in the service so no caller can bypass the lock. */
 export async function assertStructureEditable(db: Db, tastingId: string): Promise<void> {
   const [tasting] = await db.select({ status: tastings.status }).from(tastings).where(eq(tastings.id, tastingId))
   if (!tasting || !canEditStructure(tasting.status)) throw new StructureLockedError()

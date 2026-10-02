@@ -30,8 +30,8 @@ export async function joinAction(code: string, _prev: ActionState, formData: For
 }
 
 /**
- * Gebunden an die Wein-ID, nicht an die Nummer: Löscht oder verschiebt der Gastgeber
- * währenddessen einen Wein, landen die Sterne trotzdem beim richtigen Wein.
+ * Bound to the wine ID, not the number: if the host deletes or moves a wine meanwhile,
+ * the stars still land on the right wine.
  */
 export async function saveRatingAction(
   code: string,
@@ -54,7 +54,7 @@ export async function saveRatingAction(
   await saveRating(db, { participantId: participant.id, wineId: wine.id, values: parsed.values, notes: parsed.notes })
   revalidatePath(`/tasting/${tasting.code}`, 'layout')
 
-  // Nächster Wein nach der aktuellen Reihenfolge – der gerade gespeicherte kann inzwischen eine andere Nummer haben
+  // Next wine in the current order – the one just saved may have a different number by now
   const total = (await listWines(db, tasting.id)).length
   redirect(
     wine.position < total

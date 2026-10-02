@@ -1,4 +1,4 @@
-/** Offizielle deutsche Geschmacksangaben für Wein, von trocken nach süß. */
+/** Official German sweetness levels for wine, from dry to sweet. */
 export const SWEETNESS_KEYS = ['dry', 'off_dry', 'medium', 'sweet'] as const
 export type Sweetness = (typeof SWEETNESS_KEYS)[number]
 

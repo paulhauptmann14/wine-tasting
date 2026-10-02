@@ -27,7 +27,7 @@ type WineRowData = {
 }
 type FormAction = (prev: ActionState, fd: FormData) => Promise<ActionState>
 
-/** Natives Auswahlfeld im Stil von <Input> – auf dem Handy öffnet sich die Systemauswahl. */
+/** Native select styled like <Input> – on phones it opens the system picker. */
 function ChoiceField<K extends string>({
   id,
   name,

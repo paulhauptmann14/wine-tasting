@@ -58,7 +58,7 @@ it('lists participants in join order counting only complete ratings', async () =
   await joinTasting(db, t.id, 'Ben', new Date(now.getTime() + 1000))
   const [complete] = await db.insert(ratings).values({ participantId: anna.participant.id, wineId: w1.id }).returning()
   await db.insert(ratingValues).values({ ratingId: complete.id, criterionId: gesamt.id, value: 4 })
-  // Bewertung ohne Werte zählt nicht – so wie in der Gäste-Ansicht
+  // A rating without values doesn't count – same as in the guest view
   await db.insert(ratings).values({ participantId: anna.participant.id, wineId: w2.id })
   const list = await listParticipants(db, t.id)
   expect(list.map((p) => [p.name, p.ratingCount])).toEqual([['Anna', 1], ['Ben', 0]])

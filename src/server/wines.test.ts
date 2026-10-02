@@ -72,7 +72,7 @@ it('refuses to delete or move wines once the tasting has started', async () => {
   const active = await seedTastingStatus(t.id, 'active')
   await expect(deleteWine(db, active, a.id)).rejects.toThrow(StructureLockedError)
   await expect(moveWine(db, active, a.id, 'down')).rejects.toThrow(StructureLockedError)
-  // Hinzufügen und Bearbeiten bleiben erlaubt
+  // Adding and editing stay allowed
   await addWine(db, active, w('C'))
   await updateWine(db, active, a.id, w('A2'))
   expect(await names(t.id)).toEqual(['1:A2', '2:B', '3:C'])

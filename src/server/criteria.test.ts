@@ -62,7 +62,7 @@ it('refuses to add, delete or move criteria once the tasting has started', async
   await expect(addCriterion(db, t.id, 'Abgang')).rejects.toThrow(StructureLockedError)
   await expect(deleteCriterion(db, t.id, first.id)).rejects.toThrow(StructureLockedError)
   await expect(moveCriterion(db, t.id, first.id, 'down')).rejects.toThrow(StructureLockedError)
-  // Umbenennen bleibt erlaubt
+  // Renaming stays allowed
   await renameCriterion(db, t.id, first.id, 'Optik')
   expect((await listCriteria(db, t.id)).map((c) => c.name)).toEqual(['Optik', 'Aroma', 'Geschmack', 'Gesamt'])
 })
