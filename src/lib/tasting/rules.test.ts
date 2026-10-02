@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canEditStructure, canJoin, canRate, canSeeResults, canSeeWineNames, canTransition } from './rules'
+import { canEditStructure, canJoin, canRate, canSeeNotes, canSeeResults, canSeeWineNames, canTransition } from './rules'
 
 describe('participant permissions', () => {
   it('lets guests join until the tasting is finished', () => {
@@ -17,6 +17,14 @@ describe('participant permissions', () => {
     expect(canSeeResults('active', false)).toBe(true)
     expect(canSeeResults('finished', false)).toBe(true)
     expect(canSeeResults('setup', true)).toBe(true)
+  })
+})
+
+describe('canSeeNotes', () => {
+  it('shows notes to everyone only after the tasting is finished', () => {
+    expect(canSeeNotes('setup')).toBe(false)
+    expect(canSeeNotes('active')).toBe(false)
+    expect(canSeeNotes('finished')).toBe(true)
   })
 })
 

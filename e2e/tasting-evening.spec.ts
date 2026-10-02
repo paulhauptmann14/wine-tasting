@@ -21,7 +21,7 @@ async function joinAs(page: Page, code: string, name: string) {
   await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()
 }
 
-async function rateWines(page: Page, scores: number[]) {
+async function rateWines(page: Page, scores: number[], notes: string[] = []) {
   await page.getByRole('link', { name: /Wein #1/ }).first().click()
   for (const [i, stars] of scores.entries()) {
     await expect(page.getByRole('heading', { name: `Wein #${i + 1}` })).toBeVisible()
@@ -29,6 +29,7 @@ async function rateWines(page: Page, scores: number[]) {
     for (let g = 0; g < (await groups.count()); g++) {
       await groups.nth(g).getByRole('radio', { name: `${stars} von 5 Sternen` }).click()
     }
+    if (notes[i]) await page.getByLabel('Was schmeckst du?').fill(notes[i])
     const isLast = i === scores.length - 1
     await page.getByRole('button', { name: isLast ? 'Speichern & fertig' : 'Speichern & weiter' }).click()
   }
@@ -76,7 +77,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('trocken')).toHaveCount(0)
   await expect(anna.getByText('Weißwein')).toHaveCount(0)
   await expect(anna.getByRole('link', { name: 'Verwaltung' })).toHaveCount(0)
-  await rateWines(anna, [5, 3])
+  await rateWines(anna, [5, 3], ['Pfirsich, sehr frisch'])
 
   const ben = await newGuest(browser, testInfo)
   await joinAs(ben, code, 'Ben')
@@ -86,6 +87,8 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await anna.goto(`/tasting/${code}/results`)
   await expect(anna.getByText('4,5').first()).toBeVisible()
   await expect(anna.getByText('Riesling')).toHaveCount(0)
+  // Notizen erst am Ende
+  await expect(anna.getByText('Pfirsich, sehr frisch')).toHaveCount(0)
 
   // Gastgeber geht aus der Gästeansicht zurück in die Verwaltung und beendet → Namen erscheinen bei Anna
   await page.getByRole('link', { name: 'Verwaltung' }).click()
@@ -102,6 +105,10 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()
   await expect(anna.getByText('Riesling').first()).toBeVisible({ timeout: 12_000 })
   await expect(anna.getByText('Weißwein · 2022 · trocken').first()).toBeVisible()
+  // … und die Notizen, ohne Namen
+  const notes = anna.getByRole('region', { name: 'Notizen' })
+  await expect(notes.getByText('„Pfirsich, sehr frisch“')).toBeVisible()
+  await expect(notes.getByText('Anna')).toHaveCount(0)
   await expect(anna.getByText('Endergebnis')).toBeVisible()
 })
 

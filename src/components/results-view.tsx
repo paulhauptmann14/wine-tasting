@@ -51,7 +51,47 @@ function ScoreRing({ wine, size, revealed, delayMs }: { wine: WineResult; size: 
   )
 }
 
-export function ResultsView({ results, status }: { results: Results; status: TastingStatus }) {
+/** Notizen der Gäste ohne Namen, je Wein in Reihenfolge des Abends. */
+function WineNotes({ wines, notes }: { wines: WineResult[]; notes: Record<string, string[]> }) {
+  const withNotes = wines.filter((w) => notes[w.wineId]?.length)
+  if (withNotes.length === 0) return null
+  return (
+    <section aria-labelledby="notes-heading">
+      <h2 id="notes-heading" className="font-display text-2xl font-medium">
+        Notizen
+      </h2>
+      <ul className="mt-3 grid grid-cols-1 border-t border-border">
+        {withNotes.map((wine) => (
+          <li key={wine.wineId} className="flex gap-4 border-b border-border py-4">
+            <GlassRing seed={wine.position} size={44}>
+              <span className="font-display text-sm font-medium">{wine.position}</span>
+            </GlassRing>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-lg font-medium leading-tight">{wine.name ?? wine.label}</p>
+              <ul className="mt-2 grid grid-cols-1 gap-2">
+                {notes[wine.wineId].map((note, i) => (
+                  <li key={i} className="whitespace-pre-line break-words text-pretty text-muted-foreground">
+                    „{note}“
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+export function ResultsView({
+  results,
+  status,
+  notes,
+}: {
+  results: Results
+  status: TastingStatus
+  notes?: Record<string, string[]>
+}) {
   const revealed = status === 'finished'
   const ranked = results.wines.filter((w) => w.rank !== null)
 
@@ -111,6 +151,8 @@ export function ResultsView({ results, status }: { results: Results; status: Tas
           ))}
         </ol>
       )}
+
+      {notes && <WineNotes wines={byPosition} notes={notes} />}
 
       <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
         <table className="w-full min-w-max border-separate border-spacing-0 text-sm">

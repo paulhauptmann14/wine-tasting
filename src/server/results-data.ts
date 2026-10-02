@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, asc, eq, isNotNull } from 'drizzle-orm'
 import type { Db } from '@/db/types'
 import { ratingValues, ratings, wines } from '@/db/schema'
 import type { ResultsInput } from '@/lib/tasting/results'
@@ -35,4 +35,23 @@ export async function loadResultsInput(db: Db, tastingId: string): Promise<Omit<
     criteria: criteriaRows.map(({ id, name, position }) => ({ id, name, position })),
     ratings: [...grouped.values()],
   }
+}
+
+/**
+ * Notizen je Wein, bewusst ohne Bezug zur Person. Sortiert nach der zufälligen Bewertungs-ID,
+ * damit auch die Reihenfolge nicht verrät, wer was geschrieben hat.
+ */
+export async function listWineNotes(db: Db, tastingId: string): Promise<Record<string, string[]>> {
+  const rows = await db
+    .select({ wineId: ratings.wineId, notes: ratings.notes })
+    .from(ratings)
+    .innerJoin(wines, eq(ratings.wineId, wines.id))
+    .where(and(eq(wines.tastingId, tastingId), isNotNull(ratings.notes)))
+    .orderBy(asc(ratings.id))
+
+  const notes: Record<string, string[]> = {}
+  for (const row of rows) {
+    if (row.notes) (notes[row.wineId] ??= []).push(row.notes)
+  }
+  return notes
 }

@@ -23,6 +23,8 @@ export const STRUCTURE_LOCK_HINT =
 export const canJoin = (status: TastingStatus) => status !== 'finished'
 export const canRate = (status: TastingStatus) => status === 'active'
 export const canSeeResults = (status: TastingStatus, isAdmin: boolean) => isAdmin || status !== 'setup'
+/** Notizen erst am Ende – vorher würden sie Blindweine verraten und die anderen beeinflussen. */
+export const canSeeNotes = (status: TastingStatus) => status === 'finished'
 
 export function canSeeWineNames(input: {
   status: TastingStatus
