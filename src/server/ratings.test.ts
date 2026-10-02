@@ -19,7 +19,7 @@ beforeEach(async () => {
 async function setup() {
   const t = await seedTasting(db, { preset: 'simple', status: 'active' })
   const [gesamt] = await listCriteria(db, t.id)
-  const wine = await addWine(db, t.id, { name: 'Riesling', vintage: 2022, grapeVariety: null, sweetness: null })
+  const wine = await addWine(db, t.id, { name: 'Riesling', vintage: 2022, grapeVariety: null, sweetness: null, wineType: null })
   const { participant } = await joinTasting(db, t.id, 'Anna')
   return { t, gesamt, wine, participant }
 }

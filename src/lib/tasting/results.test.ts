@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { computeResults, formatScore, type ResultsInput } from './results'
 
 const wine = (id: string, position: number, name = `Wein ${id}`) => ({
-  id, position, name, vintage: 2020 + position, grapeVariety: 'Riesling', sweetness: 'medium' as const,
+  id, position, name, vintage: 2020 + position, grapeVariety: 'Riesling', sweetness: 'medium' as const, wineType: 'white' as const,
 })
 const criteria = [
   { id: 'c1', name: 'Aroma', position: 1 },
@@ -54,9 +54,9 @@ describe('computeResults', () => {
 
   it('hides names unless revealed', () => {
     const hidden = computeResults(input({ wines: [wine('a', 1, 'Riesling')] }))
-    expect(hidden.wines[0]).toMatchObject({ label: 'Wein #1', name: null, vintage: null, grapeVariety: null, sweetness: null })
+    expect(hidden.wines[0]).toMatchObject({ label: 'Wein #1', name: null, vintage: null, grapeVariety: null, sweetness: null, wineType: null })
     const shown = computeResults(input({ wines: [wine('a', 1, 'Riesling')], revealNames: true }))
-    expect(shown.wines[0]).toMatchObject({ name: 'Riesling', vintage: 2021, grapeVariety: 'Riesling', sweetness: 'medium' })
+    expect(shown.wines[0]).toMatchObject({ name: 'Riesling', vintage: 2021, grapeVariety: 'Riesling', sweetness: 'medium', wineType: 'white' })
   })
 
   it('returns criteria sorted by position', () => {

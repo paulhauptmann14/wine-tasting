@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { normalizeCode } from '@/lib/tasting/code'
 import { PRESET_KEYS } from '@/lib/tasting/presets'
 import { SWEETNESS_KEYS } from '@/lib/tasting/sweetness'
+import { WINE_TYPE_KEYS } from '@/lib/tasting/wine-type'
 
 export function formValue(fd: FormData, key: string): string {
   const value = fd.get(key)
@@ -45,6 +46,13 @@ const optionalText = (max: number) =>
     .max(max, `Maximal ${max} Zeichen.`)
     .transform((v) => (v === '' ? null : v))
 
+/** Auswahlfeld mit „keine Angabe“ (leerer Wert → null). */
+const optionalChoice = <const T extends readonly [string, ...string[]]>(keys: T, error: string) =>
+  z
+    .string()
+    .transform((v) => (v === '' ? null : v))
+    .pipe(z.enum(keys, { error }).nullable())
+
 export const wineSchema = z.object({
   name: z.string().trim().min(1, 'Bitte gib einen Namen ein.').max(80, 'Maximal 80 Zeichen.'),
   vintage: z
@@ -60,10 +68,8 @@ export const wineSchema = z.object({
         .nullable(),
     ),
   grapeVariety: optionalText(60),
-  sweetness: z
-    .string()
-    .transform((v) => (v === '' ? null : v))
-    .pipe(z.enum(SWEETNESS_KEYS, { error: 'Bitte wähle eine Geschmacksrichtung aus der Liste.' }).nullable()),
+  sweetness: optionalChoice(SWEETNESS_KEYS, 'Bitte wähle eine Geschmacksrichtung aus der Liste.'),
+  wineType: optionalChoice(WINE_TYPE_KEYS, 'Bitte wähle eine Weinart aus der Liste.'),
 })
 export type WineInput = z.output<typeof wineSchema>
 

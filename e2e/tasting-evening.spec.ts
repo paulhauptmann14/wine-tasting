@@ -48,11 +48,12 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
 
   // Weine anlegen
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
-  for (const [name, vintage, sweetness] of [
-    ['Riesling', '2022', 'trocken'],
-    ['Spätburgunder', '2020', 'keine Angabe'],
+  for (const [name, wineType, vintage, sweetness] of [
+    ['Riesling', 'Weißwein', '2022', 'trocken'],
+    ['Spätburgunder', 'keine Angabe', '2020', 'keine Angabe'],
   ]) {
     await page.getByLabel('Name', { exact: true }).fill(name)
+    await page.getByLabel('Weinart').selectOption({ label: wineType })
     await page.getByLabel('Jahrgang').fill(vintage)
     await page.getByLabel('Geschmacksrichtung').selectOption({ label: sweetness })
     await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
@@ -73,6 +74,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await joinAs(anna, code, 'Anna')
   await expect(anna.getByText('Riesling')).toHaveCount(0)
   await expect(anna.getByText('trocken')).toHaveCount(0)
+  await expect(anna.getByText('Weißwein')).toHaveCount(0)
   await expect(anna.getByRole('link', { name: 'Verwaltung' })).toHaveCount(0)
   await rateWines(anna, [5, 3])
 
@@ -99,7 +101,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await page.getByRole('button', { name: 'Beenden & auflösen' }).click()
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()
   await expect(anna.getByText('Riesling').first()).toBeVisible({ timeout: 12_000 })
-  await expect(anna.getByText('2022 · trocken').first()).toBeVisible()
+  await expect(anna.getByText('Weißwein · 2022 · trocken').first()).toBeVisible()
   await expect(anna.getByText('Endergebnis')).toBeVisible()
 })
 

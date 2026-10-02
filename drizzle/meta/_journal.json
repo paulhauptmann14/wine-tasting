@@ -15,6 +15,13 @@
       "when": 1790955678533,
       "tag": "0001_wine_sweetness",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790957422079,
+      "tag": "0002_wine_type",
+      "breakpoints": true
     }
   ]
 }

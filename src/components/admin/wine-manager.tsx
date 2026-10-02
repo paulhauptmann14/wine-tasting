@@ -13,6 +13,7 @@ import type { ActionState } from '@/lib/action-state'
 import { wineDetails } from '@/lib/tasting/display'
 import { STRUCTURE_LOCK_HINT } from '@/lib/tasting/rules'
 import { SWEETNESS_KEYS, SWEETNESS_LABELS, type Sweetness } from '@/lib/tasting/sweetness'
+import { WINE_TYPE_KEYS, WINE_TYPE_LABELS, type WineType } from '@/lib/tasting/wine-type'
 import { cn } from '@/lib/utils'
 
 type WineRowData = {
@@ -22,8 +23,49 @@ type WineRowData = {
   vintage: number | null
   grapeVariety: string | null
   sweetness: Sweetness | null
+  wineType: WineType | null
 }
 type FormAction = (prev: ActionState, fd: FormData) => Promise<ActionState>
+
+/** Natives Auswahlfeld im Stil von <Input> – auf dem Handy öffnet sich die Systemauswahl. */
+function ChoiceField<K extends string>({
+  id,
+  name,
+  label,
+  keys,
+  labels,
+  defaultValue,
+  errors,
+}: {
+  id: string
+  name: string
+  label: string
+  keys: readonly K[]
+  labels: Record<K, string>
+  defaultValue: string
+  errors?: string[]
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <select
+        id={id}
+        name={name}
+        defaultValue={defaultValue}
+        aria-invalid={!!errors}
+        className="mt-2 h-12 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm dark:bg-input/30"
+      >
+        <option value="">keine Angabe</option>
+        {keys.map((key) => (
+          <option key={key} value={key}>
+            {labels[key]}
+          </option>
+        ))}
+      </select>
+      <FieldError errors={errors} />
+    </div>
+  )
+}
 
 function WineForm({
   action,
@@ -46,8 +88,8 @@ function WineForm({
   }, [state, onDone])
 
   return (
-    <form action={formAction} noValidate className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:items-start">
-      <div className="sm:col-span-3">
+    <form action={formAction} noValidate className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
+      <div className="sm:col-span-2">
         <Label htmlFor={`${id}-name`}>Name</Label>
         <Input
           id={`${id}-name`}
@@ -59,6 +101,15 @@ function WineForm({
         />
         <FieldError errors={errors.name} />
       </div>
+      <ChoiceField
+        id={`${id}-wine-type`}
+        name="wineType"
+        label="Weinart"
+        keys={WINE_TYPE_KEYS}
+        labels={WINE_TYPE_LABELS}
+        defaultValue={values?.wineType ?? initial?.wineType ?? ''}
+        errors={errors.wineType}
+      />
       <div>
         <Label htmlFor={`${id}-vintage`}>Jahrgang</Label>
         <Input
@@ -84,25 +135,16 @@ function WineForm({
         />
         <FieldError errors={errors.grapeVariety} />
       </div>
-      <div>
-        <Label htmlFor={`${id}-sweetness`}>Geschmacksrichtung</Label>
-        <select
-          id={`${id}-sweetness`}
-          name="sweetness"
-          defaultValue={values?.sweetness ?? initial?.sweetness ?? ''}
-          aria-invalid={!!errors.sweetness}
-          className="mt-2 h-12 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm dark:bg-input/30"
-        >
-          <option value="">keine Angabe</option>
-          {SWEETNESS_KEYS.map((key) => (
-            <option key={key} value={key}>
-              {SWEETNESS_LABELS[key]}
-            </option>
-          ))}
-        </select>
-        <FieldError errors={errors.sweetness} />
-      </div>
-      <div className="flex gap-2 sm:col-span-3">
+      <ChoiceField
+        id={`${id}-sweetness`}
+        name="sweetness"
+        label="Geschmacksrichtung"
+        keys={SWEETNESS_KEYS}
+        labels={SWEETNESS_LABELS}
+        defaultValue={values?.sweetness ?? initial?.sweetness ?? ''}
+        errors={errors.sweetness}
+      />
+      <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" size="lg" className="h-12" disabled={pending}>
           {submitLabel}
         </Button>
