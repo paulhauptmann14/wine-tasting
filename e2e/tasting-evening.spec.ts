@@ -217,3 +217,20 @@ test('unbekannter Code zeigt die Fehlerseite', async ({ page }) => {
   await page.goto('/tasting/222222')
   await expect(page.getByRole('heading', { name: 'Tasting nicht gefunden' })).toBeVisible()
 })
+
+test('Sicherheits-Header, robots.txt und App-Icons', async ({ request }) => {
+  const home = await request.get('/')
+  expect(home.headers()['x-content-type-options']).toBe('nosniff')
+  expect(home.headers()['referrer-policy']).toBe('same-origin')
+  expect(home.headers()['content-security-policy']).toBe("frame-ancestors 'none'")
+  expect(home.headers()['x-robots-tag']).toBeUndefined()
+
+  const tasting = await request.get('/tasting/ZZZZZZ')
+  expect(tasting.headers()['x-robots-tag']).toBe('noindex, nofollow')
+
+  expect(await (await request.get('/robots.txt')).text()).toContain('Disallow: /')
+  const manifest = await (await request.get('/manifest.webmanifest')).json()
+  expect(manifest.name).toBe('Wine Tasting')
+  for (const icon of manifest.icons) expect((await request.get(icon.src)).ok()).toBe(true)
+  expect((await request.get('/apple-icon')).headers()['content-type']).toBe('image/png')
+})
