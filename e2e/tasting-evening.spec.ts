@@ -152,8 +152,16 @@ test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, bro
   await guest.reload()
   await expect(guest.getByLabel('Wie heißt du?')).toBeVisible()
 
-  // Löschen erst nach Eingabe des Codes
+  // Blindverkostung speichert beim Umschalten sofort – ohne extra Button
   await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
+  const blindSwitch = page.getByRole('switch', { name: 'Blindverkostung' })
+  await expect(blindSwitch).toBeChecked()
+  await blindSwitch.click()
+  await expect(page.getByText('Gespeichert.')).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('switch', { name: 'Blindverkostung' })).not.toBeChecked()
+
+  // Löschen erst nach Eingabe des Codes
   const deleteButton = page.getByRole('button', { name: 'Endgültig löschen' })
   await expect(deleteButton).toBeDisabled()
   await page.getByLabel(/Zur Bestätigung den Code/).fill(code.toLowerCase())

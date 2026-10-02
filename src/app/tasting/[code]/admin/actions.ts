@@ -39,14 +39,26 @@ async function unlessLocked(change: () => Promise<unknown>): Promise<void> {
 
 export async function updateSettingsAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const tasting = await getAdminTasting(code)
-  // Blindverkostung nur in der Vorbereitung änderbar – sonst würden die Namen mitten im Tasting aufgelöst
-  const blindTasting = canEditStructure(tasting.status) ? fd.get('blindTasting') === 'on' : tasting.blindTasting
-  const raw = { name: formValue(fd, 'name'), blindTasting }
+  // Nur der Name – die Blindverkostung speichert ihr Schalter sofort selbst (updateBlindTastingAction)
+  const raw = { name: formValue(fd, 'name'), blindTasting: tasting.blindTasting }
   const parsed = settingsSchema.safeParse(raw)
   if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values: { name: raw.name } }
   await updateTastingSettings(db, tasting.id, parsed.data)
   refresh(tasting.code)
   return { ok: true, message: 'Gespeichert.' }
+}
+
+/** Schalter speichert sofort. Nur in der Vorbereitung – sonst würden die Namen mitten im Tasting aufgelöst. */
+export async function updateBlindTastingAction(code: string, blindTasting: unknown): Promise<ActionState> {
+  const tasting = await getAdminTasting(code)
+  const parsed = z.boolean().safeParse(blindTasting)
+  if (!parsed.success) return INVALID
+  if (!canEditStructure(tasting.status)) {
+    return { message: 'Lässt sich nur in der Vorbereitung ändern.' }
+  }
+  await updateTastingSettings(db, tasting.id, { name: tasting.name, blindTasting: parsed.data })
+  refresh(tasting.code)
+  return { ok: true }
 }
 
 export async function setStatusAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
