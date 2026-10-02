@@ -12,8 +12,8 @@ export function JoinByCodeForm({ className, defaultCode }: { className?: string;
   const [state, action, pending] = useActionState(goToTastingAction, undefined)
   const error = state?.fieldErrors?.code
   return (
-    <form action={action} noValidate className={cn('flex items-start gap-2', className)}>
-      <div className="flex-1">
+    <form action={action} noValidate className={cn('grid gap-2', className)}>
+      <div>
         <Label htmlFor="join-code" className="sr-only">
           Code vom Gastgeber
         </Label>
@@ -28,11 +28,11 @@ export function JoinByCodeForm({ className, defaultCode }: { className?: string;
           maxLength={6}
           aria-invalid={!!error}
           aria-describedby={error ? 'join-code-error' : undefined}
-          className="h-14 font-mono text-lg tracking-[0.3em] uppercase"
+          className="h-14 border-foreground/40 bg-card font-mono text-lg tracking-[0.35em] uppercase"
         />
         <FieldError id="join-code-error" errors={error} />
       </div>
-      <Button type="submit" size="lg" variant="secondary" className="h-14 px-6" disabled={pending}>
+      <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
         Beitreten
       </Button>
     </form>

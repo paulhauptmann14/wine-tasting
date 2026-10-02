@@ -2,32 +2,39 @@ import Link from 'next/link'
 import { GlassRing } from '@/components/glass-ring'
 import { JoinByCodeForm } from '@/components/join-by-code-form'
 import { PageShell } from '@/components/page-shell'
-import { buttonVariants } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+
+const textLink =
+  'inline-flex h-12 items-center font-medium underline decoration-border decoration-2 underline-offset-[6px] outline-none hover:decoration-wine focus-visible:decoration-wine'
 
 export default function HomePage() {
   return (
     <PageShell>
-      <div className="flex flex-col items-center pt-6 text-center lg:pt-0">
-        <GlassRing seed={3} size={112} />
-        <h1 className="mt-6 font-display text-5xl leading-none tracking-tight">Wine Tasting</h1>
-        <p className="mt-3 max-w-[30ch] text-muted-foreground">Weine verkosten, Sterne vergeben, gemeinsam auflösen.</p>
-      </div>
+      <div className="relative">
+        {/* Abdruck eines abgestellten Glases am Rand des Bogens */}
+        <GlassRing seed={5} size={200} className="pointer-events-none absolute -top-4 -right-28 lg:-top-24 lg:-right-28" />
+        <p className="relative font-display text-lg font-medium">Wine Tasting</p>
 
-      <section className="mt-12" aria-labelledby="join-heading">
-        <h2 id="join-heading" className="text-sm font-medium text-muted-foreground">
-          Du bist eingeladen? Gib den Code ein.
-        </h2>
-        <JoinByCodeForm className="mt-3" />
-      </section>
+        <section aria-labelledby="join-heading" className="relative mt-24 lg:mt-20">
+          <p className="text-sm text-muted-foreground">Eingeladen?</p>
+          <h1 id="join-heading" className="mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight">
+            Gib den Code vom Gastgeber ein.
+          </h1>
+          <JoinByCodeForm className="mt-6" />
+        </section>
 
-      <div className="mt-10 grid gap-3">
-        <Link href="/new" className={cn(buttonVariants({ size: 'lg' }), 'h-14 text-base')}>
-          Tasting erstellen
-        </Link>
-        <Link href="/manage" className={cn(buttonVariants({ size: 'lg', variant: 'secondary' }), 'h-14 text-base')}>
-          Tasting verwalten
-        </Link>
+        <section aria-labelledby="host-heading" className="mt-20 border-t border-border pt-5">
+          <h2 id="host-heading" className="text-sm text-muted-foreground">
+            Du lädst selbst ein?
+          </h2>
+          <div className="mt-1 flex flex-wrap gap-x-8">
+            <Link href="/new" className={textLink}>
+              Tasting erstellen
+            </Link>
+            <Link href="/manage" className={textLink}>
+              Tasting verwalten
+            </Link>
+          </div>
+        </section>
       </div>
     </PageShell>
   )

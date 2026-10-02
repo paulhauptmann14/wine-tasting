@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
-import { Bodoni_Moda, IBM_Plex_Mono, Schibsted_Grotesk } from 'next/font/google'
+import { IBM_Plex_Mono, IBM_Plex_Serif, Schibsted_Grotesk } from 'next/font/google'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { THEME_COOKIE, parseTheme } from '@/lib/theme'
 import './globals.css'
 
-const bodoni = Bodoni_Moda({ subsets: ['latin'], variable: '--font-bodoni', style: ['normal', 'italic'] })
+// Aufrechte, ruhige Serife für Titel, Weinnamen und Noten – bildet mit Plex Mono eine Familie
+const plexSerif = IBM_Plex_Serif({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-plex-serif' })
 const schibsted = Schibsted_Grotesk({ subsets: ['latin'], variable: '--font-schibsted' })
 const plex = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' })
 
@@ -27,12 +28,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // Gespeicherte Wahl serverseitig setzen – so gibt es kein Aufblitzen der falschen Farben
   const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value)
   return (
-    <html lang="de" data-theme={theme} className={`${bodoni.variable} ${schibsted.variable} ${plex.variable}`}>
+    <html lang="de" data-theme={theme} className={`${plexSerif.variable} ${schibsted.variable} ${plex.variable}`}>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
         <div className="mx-auto flex w-full max-w-[1100px] justify-end px-2 pt-2 sm:px-4">
           <ThemeToggle initial={theme} />
         </div>
-        {children}
+        {/* Eigene Hülle statt overflow am body: das würde an den Viewport weitergereicht */}
+        <div className="overflow-x-clip">{children}</div>
       </body>
     </html>
   )

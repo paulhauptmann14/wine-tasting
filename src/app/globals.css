@@ -42,8 +42,8 @@
   --color-star-edge: var(--star-edge);
 
   --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-bodoni), ui-serif, Georgia, serif;
-  --font-display: var(--font-bodoni), ui-serif, Georgia, serif;
+  --font-heading: var(--font-plex-serif), ui-serif, Georgia, serif;
+  --font-display: var(--font-plex-serif), ui-serif, Georgia, serif;
   --font-mono: var(--font-plex), ui-monospace, monospace;
 
   --radius-sm: calc(var(--radius) * 0.6);
@@ -67,7 +67,7 @@
   --star: light-dark(#f0a830, #ffc857);
   --star-edge: light-dark(#c27800, #ffc857);
 
-  --radius: 0.875rem;
+  --radius: 0.625rem;
   --background: light-dark(#f4f4f6, #121214);
   --foreground: light-dark(#17141b, #f4f4f6);
   --card: light-dark(#ffffff, #1c1c21);
@@ -113,11 +113,10 @@
 
 /* Glasrand-Ring: einmal nachzeichnen nach dem Speichern */
 @keyframes ring-draw {
-  from { stroke-dashoffset: 1; }
+  from { stroke-dashoffset: 0.82; }
   to { stroke-dashoffset: 0; }
 }
 .ring-draw {
-  stroke-dasharray: 1;
   animation: ring-draw 700ms cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 

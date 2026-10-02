@@ -34,21 +34,39 @@ export function GlassRing({
       aria-hidden={label ? undefined : true}
     >
       <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full overflow-visible">
-        {state === 'done' && <circle cx="50" cy="50" r="38" className="ring-fill fill-wine/15" />}
-        <path
-          d={ringPath(seed, 40)}
-          pathLength={1}
-          fill="none"
-          strokeLinecap="round"
-          className={cn(
-            state === 'open' && 'stroke-muted-foreground/50 [stroke-dasharray:0.02_0.025] [stroke-width:2.5]',
-            state === 'incomplete' && 'stroke-star-edge [stroke-dasharray:0.02_0.025] [stroke-width:3]',
-            state === 'done' && 'stroke-wine [stroke-width:6]',
-            animation === 'draw' && state === 'done' && 'ring-draw',
-          )}
-        />
-        {state === 'done' && (
-          <path d={ringPath(seed + 7, 36.5)} fill="none" className="stroke-wine/45 [stroke-width:1.5]" />
+        {state === 'done' ? (
+          // Abdruck eines Weinglases: blasse Füllung, feiner geschlossener Innenrand,
+          // kräftiger Rand mit Lücke und eine dunklere „Lippe“ – je Wein anders gedreht
+          <g transform={`rotate(${(seed * 47) % 360} 50 50)`}>
+            <path d={ringPath(seed, 38)} className="ring-fill fill-wine/[0.07]" />
+            <path d={ringPath(seed + 7, 37)} fill="none" className="stroke-wine/30 [stroke-width:1]" />
+            <path
+              d={ringPath(seed + 3, 40.5)}
+              pathLength={1}
+              fill="none"
+              strokeLinecap="round"
+              className={cn('stroke-wine/85 [stroke-dasharray:0.82_1] [stroke-width:4.5]', animation === 'draw' && 'ring-draw')}
+            />
+            {/* Gleicher Pfad wie der Rand, nur ein Stück davon dicker: der Wein sammelt sich an einer Seite */}
+            <path
+              d={ringPath(seed + 3, 40.5)}
+              pathLength={1}
+              fill="none"
+              strokeLinecap="round"
+              className="stroke-wine/60 [stroke-dasharray:0.2_1] [stroke-dashoffset:-0.45] [stroke-width:7.5]"
+            />
+          </g>
+        ) : (
+          <path
+            d={ringPath(seed, 40)}
+            pathLength={1}
+            fill="none"
+            strokeLinecap="round"
+            className={cn(
+              state === 'open' && 'stroke-muted-foreground/50 [stroke-dasharray:0.02_0.025] [stroke-width:2.5]',
+              state === 'incomplete' && 'stroke-star-edge [stroke-dasharray:0.02_0.025] [stroke-width:3]',
+            )}
+          />
         )}
       </svg>
       {children && <span className="relative leading-none">{children}</span>}
