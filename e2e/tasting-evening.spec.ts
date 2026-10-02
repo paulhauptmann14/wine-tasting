@@ -70,13 +70,16 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()
   await expect(page.getByRole('link', { name: 'Verwaltung' })).toBeVisible()
 
-  // Zwei Gäste bewerten blind – ohne Zugang zur Verwaltung
+  // Zwei Gäste bewerten blind – die Verwaltung verlangt von ihnen die PIN
   const anna = await newGuest(browser, testInfo)
   await joinAs(anna, code, 'Anna')
   await expect(anna.getByText('Riesling')).toHaveCount(0)
   await expect(anna.getByText('trocken')).toHaveCount(0)
   await expect(anna.getByText('Weißwein')).toHaveCount(0)
-  await expect(anna.getByRole('link', { name: 'Verwaltung' })).toHaveCount(0)
+  await anna.getByRole('link', { name: 'Verwaltung' }).click()
+  await expect(anna.getByLabel('PIN')).toBeVisible()
+  await expect(anna.getByRole('link', { name: 'Weine', exact: true })).toHaveCount(0)
+  await anna.goto(`/tasting/${code}`)
   await rateWines(anna, [5, 3], ['Pfirsich, sehr frisch'])
 
   const ben = await newGuest(browser, testInfo)
@@ -135,6 +138,33 @@ test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ pag
   // Gast ohne Admin-Cookie bekommt nur die Weiterleitung zum Login, keine Weindaten
   const guest = await newGuest(browser, testInfo)
   expect(await replay(guest)).not.toContain('Geheimwein')
+})
+
+test('Gastgeber kommt vom Gäste-Gerät mit der PIN in die Verwaltung', async ({ page, browser }, testInfo) => {
+  await page.goto('/new')
+  await page.getByLabel('Name der Verkostung').fill('E2E Zweitgerät')
+  await page.getByLabel('Admin-PIN').fill('1234')
+  await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
+  await page.waitForURL(/\/admin$/)
+  const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
+  await page.getByRole('link', { name: 'Weine', exact: true }).click()
+  await page.getByLabel('Name', { exact: true }).fill('Riesling')
+  await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
+  await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
+  await page.getByRole('button', { name: 'Tasting starten' }).click()
+
+  // Das Gäste-Handy ist mitten im Tasting und kennt die PIN
+  const phone = await newGuest(browser, testInfo)
+  await joinAs(phone, code, 'Paul')
+  await phone.getByRole('link', { name: 'Verwaltung' }).click()
+  await expect(phone.getByLabel('Code')).toHaveValue(code)
+  await phone.getByLabel('PIN').fill('9999')
+  await phone.getByRole('button', { name: 'Weiter' }).click()
+  await expect(phone.getByText('Die PIN stimmt nicht.')).toBeVisible()
+  await phone.getByLabel('PIN').fill('1234')
+  await phone.getByRole('button', { name: 'Weiter' }).click()
+  await phone.waitForURL(new RegExp(`/tasting/${code}/admin$`))
+  await expect(phone.getByRole('link', { name: 'Weine', exact: true })).toBeVisible()
 })
 
 test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, browser }, testInfo) => {

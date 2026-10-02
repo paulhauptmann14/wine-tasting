@@ -41,6 +41,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
           </h1>
           <JoinForm action={joinAction.bind(null, tasting.code)} />
         </div>
+        <AdminLink code={tasting.code} className="mt-6" />
       </PageShell>
     )
   }
@@ -83,6 +84,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
             Du bist dabei. Sobald der Gastgeber startet, erscheinen hier die Weine.
           </p>
         </div>
+        <AdminLink code={tasting.code} className="mt-6" />
       </PageShell>
     )
   }
@@ -99,7 +101,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
       <header>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">Hallo {participant.name}</p>
-          {admin && <AdminLink code={tasting.code} className="-my-3" />}
+          <AdminLink code={tasting.code} className="-my-3" />
         </div>
         <h1 className="mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight lg:text-5xl">{tasting.name}</h1>
         <p className="mt-2 text-sm text-muted-foreground tabular-nums">

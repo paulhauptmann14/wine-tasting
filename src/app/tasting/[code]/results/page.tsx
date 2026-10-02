@@ -32,7 +32,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ code: 
           <span />
         )}
         <div className="flex items-center gap-4">
-          {admin && <AdminLink code={tasting.code} />}
+          <AdminLink code={tasting.code} />
           <StatusPill status={tasting.status} />
         </div>
       </div>

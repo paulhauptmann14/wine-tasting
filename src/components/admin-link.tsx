@@ -2,7 +2,10 @@ import Link from 'next/link'
 import { Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/** Rückweg in die Verwaltung – nur für den Gastgeber, wenn er selbst mitbewertet. */
+/**
+ * Weg in die Verwaltung, für alle sichtbar: Ist das Gerät nicht angemeldet, leitet die Admin-Seite
+ * zur PIN-Abfrage mit vorausgefülltem Code weiter. So kommt der Gastgeber auch vom Gäste-Handy hinein.
+ */
 export function AdminLink({ code, className }: { code: string; className?: string }) {
   return (
     <Link

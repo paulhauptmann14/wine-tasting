@@ -7,7 +7,6 @@ import { RatingForm } from '@/components/rating-form'
 import { TastingSplit } from '@/components/tasting-split'
 import { WineList, WineRingStrip } from '@/components/wine-list'
 import { db } from '@/db/client'
-import { isAdmin } from '@/lib/auth/admin-session'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { getTasting } from '@/lib/data'
 import { wineTitle } from '@/lib/tasting/display'
@@ -27,7 +26,7 @@ export default async function WinePage({ params, searchParams }: Props) {
   if (!tasting || !Number.isInteger(position) || position < 1) notFound()
   if (tasting.code !== code) redirect(`/tasting/${tasting.code}/wine/${position}`)
 
-  const [participant, admin] = await Promise.all([getCurrentParticipant(tasting), isAdmin(tasting)])
+  const participant = await getCurrentParticipant(tasting)
   if (!participant) redirect(`/tasting/${tasting.code}`)
   if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
   if (!canRate(tasting.status)) redirect(`/tasting/${tasting.code}`)
@@ -52,7 +51,7 @@ export default async function WinePage({ params, searchParams }: Props) {
           ‹ Alle Weine
         </Link>
         <div className="ml-auto flex items-center gap-4">
-          {admin && <AdminLink code={tasting.code} />}
+          <AdminLink code={tasting.code} />
           <span className="font-mono">
             {doneCount} / {items.length}
           </span>
