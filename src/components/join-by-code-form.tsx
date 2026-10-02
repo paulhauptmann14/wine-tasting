@@ -8,11 +8,24 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
-export function JoinByCodeForm({ className, defaultCode }: { className?: string; defaultCode?: string }) {
+export function JoinByCodeForm({
+  className,
+  defaultCode,
+  layout = 'stack',
+}: {
+  className?: string
+  defaultCode?: string
+  /** row: ab lg Feld und Button nebeneinander (Startseite am Laptop) */
+  layout?: 'stack' | 'row'
+}) {
   const [state, action, pending] = useActionState(goToTastingAction, undefined)
   const error = state?.fieldErrors?.code
   return (
-    <form action={action} noValidate className={cn('grid gap-2', className)}>
+    <form
+      action={action}
+      noValidate
+      className={cn('grid gap-2', layout === 'row' && 'lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start', className)}
+    >
       <div>
         <Label htmlFor="join-code" className="sr-only">
           Code vom Gastgeber
@@ -32,7 +45,12 @@ export function JoinByCodeForm({ className, defaultCode }: { className?: string;
         />
         <FieldError id="join-code-error" errors={error} />
       </div>
-      <Button type="submit" size="lg" className="h-12 text-base" disabled={pending}>
+      <Button
+        type="submit"
+        size="lg"
+        className={cn('h-12 text-base', layout === 'row' && 'lg:h-14 lg:px-8')}
+        disabled={pending}
+      >
         Beitreten
       </Button>
     </form>
