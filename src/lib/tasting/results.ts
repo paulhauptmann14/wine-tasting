@@ -1,5 +1,14 @@
+import type { Sweetness } from './sweetness'
+
 export type ResultsInput = {
-  wines: { id: string; position: number; name: string; vintage: number | null; grapeVariety: string | null }[]
+  wines: {
+    id: string
+    position: number
+    name: string
+    vintage: number | null
+    grapeVariety: string | null
+    sweetness: Sweetness | null
+  }[]
   criteria: { id: string; name: string; position: number }[]
   ratings: { participantId: string; wineId: string; values: Record<string, number> }[]
   revealNames: boolean
@@ -12,6 +21,7 @@ export type WineResult = {
   name: string | null
   vintage: number | null
   grapeVariety: string | null
+  sweetness: Sweetness | null
   score: number | null
   rank: number | null
   ratingCount: number
@@ -44,6 +54,7 @@ export function computeResults(input: ResultsInput): Results {
       name: input.revealNames ? w.name : null,
       vintage: input.revealNames ? w.vintage : null,
       grapeVariety: input.revealNames ? w.grapeVariety : null,
+      sweetness: input.revealNames ? w.sweetness : null,
       score: rs.length > 0 ? mean(personScores) : null,
       rank: null,
       ratingCount: rs.length,

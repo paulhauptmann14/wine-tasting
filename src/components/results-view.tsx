@@ -1,10 +1,11 @@
 import { GlassRing } from '@/components/glass-ring'
+import { wineDetails } from '@/lib/tasting/display'
 import type { TastingStatus } from '@/lib/tasting/rules'
 import { formatScore, type Results, type WineResult } from '@/lib/tasting/results'
 import { cn } from '@/lib/utils'
 
 function WineIdentity({ wine, revealed, delayMs, size = 'md' }: { wine: WineResult; revealed: boolean; delayMs: number; size?: 'lg' | 'md' }) {
-  const subtitle = [wine.vintage, wine.grapeVariety].filter(Boolean).join(' · ')
+  const subtitle = wineDetails(wine)
   const nameClass = cn('font-display font-medium leading-tight tracking-tight', size === 'lg' ? 'text-2xl' : 'text-lg')
   return (
     <div className="min-w-0">

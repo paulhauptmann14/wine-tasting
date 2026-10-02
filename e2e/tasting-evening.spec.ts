@@ -48,12 +48,13 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
 
   // Weine anlegen
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
-  for (const [name, vintage] of [
-    ['Riesling', '2022'],
-    ['Spätburgunder', '2020'],
+  for (const [name, vintage, sweetness] of [
+    ['Riesling', '2022', 'trocken'],
+    ['Spätburgunder', '2020', 'keine Angabe'],
   ]) {
     await page.getByLabel('Name', { exact: true }).fill(name)
     await page.getByLabel('Jahrgang').fill(vintage)
+    await page.getByLabel('Geschmacksrichtung').selectOption({ label: sweetness })
     await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
     await expect(page.getByText(name, { exact: true })).toBeVisible()
   }
@@ -71,6 +72,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   const anna = await newGuest(browser, testInfo)
   await joinAs(anna, code, 'Anna')
   await expect(anna.getByText('Riesling')).toHaveCount(0)
+  await expect(anna.getByText('trocken')).toHaveCount(0)
   await expect(anna.getByRole('link', { name: 'Verwaltung' })).toHaveCount(0)
   await rateWines(anna, [5, 3])
 
@@ -97,6 +99,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await page.getByRole('button', { name: 'Beenden & auflösen' }).click()
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()
   await expect(anna.getByText('Riesling').first()).toBeVisible({ timeout: 12_000 })
+  await expect(anna.getByText('2022 · trocken').first()).toBeVisible()
   await expect(anna.getByText('Endergebnis')).toBeVisible()
 })
 

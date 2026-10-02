@@ -12,7 +12,14 @@ export default async function WinesPage({ params }: { params: Promise<{ code: st
     <WineManager
       code={tasting.code}
       locked={!canEditStructure(tasting.status)}
-      wines={wines.map(({ id, position, name, vintage, grapeVariety }) => ({ id, position, name, vintage, grapeVariety }))}
+      wines={wines.map(({ id, position, name, vintage, grapeVariety, sweetness }) => ({
+        id,
+        position,
+        name,
+        vintage,
+        grapeVariety,
+        sweetness,
+      }))}
     />
   )
 }

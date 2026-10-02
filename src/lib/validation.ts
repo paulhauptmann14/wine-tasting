@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { normalizeCode } from '@/lib/tasting/code'
 import { PRESET_KEYS } from '@/lib/tasting/presets'
+import { SWEETNESS_KEYS } from '@/lib/tasting/sweetness'
 
 export function formValue(fd: FormData, key: string): string {
   const value = fd.get(key)
@@ -59,6 +60,10 @@ export const wineSchema = z.object({
         .nullable(),
     ),
   grapeVariety: optionalText(60),
+  sweetness: z
+    .string()
+    .transform((v) => (v === '' ? null : v))
+    .pipe(z.enum(SWEETNESS_KEYS, { error: 'Bitte wähle eine Geschmacksrichtung aus der Liste.' }).nullable()),
 })
 export type WineInput = z.output<typeof wineSchema>
 

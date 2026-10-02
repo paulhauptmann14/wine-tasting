@@ -13,6 +13,7 @@ import {
 const timestamptz = (name: string) => timestamp(name, { withTimezone: true })
 
 export const tastingStatus = pgEnum('tasting_status', ['setup', 'active', 'finished'])
+export const wineSweetness = pgEnum('wine_sweetness', ['dry', 'off_dry', 'medium', 'sweet'])
 
 export const tastings = pgTable('tasting', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -38,6 +39,7 @@ export const wines = pgTable(
     name: text('name').notNull(),
     vintage: integer('vintage'),
     grapeVariety: text('grape_variety'),
+    sweetness: wineSweetness('sweetness'),
   },
   (t) => [unique('wine_tasting_position_uq').on(t.tastingId, t.position)],
 ).enableRLS()

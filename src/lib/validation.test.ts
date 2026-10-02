@@ -46,14 +46,18 @@ describe('adminLoginSchema', () => {
 
 describe('wineSchema', () => {
   it('maps empty optional fields to null', () => {
-    expect(wineSchema.parse({ name: 'Riesling', vintage: '', grapeVariety: ' ' })).toEqual({
-      name: 'Riesling', vintage: null, grapeVariety: null,
+    expect(wineSchema.parse({ name: 'Riesling', vintage: '', grapeVariety: ' ', sweetness: '' })).toEqual({
+      name: 'Riesling', vintage: null, grapeVariety: null, sweetness: null,
     })
   })
   it('parses vintage and validates its range', () => {
-    expect(wineSchema.parse({ name: 'R', vintage: '2022', grapeVariety: 'Riesling' }).vintage).toBe(2022)
-    expect(wineSchema.safeParse({ name: 'R', vintage: '1800', grapeVariety: '' }).success).toBe(false)
-    expect(wineSchema.safeParse({ name: 'R', vintage: 'abc', grapeVariety: '' }).success).toBe(false)
+    expect(wineSchema.parse({ name: 'R', vintage: '2022', grapeVariety: 'Riesling', sweetness: '' }).vintage).toBe(2022)
+    expect(wineSchema.safeParse({ name: 'R', vintage: '1800', grapeVariety: '', sweetness: '' }).success).toBe(false)
+    expect(wineSchema.safeParse({ name: 'R', vintage: 'abc', grapeVariety: '', sweetness: '' }).success).toBe(false)
+  })
+  it('accepts only the four sweetness levels', () => {
+    expect(wineSchema.parse({ name: 'R', vintage: '', grapeVariety: '', sweetness: 'off_dry' }).sweetness).toBe('off_dry')
+    expect(wineSchema.safeParse({ name: 'R', vintage: '', grapeVariety: '', sweetness: 'sauer' }).success).toBe(false)
   })
 })
 
