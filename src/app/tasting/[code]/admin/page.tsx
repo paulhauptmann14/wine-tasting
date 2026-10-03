@@ -1,6 +1,7 @@
 import QRCode from 'qrcode'
 import { CopyLinkButton } from '@/components/admin/copy-link-button'
 import { StatusControl } from '@/components/admin/status-control'
+import { CopyCodeButton } from '@/components/copy-code-button'
 import { getBaseUrl } from '@/lib/base-url'
 import { getAdminTasting } from '@/lib/data'
 
@@ -27,7 +28,10 @@ export default async function SharePage({ params }: { params: Promise<{ code: st
       <div className="grid gap-6">
         <div>
           <p className="text-sm text-muted-foreground">Code</p>
-          <p className="mt-1 font-mono text-4xl tracking-[0.3em]">{tasting.code}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <p className="font-mono text-4xl tracking-[0.3em]">{tasting.code}</p>
+            <CopyCodeButton code={tasting.code} size="lg" />
+          </div>
         </div>
         <div>
           <p className="text-sm text-muted-foreground">Link</p>

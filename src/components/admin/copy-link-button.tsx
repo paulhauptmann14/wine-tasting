@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { copyText } from '@/lib/clipboard'
 
 export function CopyLinkButton({ url }: { url: string }) {
   const [copied, setCopied] = useState(false)
@@ -12,7 +13,7 @@ export function CopyLinkButton({ url }: { url: string }) {
       size="lg"
       className="h-12"
       onClick={async () => {
-        await navigator.clipboard.writeText(url)
+        if (!(await copyText(url))) return
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       }}
