@@ -39,8 +39,15 @@ export function ScoringExplainer({
           <p>Die Note sind deine Sterne, danach wird über alle Gäste gemittelt. Ergebnis von 5.</p>
         ) : usesPoints ? (
           <>
+            {/* The Parker floor surprises people who expect 0–100 – say why it exists and what it means */}
+            {s.base > 0 && (
+              <p>
+                Wie bei Robert Parker, dem bekanntesten Weinkritiker: Jeder Wein startet mit {s.base} Punkten. Die
+                niedrigste mögliche Note ist deshalb {formatScaled(1, scale)} (überall 1 Stern), die meisten Weine
+                landen zwischen 80 und 95.
+              </p>
+            )}
             <p>
-              {s.base > 0 && `Jeder Wein startet mit ${s.base} Punkten. `}
               Pro Kriterium gibt es bis zu den genannten Punkten: 5 Sterne die volle Punktzahl, jeder Stern ein
               Fünftel davon. Die Summe ist deine Note, danach wird über alle Gäste gemittelt. Ergebnis von {s.max}.
             </p>

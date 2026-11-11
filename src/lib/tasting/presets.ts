@@ -52,7 +52,7 @@ export const PRESETS: Record<PresetKey, Preset> = {
   },
   hundred: {
     label: '100-Punkte-Schema',
-    hint: 'Nach Robert Parker: 50 Punkte Sockel, Geschmack zählt am meisten. Ergebnis von 100.',
+    hint: 'Wie bei Robert Parker: Jeder Wein startet mit 50 Punkten, Geschmack zählt am meisten. Ergebnis von 60 bis 100.',
     scale: 'hundred',
     criteria: [
       { name: 'Aussehen', weight: 5 },
