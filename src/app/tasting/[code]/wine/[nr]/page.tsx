@@ -6,6 +6,7 @@ import { GlassRing } from '@/components/glass-ring'
 import { RatingForm } from '@/components/rating-form'
 import { TastingSplit } from '@/components/tasting-split'
 import { WineList, WineRingStrip } from '@/components/wine-list'
+import { WineSwipe } from '@/components/wine-swipe'
 import { db } from '@/db/client'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { getTasting } from '@/lib/data'
@@ -16,11 +17,11 @@ import { getWineListItems } from '@/server/participant-view'
 import { getRating } from '@/server/ratings'
 import { getWineByPosition } from '@/server/wines'
 
-type Props = { params: Promise<{ code: string; nr: string }>; searchParams: Promise<{ saved?: string }> }
+type Props = { params: Promise<{ code: string; nr: string }>; searchParams: Promise<{ saved?: string; from?: string }> }
 
 export default async function WinePage({ params, searchParams }: Props) {
   const { code, nr } = await params
-  const { saved } = await searchParams
+  const { saved, from } = await searchParams
   const position = Number(nr)
   const tasting = await getTasting(code)
   if (!tasting || !Number.isInteger(position) || position < 1) notFound()
@@ -42,6 +43,10 @@ export default async function WinePage({ params, searchParams }: Props) {
   const showName = canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin: false })
   const { title, subtitle } = wineTitle(wine, showName)
   const savedPosition = saved ? Number(saved) : undefined
+  // Where we came from (saved or swiped) decides the direction the wine arrives from
+  const cameFrom = Number(saved ?? from)
+  const arrival = cameFrom === position - 1 ? 'arrive-next' : cameFrom === position + 1 ? 'arrive-prev' : undefined
+  const wineHref = (n: number) => `/tasting/${tasting.code}/wine/${n}?from=${position}`
   const doneCount = items.filter((i) => i.state === 'done').length
 
   return (
@@ -59,8 +64,13 @@ export default async function WinePage({ params, searchParams }: Props) {
       </div>
       <WineRingStrip items={items} currentPosition={position} savedPosition={savedPosition} />
 
-      {/* Remounted per wine so the arrival plays again after every "Speichern & weiter" */}
-      <div key={position} className={savedPosition === position - 1 ? 'arrive-next' : undefined}>
+      {/* Remounted per wine so the arrival plays again after every save or swipe */}
+      <WineSwipe
+        key={position}
+        className={arrival}
+        prevHref={position > 1 ? wineHref(position - 1) : undefined}
+        nextHref={position < items.length ? wineHref(position + 1) : undefined}
+      >
         <header className="mt-6 flex items-center gap-4">
           <GlassRing seed={position} size={96} className="-ml-2">
             <span className="font-display text-4xl font-medium">{position}</span>
@@ -80,7 +90,7 @@ export default async function WinePage({ params, searchParams }: Props) {
           initialNotes={existing?.notes ?? ''}
           isLast={position === items.length}
         />
-      </div>
+      </WineSwipe>
     </TastingSplit>
   )
 }

@@ -172,6 +172,54 @@ test('Gastgeber kommt vom Gäste-Gerät mit der PIN in die Verwaltung', async ({
   await expect(phone.getByRole('link', { name: 'Weine', exact: true })).toBeVisible()
 })
 
+/** Horizontal finger swipe on the wine heading, as touch pointer events. */
+async function swipe(page: Page, fromX: number, toX: number) {
+  const target = page.getByRole('heading', { level: 1 })
+  const init = { pointerId: 7, pointerType: 'touch', isPrimary: true, clientY: 300 }
+  await target.dispatchEvent('pointerdown', { ...init, clientX: fromX })
+  for (let i = 1; i <= 6; i++) {
+    await target.dispatchEvent('pointermove', { ...init, clientX: fromX + ((toX - fromX) * i) / 6 })
+  }
+  await target.dispatchEvent('pointerup', { ...init, clientX: toX })
+}
+
+test('Gäste wischen zwischen den Weinen, ungespeicherte Sterne halten sie auf', async ({ page, browser }, testInfo) => {
+  await page.goto('/new')
+  await page.getByLabel('Name der Verkostung').fill('E2E Wischen')
+  await page.getByLabel('Admin-PIN').fill('1234')
+  await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
+  await page.waitForURL(/\/admin$/)
+  const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
+  await page.getByRole('link', { name: 'Weine', exact: true }).click()
+  for (const name of ['Riesling', 'Silvaner']) {
+    await page.getByLabel('Name', { exact: true }).fill(name)
+    await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
+    await expect(page.getByText(name, { exact: true })).toBeVisible()
+  }
+  await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
+  await page.getByRole('button', { name: 'Tasting starten' }).click()
+
+  const guest = await newGuest(browser, testInfo)
+  await joinAs(guest, code, 'Anna')
+  await guest.goto(`/tasting/${code}/wine/1`)
+  await expect(guest.getByRole('heading', { name: 'Riesling' })).toBeVisible()
+
+  // Left: next wine – right: back again
+  await swipe(guest, 320, 60)
+  await guest.waitForURL(new RegExp(`/tasting/${code}/wine/2`))
+  await expect(guest.getByRole('heading', { name: 'Silvaner' })).toBeVisible()
+  await swipe(guest, 60, 320)
+  await guest.waitForURL(new RegExp(`/tasting/${code}/wine/1`))
+  await expect(guest.getByRole('heading', { name: 'Riesling' })).toBeVisible()
+
+  // Unsaved stars: the swipe springs back and asks to save first
+  await guest.getByRole('radio', { name: '4 von 5 Sternen' }).first().click()
+  await swipe(guest, 320, 60)
+  await expect(guest.getByText('Speichere erst – sonst gehen deine Sterne verloren.')).toBeVisible()
+  await expect(guest.getByRole('heading', { name: 'Riesling' })).toBeVisible()
+  expect(guest.url()).toMatch(new RegExp(`/tasting/${code}/wine/1`))
+})
+
 test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, browser }, testInfo) => {
   await page.goto('/new')
   await page.getByLabel('Name der Verkostung').fill('E2E Aufräumen')

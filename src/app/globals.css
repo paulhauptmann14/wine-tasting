@@ -209,9 +209,13 @@
 }
 .star-pop { animation: star-pop 260ms var(--ease-pop); transform-origin: center; }
 
-/* Next wine after saving: arrives from the right, where the next ring sits in the strip */
+/* Next wine arrives from the right, where its ring sits in the strip – the previous one from the left */
 @keyframes arrive-from-right {
   from { opacity: 0; transform: translateX(1.5rem); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes arrive-from-left {
+  from { opacity: 0; transform: translateX(-1.5rem); }
   to { opacity: 1; transform: none; }
 }
 @keyframes fade-in {
@@ -220,11 +224,23 @@
 }
 /*
  * Only the content moves, never the wrapper: a transformed ancestor would turn the fixed
- * bottom bar (.material-bar) into a child of the moving block for the length of the animation.
+ * bottom bar (.material-bar) into a child of the moving block.
+ * "backwards" fill: once arrived, opacity is free again for the swipe below.
  */
 .arrive-next > header,
 .arrive-next form > :not(.material-bar) {
-  animation: arrive-from-right 350ms var(--ease-fluid) both;
+  animation: arrive-from-right 350ms var(--ease-fluid) backwards;
+}
+.arrive-prev > header,
+.arrive-prev form > :not(.material-bar) {
+  animation: arrive-from-left 350ms var(--ease-fluid) backwards;
+}
+
+/* Swipe between wines: <WineSwipe> sets the variables, the content follows the finger */
+.wine-swipe > header,
+.wine-swipe form > :not(.material-bar) {
+  translate: var(--swipe-x, 0px) 0;
+  opacity: var(--swipe-o, 1);
 }
 
 /* Light/dark switch: cross-fade instead of an abrupt brightness jump */
@@ -246,6 +262,8 @@
   }
   /* Keep the meaning (something new arrived), drop the movement */
   .arrive-next > header,
-  .arrive-next form > :not(.material-bar) { animation-name: fade-in; }
+  .arrive-next form > :not(.material-bar),
+  .arrive-prev > header,
+  .arrive-prev form > :not(.material-bar) { animation-name: fade-in; }
   [data-slot="alert-dialog-content"] { --tw-enter-scale: 1 !important; }
 }
