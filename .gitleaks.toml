@@ -1,0 +1,22 @@
+# Secret scan for the pre-commit hook (.githooks/pre-commit) and manual runs: `gitleaks git .`
+title = "wine-tasting"
+
+[extend]
+useDefault = true
+
+# The default rules miss database URLs – the most important secret in this project
+[[rules]]
+id = "postgres-url-with-password"
+description = "Postgres connection string with an inline password"
+regex = '''postgres(?:ql)?://[^:\s/@]+:([^@\s$'"]{6,})@[^\s'"]+'''
+secretGroup = 1
+keywords = ["postgres"]
+
+  # Local development and the Docker service host are placeholders, not secrets
+  [[rules.allowlists]]
+  regexTarget = "match"
+  regexes = ['''@(?:localhost|127\.0\.0\.1|db)[:/]''']
+
+[[allowlists]]
+description = "Made-up signing key used only in tests"
+paths = ['''(?:^|/)src/lib/auth/admin-token\.test\.ts$''']

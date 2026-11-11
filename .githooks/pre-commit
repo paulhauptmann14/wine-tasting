@@ -1,0 +1,18 @@
+#!/bin/sh
+# Blocks commits that contain secrets (API keys, tokens, database URLs). Rules: .gitleaks.toml
+# Activate once per clone: git config core.hooksPath .githooks
+
+# GUI git clients often start hooks without the Homebrew path
+PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks fehlt – Secret-Scan übersprungen (brew install gitleaks)" >&2
+  exit 0
+fi
+
+if ! gitleaks git --pre-commit --staged --redact --no-banner --log-level warn .; then
+  echo "" >&2
+  echo "pre-commit: Secret gefunden – Commit abgebrochen. Datei aus dem Commit nehmen (git restore --staged <datei>)." >&2
+  echo "Fehlalarm? Regel in .gitleaks.toml anpassen." >&2
+  exit 1
+fi

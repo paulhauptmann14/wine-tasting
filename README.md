@@ -29,6 +29,7 @@ Voraussetzungen: Node.js ≥ 20.9, Docker Desktop, Google Chrome (für die E2E-T
 ```bash
 npm install
 cp .env.example .env.local
+git config core.hooksPath .githooks   # Secret-Scan vor jedem Commit (braucht: brew install gitleaks)
 ```
 
 In `.env.local` ein zufälliges `SESSION_SECRET` (mind. 32 Zeichen) eintragen, z. B. mit `openssl rand -base64 48`. Dann:
@@ -96,6 +97,7 @@ e2e/                Playwright-Tests
 - Admin-Cookie: HMAC-signiert, 7 Tage gültig, nur für ein Tasting
 - Blindverkostung: Weinnamen werden serverseitig zurückgehalten, nicht nur in der Oberfläche versteckt
 - Row Level Security auf allen Tabellen (ohne Policies) – schützt vor Zugriffen über eine öffentliche Datenbank-API wie die von Supabase
+- Secrets bleiben aus dem Repo: Der Pre-Commit-Hook (`.githooks/pre-commit`) bricht Commits mit API-Keys, Tokens oder Datenbank-URLs mit Passwort ab; Regeln in `.gitleaks.toml`. Ganze Historie prüfen: `gitleaks git .`
 
 ## Deployment
 
@@ -158,3 +160,7 @@ HTTPS ist nötig: In Produktion setzt die App ihre Cookies nur über sichere Ver
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.production exec db pg_dump -U wine wine_tasting > backup-$(date +%F).sql
 ```
+
+## Lizenz
+
+MIT – siehe [LICENSE](LICENSE).
