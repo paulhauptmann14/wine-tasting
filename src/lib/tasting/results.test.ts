@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { computeResults, formatScaled, formatScore, toScale, type ResultsInput } from './results'
 
 const wine = (id: string, position: number, name = `Wein ${id}`) => ({
-  id, position, name, vintage: 2020 + position, grapeVariety: 'Riesling', sweetness: 'medium' as const, wineType: 'white' as const,
+  id, position, name, winery: 'Weingut Test', vintage: 2020 + position, grapeVariety: 'Riesling', sweetness: 'medium' as const, wineType: 'white' as const,
 })
 const criteria = [
   { id: 'c1', name: 'Aroma', position: 1, weight: 1 },
@@ -54,9 +54,18 @@ describe('computeResults', () => {
 
   it('hides names unless revealed', () => {
     const hidden = computeResults(input({ wines: [wine('a', 1, 'Riesling')] }))
-    expect(hidden.wines[0]).toMatchObject({ label: 'Wein #1', name: null, vintage: null, grapeVariety: null, sweetness: null, wineType: null })
+    expect(hidden.wines[0]).toMatchObject({ label: 'Wein #1', name: null, winery: null, vintage: null, grapeVariety: null, sweetness: null, wineType: null })
     const shown = computeResults(input({ wines: [wine('a', 1, 'Riesling')], revealNames: true }))
-    expect(shown.wines[0]).toMatchObject({ name: 'Riesling', vintage: 2021, grapeVariety: 'Riesling', sweetness: 'medium', wineType: 'white' })
+    expect(shown.wines[0]).toMatchObject({ name: 'Riesling', winery: 'Weingut Test', vintage: 2021, grapeVariety: 'Riesling', sweetness: 'medium', wineType: 'white' })
+  })
+
+  it('never leaks the winery while names are withheld', () => {
+    const hidden = computeResults(input({
+      wines: [{ ...wine('a', 1), winery: 'Geheimes Weingut' }],
+      ratings: [{ participantId: 'p1', wineId: 'a', values: { c1: 4, c2: 4 } }],
+    }))
+    expect(hidden.wines[0].winery).toBeNull()
+    expect(JSON.stringify(hidden)).not.toContain('Geheimes')
   })
 
   it('weights criteria per person before averaging across people', () => {

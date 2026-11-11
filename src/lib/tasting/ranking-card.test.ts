@@ -3,7 +3,7 @@ import { CARD_CHAR, MAX_CARD_ROWS, cardText, fitDetails, rankingCard, rankingIma
 import { computeResults, type ResultsInput } from './results'
 
 const wine = (id: string, position: number, name = `Wein ${id}`) => ({
-  id, position, name, vintage: 2020, grapeVariety: 'Riesling', sweetness: 'dry' as const, wineType: 'white' as const,
+  id, position, name, winery: null as string | null, vintage: 2020, grapeVariety: 'Riesling', sweetness: 'dry' as const, wineType: 'white' as const,
 })
 const criteria = [{ id: 'c1', name: 'Gesamt', position: 1, weight: 1 }]
 const rate = (wineId: string, value: number, participantId = 'p1') => ({ participantId, wineId, values: { c1: value } })
@@ -128,6 +128,25 @@ describe('rankingCard', () => {
     expect(card.rest[1].details).toBe('Weißwein · 2020 · Riesling · trocken')
   })
 
+  it('puts the winery in front of the details and drops it as a whole part when it does not fit', () => {
+    const wines = [
+      { ...wine('a', 1), winery: 'Dr. Loosen' },
+      { ...wine('b', 2), winery: 'Weingut der Fürstlich Castell\'schen Domänenverwaltung' },
+    ]
+    const r = results({ wines, ratings: [rate('a', 5), rate('b', 4)] })
+    const card = rankingCard(r, 'five', meta)
+    // 48 characters per slot: the last whole part makes room for the winery
+    expect(card.podium[0].details).toBe('Dr. Loosen · Weißwein · 2020 · Riesling')
+    // Too long to fit on one line: the winery goes, the rest stays
+    expect(card.podium[1].details).toBe('Weißwein · 2020 · Riesling · trocken')
+    expect(fitDetails('Weingut Dr. Loosen · Weißwein · 2020', 30)).toBe('Weingut Dr. Loosen · Weißwein')
+  })
+
+  it('never puts the winery on the image when names are hidden', () => {
+    const r = computeResults({ wines: [{ ...wine('a', 4), winery: 'Geheimes Weingut' }], criteria, ratings: [rate('a', 4)], revealNames: false })
+    expect(JSON.stringify(rankingCard(r, 'five', meta))).not.toContain('Geheimes')
+  })
+
   it('falls back to the wine number when names are hidden', () => {
     const r = computeResults({ wines: [wine('a', 4)], criteria, ratings: [rate('a', 4)], revealNames: false })
     const card = rankingCard(r, 'five', meta)
@@ -170,6 +189,9 @@ describe('fitDetails', () => {
     expect(fitDetails('Rotwein · 2019', 40)).toBe('Rotwein · 2019')
     expect(fitDetails('Schaumwein', 5)).toBeNull()
     expect(fitDetails(null, 40)).toBeNull()
+    // Only the first part (the winery) may be skipped; a too-long later part stops the fitting
+    expect(fitDetails('Weingut Dr. Loosen · Weißwein · 2020', 12)).toBe('Weißwein')
+    expect(fitDetails('Weingut Dr. Loosen · Weißwein · 2020', 7)).toBeNull()
   })
 })
 

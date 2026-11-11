@@ -47,6 +47,7 @@ export function computeResults(input: ResultsInput): Results {
       position: w.position,
       label: `Wein #${w.position}`,
       name: input.revealNames ? w.name : null,
+      winery: input.revealNames ? w.winery : null,
       vintage: input.revealNames ? w.vintage : null,
       grapeVariety: input.revealNames ? w.grapeVariety : null,
       sweetness: input.revealNames ? w.sweetness : null,

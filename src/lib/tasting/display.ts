@@ -2,6 +2,7 @@ import { SWEETNESS_LABELS, type Sweetness } from './sweetness'
 import { WINE_TYPE_LABELS, type WineType } from './wine-type'
 
 export type WineDetails = {
+  winery: string | null
   vintage: number | null
   grapeVariety: string | null
   sweetness: Sweetness | null
@@ -9,11 +10,11 @@ export type WineDetails = {
 }
 export type WineLike = { position: number; name: string } & WineDetails
 
-/** "Weißwein · 2022 · Riesling · trocken" – or null if nothing is set. */
+/** "Weingut Dr. Loosen · Weißwein · 2022 · Riesling · trocken" – or null if nothing is set. */
 export function wineDetails(wine: WineDetails): string | null {
   const wineType = wine.wineType ? WINE_TYPE_LABELS[wine.wineType] : null
   const sweetness = wine.sweetness ? SWEETNESS_LABELS[wine.sweetness] : null
-  return [wineType, wine.vintage, wine.grapeVariety, sweetness].filter(Boolean).join(' · ') || null
+  return [wine.winery, wineType, wine.vintage, wine.grapeVariety, sweetness].filter(Boolean).join(' · ') || null
 }
 
 export function wineTitle(wine: WineLike, showName: boolean): { title: string; subtitle: string | null } {

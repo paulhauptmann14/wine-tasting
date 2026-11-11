@@ -46,6 +46,7 @@ export const wines = pgTable(
       .references(() => tastings.id, { onDelete: 'cascade' }),
     position: integer('position').notNull(),
     name: text('name').notNull(),
+    winery: text('winery'),
     vintage: integer('vintage'),
     grapeVariety: text('grape_variety'),
     sweetness: wineSweetness('sweetness'),

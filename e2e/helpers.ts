@@ -29,11 +29,12 @@ export async function createTasting(page: Page, name: string): Promise<string> {
   return tastingCode(page)
 }
 
-/** Adds wines with a name only, from anywhere in the admin area. */
+/** Adds wines with a name and the required wine type only, from anywhere in the admin area. */
 export async function addWines(page: Page, names: string[]) {
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
   for (const name of names) {
     await page.getByLabel('Name', { exact: true }).fill(name)
+    await page.getByLabel('Weinart').selectOption({ label: 'Rotwein' })
     await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
     await expect(page.getByText(name, { exact: true })).toBeVisible()
   }

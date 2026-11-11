@@ -102,12 +102,20 @@ function truncate(text: string, max: number): string {
 
 const dateFormat = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' })
 
-/** Keeps as many leading parts of "Weißwein · 2022 · Riesling" as fit into `max` characters. */
+/**
+ * Keeps as many leading parts of "Weingut Dr. Loosen · Weißwein · 2022" as fit into `max` characters.
+ * A first part that is too long on its own (a long winery) is dropped, so it doesn't take the type
+ * and vintage with it.
+ */
 export function fitDetails(details: string | null, max: number): string | null {
   if (!details) return null
   const kept: string[] = []
-  for (const part of details.split(SEPARATOR)) {
-    if ([...kept, part].join(SEPARATOR).length > max) break
+  const parts = details.split(SEPARATOR)
+  for (const [i, part] of parts.entries()) {
+    if ([...kept, part].join(SEPARATOR).length > max) {
+      if (i === 0) continue
+      break
+    }
     kept.push(part)
   }
   return kept.length > 0 ? kept.join(SEPARATOR) : null

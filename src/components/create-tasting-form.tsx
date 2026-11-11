@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { PresetPicker } from '@/components/preset-picker'
+import { RequiredLegend, RequiredMark } from '@/components/required-mark'
 import { useRevealErrors } from '@/components/use-reveal-errors'
 import { RETENTION_DAYS } from '@/lib/tasting/retention'
 import type { PresetKey } from '@/lib/tasting/presets'
@@ -22,14 +23,20 @@ export function CreateTastingForm() {
 
   return (
     <form ref={formRef} action={action} noValidate className="grid gap-8">
+      <RequiredLegend className="-mb-4 text-sm text-muted-foreground" />
       <div>
-        <Label htmlFor="name">Name der Verkostung</Label>
+        <Label htmlFor="name">
+          Name der Verkostung
+          <RequiredMark />
+        </Label>
         <Input
           id="name"
           name="name"
           defaultValue={state?.values?.name}
           placeholder="Weinabend 2026"
           maxLength={60}
+          required
+          aria-required="true"
           aria-invalid={!!errors.name}
           className="mt-2 h-12 lg:bg-card text-base"
         />
@@ -59,7 +66,10 @@ export function CreateTastingForm() {
       />
 
       <div>
-        <Label htmlFor="pin">Deine Gastgeber-PIN</Label>
+        <Label htmlFor="pin">
+          Deine Gastgeber-PIN
+          <RequiredMark />
+        </Label>
         {/* Visible on purpose: it can't be reset, so the host should see what they typed */}
         <Input
           id="pin"
@@ -70,6 +80,8 @@ export function CreateTastingForm() {
           autoCorrect="off"
           spellCheck={false}
           maxLength={12}
+          required
+          aria-required="true"
           aria-invalid={!!errors.pin}
           aria-describedby="pin-hint"
           className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.4em]"

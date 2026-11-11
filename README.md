@@ -23,7 +23,7 @@ Der Gastgeber erstellt ein Tasting, trägt die Weine ein und zeigt einen QR-Code
 
 - **Tasting erstellen** mit Name, optionaler Blindverkostung, Bewertungssystem und Admin-PIN
 - **Bewertungssysteme:** Einfach (ein Gesamturteil), 5-, 20- oder 100-Punkte-Schema mit gewichteten Kriterien – die App erklärt, wie gerechnet wird
-- **Weine** mit Name, Jahrgang, Rebsorte, Weinart und Süße; die Reihenfolge lässt sich auch während des Abends ändern; „Reihenfolge mischen“ mischt nur Weine, die noch niemand bewertet hat
+- **Weine** mit Name und Weinart (Pflicht) sowie Weingut, Jahrgang, Rebsorte und Geschmacksrichtung (freiwillig); die Reihenfolge lässt sich auch während des Abends ändern; „Reihenfolge mischen“ mischt nur Weine, die noch niemand bewertet hat
 - **Einladen** per QR-Code, Link oder 6-stelligem Code
 - **Bewerten** mit Sternen und optionaler Notiz; auf dem Handy wischt man zwischen den Weinen
 - **Ergebnisse** live mit Podest, Durchschnitt je Kriterium und – nach dem Ende – den Notizen aller Gäste ohne Namen

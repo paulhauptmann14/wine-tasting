@@ -4,10 +4,17 @@ import type { Db } from '@/db/types'
 import { ratings, tastings, wines } from '@/db/schema'
 import { moveInOrder, shuffleUnrated, type RandomInt } from '@/lib/tasting/order'
 import { SHUFFLE_FINISHED_HINT, canShuffleWines, type TastingStatus } from '@/lib/tasting/rules'
+import type { WineType } from '@/lib/tasting/wine-type'
 import type { Direction, WineInput } from '@/lib/validation'
 import { assertStructureEditable } from './structure'
 
 export type Wine = typeof wines.$inferSelect
+
+/**
+ * What the services store. Validation requires the wine type (WineInput), but the column stays nullable
+ * for wines created before that rule, so the services accept both.
+ */
+export type WineFields = Omit<WineInput, 'wineType'> & { wineType: WineType | null }
 
 export async function listWines(db: Db, tastingId: string): Promise<Wine[]> {
   return db.select().from(wines).where(eq(wines.tastingId, tastingId)).orderBy(asc(wines.position))
@@ -47,7 +54,7 @@ async function lockTasting(tx: Db, tastingId: string): Promise<TastingStatus | n
   return row?.status ?? null
 }
 
-export async function addWine(db: Db, tastingId: string, input: WineInput): Promise<Wine> {
+export async function addWine(db: Db, tastingId: string, input: WineFields): Promise<Wine> {
   return db.transaction(async (tx) => {
     await lockTasting(tx, tastingId)
     const [{ last }] = await tx
@@ -62,7 +69,7 @@ export async function addWine(db: Db, tastingId: string, input: WineInput): Prom
   })
 }
 
-export async function updateWine(db: Db, tastingId: string, wineId: string, input: WineInput): Promise<void> {
+export async function updateWine(db: Db, tastingId: string, wineId: string, input: WineFields): Promise<void> {
   await db
     .update(wines)
     .set(input)

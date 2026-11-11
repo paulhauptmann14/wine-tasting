@@ -61,6 +61,7 @@ const optionalChoice = <const T extends readonly [string, ...string[]]>(keys: T,
 
 export const wineSchema = z.object({
   name: z.string().trim().min(1, 'Bitte gib einen Namen ein.').max(80, 'Maximal 80 Zeichen.'),
+  winery: optionalText(80),
   vintage: z
     .string()
     .trim()
@@ -75,7 +76,11 @@ export const wineSchema = z.object({
     ),
   grapeVariety: optionalText(60),
   sweetness: optionalChoice(SWEETNESS_KEYS, 'Bitte wähle eine Geschmacksrichtung aus der Liste.'),
-  wineType: optionalChoice(WINE_TYPE_KEYS, 'Bitte wähle eine Weinart aus der Liste.'),
+  // Required for new input only: the column stays nullable, wines from before this rule have no type
+  wineType: z
+    .string()
+    .min(1, 'Bitte wähle die Weinart.')
+    .pipe(z.enum(WINE_TYPE_KEYS, { error: 'Bitte wähle eine Weinart aus der Liste.' })),
 })
 export type WineInput = z.output<typeof wineSchema>
 

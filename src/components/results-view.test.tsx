@@ -14,6 +14,7 @@ const wine = (position: number, score: number | null, rank: number | null): Wine
   ratingCount: score === null ? 0 : 2,
   criterionAverages: { c1: score },
   wineType: null,
+  winery: null,
   vintage: null,
   grapeVariety: null,
   sweetness: null,

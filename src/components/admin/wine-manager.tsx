@@ -13,6 +13,7 @@ import { RowActions } from '@/components/admin/row-actions'
 import { FieldError } from '@/components/field-error'
 import { GlassRing } from '@/components/glass-ring'
 import { InfoPopover } from '@/components/info-popover'
+import { RequiredLegend, RequiredMark } from '@/components/required-mark'
 import { marginNote, textLink, textLinkFocus } from '@/components/styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,6 +44,7 @@ function ChoiceField<K extends string>({
   labels,
   defaultValue,
   errors,
+  required,
 }: {
   id: string
   name: string
@@ -51,18 +53,24 @@ function ChoiceField<K extends string>({
   labels: Record<K, string>
   defaultValue: string
   errors?: string[]
+  required?: boolean
 }) {
   return (
     <div>
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id}>
+        {label}
+        {required && <RequiredMark />}
+      </Label>
       <select
         id={id}
         name={name}
         defaultValue={defaultValue}
+        required={required}
+        aria-required={required ? 'true' : undefined}
         aria-invalid={!!errors}
         className="mt-2 h-12 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm dark:bg-input/30"
       >
-        <option value="">keine Angabe</option>
+        <option value="">{required ? 'Bitte wählen' : 'keine Angabe'}</option>
         {keys.map((key) => (
           <option key={key} value={key}>
             {labels[key]}
@@ -96,13 +104,19 @@ function WineForm({
 
   return (
     <form action={formAction} noValidate className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
+      <RequiredLegend className="text-sm text-muted-foreground sm:col-span-2" />
       <div className="sm:col-span-2">
-        <Label htmlFor={`${id}-name`}>Name</Label>
+        <Label htmlFor={`${id}-name`}>
+          Name
+          <RequiredMark />
+        </Label>
         <Input
           id={`${id}-name`}
           name="name"
           defaultValue={values?.name ?? initial?.name}
           maxLength={80}
+          required
+          aria-required="true"
           aria-invalid={!!errors.name}
           className="mt-2 h-12"
         />
@@ -116,7 +130,20 @@ function WineForm({
         labels={WINE_TYPE_LABELS}
         defaultValue={values?.wineType ?? initial?.wineType ?? ''}
         errors={errors.wineType}
+        required
       />
+      <div>
+        <Label htmlFor={`${id}-winery`}>Weingut</Label>
+        <Input
+          id={`${id}-winery`}
+          name="winery"
+          defaultValue={values?.winery ?? initial?.winery ?? ''}
+          maxLength={80}
+          aria-invalid={!!errors.winery}
+          className="mt-2 h-12"
+        />
+        <FieldError errors={errors.winery} />
+      </div>
       <div>
         <Label htmlFor={`${id}-vintage`}>Jahrgang</Label>
         <Input

@@ -16,7 +16,7 @@ beforeEach(async () => {
 async function setup(opts: { blindTasting?: boolean } = {}) {
   const t = await seedTasting(db, { preset: 'simple', status: 'active', ...opts })
   const [gesamt] = await listCriteria(db, t.id)
-  const wine = await addWine(db, t.id, wineInput('Riesling', { vintage: 2022 }))
+  const wine = await addWine(db, t.id, wineInput('Riesling', { winery: 'Dr. Loosen', vintage: 2022 }))
   const { participant } = await joinTasting(db, t.id, 'Anna')
   return { t, gesamt, wine, participant }
 }
@@ -28,7 +28,7 @@ describe('loadResultsInput', () => {
     await saveRating(db, { participantId: participant.id, wineId: wine.id, values: { [gesamt.id]: 5 }, notes: null })
     await saveRating(db, { participantId: ben.id, wineId: wine.id, values: { [gesamt.id]: 4 }, notes: null })
     const data = await loadResultsInput(db, t.id)
-    expect(data.wines).toMatchObject([{ id: wine.id, name: 'Riesling', position: 1, vintage: 2022 }])
+    expect(data.wines).toMatchObject([{ id: wine.id, name: 'Riesling', winery: 'Dr. Loosen', position: 1, vintage: 2022 }])
     expect(data.criteria).toEqual([{ id: gesamt.id, name: 'Gesamt', position: 1, weight: 1 }])
     expect(data.ratings).toEqual(
       expect.arrayContaining([
@@ -56,8 +56,8 @@ describe('loadResults', () => {
   it('withholds blind names from guests until the end, never from the host', async () => {
     const { t, gesamt, wine, participant } = await setup({ blindTasting: true })
     await saveRating(db, { participantId: participant.id, wineId: wine.id, values: { [gesamt.id]: 4 }, notes: null })
-    expect((await loadResults(db, t, false)).wines[0]).toMatchObject({ score: 4, rank: 1, name: null, vintage: null })
-    expect((await loadResults(db, t, true)).wines[0]).toMatchObject({ name: 'Riesling', vintage: 2022 })
+    expect((await loadResults(db, t, false)).wines[0]).toMatchObject({ score: 4, rank: 1, name: null, winery: null, vintage: null })
+    expect((await loadResults(db, t, true)).wines[0]).toMatchObject({ name: 'Riesling', winery: 'Dr. Loosen', vintage: 2022 })
     const finished = await forceStatus(db, t.id, 'finished')
     expect((await loadResults(db, finished, false)).wines[0]).toMatchObject({ name: 'Riesling' })
   })
@@ -93,5 +93,20 @@ describe('listWineNotes', () => {
     await saveRating(db, { participantId: participant.id, wineId: wine.id, values: { [gesamt.id]: 4 }, notes: 'fremd' })
 
     expect(await listWineNotes(db, t.id)).toEqual({})
+  })
+})
+
+describe('loadResults winery', () => {
+  it('stays out of the data a guest receives until a blind tasting is finished', async () => {
+    const { t, gesamt, wine, participant } = await setup({ blindTasting: true })
+    await saveRating(db, { participantId: participant.id, wineId: wine.id, values: { [gesamt.id]: 4 }, notes: null })
+    expect(JSON.stringify(await loadResults(db, t, false))).not.toMatch(/Loosen|Riesling/)
+    const finished = await forceStatus(db, t.id, 'finished')
+    expect((await loadResults(db, finished, false)).wines[0]).toMatchObject({ winery: 'Dr. Loosen' })
+  })
+
+  it('is shown right away in an open tasting', async () => {
+    const { t } = await setup({ blindTasting: false })
+    expect((await loadResults(db, t, false)).wines[0]).toMatchObject({ winery: 'Dr. Loosen' })
   })
 })

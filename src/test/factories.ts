@@ -3,7 +3,7 @@ import type { Db } from '@/db/types'
 import { tastings } from '@/db/schema'
 import type { PresetKey } from '@/lib/tasting/presets'
 import type { TastingStatus } from '@/lib/tasting/rules'
-import type { WineInput } from '@/lib/validation'
+import type { WineFields } from '@/server/wines'
 import { createTasting, type Tasting } from '@/server/tastings'
 
 export async function seedTasting(
@@ -26,9 +26,10 @@ export async function forceStatus(db: Db, tastingId: string, status: TastingStat
   return updated
 }
 
-/** A wine with only a name – the details stay empty unless given. */
-export const wineInput = (name: string, overrides: Partial<WineInput> = {}): WineInput => ({
+/** A wine with only a name – the details stay empty unless given (wines from before the required type have none). */
+export const wineInput = (name: string, overrides: Partial<WineFields> = {}): WineFields => ({
   name,
+  winery: null,
   vintage: null,
   grapeVariety: null,
   sweetness: null,

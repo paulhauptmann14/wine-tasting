@@ -37,6 +37,17 @@ it('numbers wines automatically', async () => {
   expect(await getWineByPosition(db, t.id, 4)).toBeNull()
 })
 
+it('stores the winery on add and update, and keeps wines without a wine type working', async () => {
+  const t = await seedTasting(db)
+  const a = await addWine(db, t.id, wineInput('A', { winery: 'Dr. Loosen', wineType: 'white' }))
+  expect(await getWineByPosition(db, t.id, 1)).toMatchObject({ winery: 'Dr. Loosen', wineType: 'white' })
+  await updateWine(db, t.id, a.id, wineInput('A', { winery: null, wineType: 'white' }))
+  expect(await getWineById(db, t.id, a.id)).toMatchObject({ winery: null })
+  // Older wines have no type; the column stays nullable
+  await addWine(db, t.id, wineInput('Old'))
+  expect(await getWineByPosition(db, t.id, 2)).toMatchObject({ winery: null, wineType: null })
+})
+
 it('closes gaps after deleting', async () => {
   const t = await seedTasting(db)
   await addWine(db, t.id, wineInput('A'))

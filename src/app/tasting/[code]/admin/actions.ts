@@ -78,6 +78,7 @@ export async function setStatusAction(code: string, _prev: ActionState, fd: Form
 
 const wineRaw = (fd: FormData) => ({
   name: formValue(fd, 'name'),
+  winery: formValue(fd, 'winery'),
   vintage: formValue(fd, 'vintage'),
   grapeVariety: formValue(fd, 'grapeVariety'),
   sweetness: formValue(fd, 'sweetness'),

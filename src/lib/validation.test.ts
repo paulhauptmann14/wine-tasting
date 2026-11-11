@@ -45,24 +45,39 @@ describe('adminLoginSchema', () => {
 })
 
 describe('wineSchema', () => {
+  const base = { name: 'Riesling', winery: '', vintage: '', grapeVariety: '', sweetness: '', wineType: 'white' }
+  const error = (raw: Record<string, string>, field: string) => {
+    const result = wineSchema.safeParse(raw)
+    return result.success ? undefined : result.error.issues.find((i) => i.path[0] === field)?.message
+  }
+
   it('maps empty optional fields to null', () => {
-    expect(wineSchema.parse({ name: 'Riesling', vintage: '', grapeVariety: ' ', sweetness: '', wineType: '' })).toEqual({
-      name: 'Riesling', vintage: null, grapeVariety: null, sweetness: null, wineType: null,
+    expect(wineSchema.parse({ ...base, grapeVariety: ' ', winery: '  ' })).toEqual({
+      name: 'Riesling', winery: null, vintage: null, grapeVariety: null, sweetness: null, wineType: 'white',
     })
   })
+  it('requires a name', () => {
+    expect(error({ ...base, name: '  ' }, 'name')).toBe('Bitte gib einen Namen ein.')
+  })
+  it('requires the wine type', () => {
+    expect(error({ ...base, wineType: '' }, 'wineType')).toBe('Bitte wähle die Weinart.')
+    expect(error({ ...base, wineType: 'blau' }, 'wineType')).toBe('Bitte wähle eine Weinart aus der Liste.')
+    expect(wineSchema.parse({ ...base, wineType: 'rose' }).wineType).toBe('rose')
+  })
+  it('trims the optional winery, maps empty to null and caps it at 80 characters', () => {
+    expect(wineSchema.parse({ ...base, winery: '  Dr. Loosen ' }).winery).toBe('Dr. Loosen')
+    expect(wineSchema.parse({ ...base, winery: '' }).winery).toBeNull()
+    expect(wineSchema.safeParse({ ...base, winery: 'x'.repeat(80) }).success).toBe(true)
+    expect(error({ ...base, winery: 'x'.repeat(81) }, 'winery')).toBe('Maximal 80 Zeichen.')
+  })
   it('parses vintage and validates its range', () => {
-    expect(wineSchema.parse({ name: 'R', vintage: '2022', grapeVariety: 'Riesling', sweetness: '', wineType: '' }).vintage).toBe(2022)
-    expect(wineSchema.safeParse({ name: 'R', vintage: '1800', grapeVariety: '', sweetness: '', wineType: '' }).success).toBe(false)
-    expect(wineSchema.safeParse({ name: 'R', vintage: 'abc', grapeVariety: '', sweetness: '', wineType: '' }).success).toBe(false)
+    expect(wineSchema.parse({ ...base, vintage: '2022' }).vintage).toBe(2022)
+    expect(wineSchema.safeParse({ ...base, vintage: '1800' }).success).toBe(false)
+    expect(wineSchema.safeParse({ ...base, vintage: 'abc' }).success).toBe(false)
   })
   it('accepts only the four sweetness levels', () => {
-    expect(wineSchema.parse({ name: 'R', vintage: '', grapeVariety: '', sweetness: 'off_dry', wineType: '' }).sweetness).toBe('off_dry')
-    expect(wineSchema.safeParse({ name: 'R', vintage: '', grapeVariety: '', sweetness: 'sauer', wineType: '' }).success).toBe(false)
-  })
-
-  it('accepts only the listed wine types', () => {
-    expect(wineSchema.parse({ name: 'R', vintage: '', grapeVariety: '', sweetness: '', wineType: 'rose' }).wineType).toBe('rose')
-    expect(wineSchema.safeParse({ name: 'R', vintage: '', grapeVariety: '', sweetness: '', wineType: 'blau' }).success).toBe(false)
+    expect(wineSchema.parse({ ...base, sweetness: 'off_dry' }).sweetness).toBe('off_dry')
+    expect(wineSchema.safeParse({ ...base, sweetness: 'sauer' }).success).toBe(false)
   })
 })
 

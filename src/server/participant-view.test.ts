@@ -29,8 +29,25 @@ it('hides names in active blind tastings and reports per-wine state', async () =
 
 it('shows names in open tastings', async () => {
   const t = await seedTasting(db, { status: 'active', blindTasting: false })
-  await addWine(db, t.id, { name: 'Riesling', vintage: 2022, grapeVariety: 'Riesling', sweetness: null, wineType: null })
+  await addWine(db, t.id, wineInput('Riesling', { winery: 'Dr. Loosen', vintage: 2022, grapeVariety: 'Riesling' }))
   const { participant } = await joinTasting(db, t.id, 'Anna')
   const [item] = await getWineListItems(db, t, participant.id)
-  expect(item).toMatchObject({ title: 'Riesling', subtitle: '2022 · Riesling' })
+  expect(item).toMatchObject({ title: 'Riesling', subtitle: 'Dr. Loosen · 2022 · Riesling' })
+})
+
+it('never exposes the winery of a blind, unfinished tasting to guests', async () => {
+  for (const status of ['setup', 'active'] as const) {
+    const t = await seedTasting(db, { status, blindTasting: true })
+    await addWine(db, t.id, wineInput('Riesling', { winery: 'Geheimes Weingut', wineType: 'white', vintage: 2022 }))
+    const { participant } = await joinTasting(db, t.id, 'Anna')
+    const items = await getWineListItems(db, t, participant.id)
+    expect(JSON.stringify(items)).not.toMatch(/Geheimes|Riesling/)
+  }
+})
+
+it('shows the winery to guests once a blind tasting is finished', async () => {
+  const t = await seedTasting(db, { status: 'finished', blindTasting: true })
+  await addWine(db, t.id, wineInput('Riesling', { winery: 'Geheimes Weingut' }))
+  const { participant } = await joinTasting(db, t.id, 'Anna')
+  expect((await getWineListItems(db, t, participant.id))[0]).toMatchObject({ title: 'Riesling', subtitle: 'Geheimes Weingut' })
 })

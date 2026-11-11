@@ -43,6 +43,13 @@
       "when": 1794400707669,
       "tag": "0005_drop_unused_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794410120623,
+      "tag": "0006_wine_winery",
+      "breakpoints": true
     }
   ]
 }
