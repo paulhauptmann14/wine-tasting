@@ -1,9 +1,10 @@
-import { and, eq, isNull, lte, or, sql } from 'drizzle-orm'
+import { and, eq, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/types'
-import { ratingCriteria, tastings, wines } from '@/db/schema'
+import { ratingCriteria, sessions, tastings, wines } from '@/db/schema'
 import { generateCode, normalizeCode } from '@/lib/tasting/code'
 import { PRESETS, type PresetKey } from '@/lib/tasting/presets'
 import { hashPin, verifyPin } from '@/lib/auth/pin'
+import { RETENTION_DAYS, isExpired } from '@/lib/tasting/retention'
 import { canTransition, type TastingStatus } from '@/lib/tasting/rules'
 
 export type Tasting = typeof tastings.$inferSelect
@@ -17,6 +18,7 @@ export async function createTasting(
   input: { name: string; blindTasting: boolean; preset: PresetKey; pin: string },
 ): Promise<Tasting> {
   const adminPinHash = await hashPin(input.pin)
+  await purgeExpired(db)
   return db.transaction(async (tx) => {
     for (let attempt = 0; attempt < CODE_ATTEMPTS; attempt++) {
       const [tasting] = await tx
@@ -49,7 +51,23 @@ export async function getTastingByCode(db: Db, code: string): Promise<Tasting | 
   const normalized = normalizeCode(code)
   if (!normalized) return null
   const [tasting] = await db.select().from(tastings).where(eq(tastings.code, normalized))
-  return tasting ?? null
+  if (!tasting) return null
+  // Past the retention period it's gone – even if no cleanup has run yet
+  if (isExpired(tasting.createdAt)) {
+    await db.delete(tastings).where(eq(tastings.id, tasting.id))
+    return null
+  }
+  return tasting
+}
+
+/**
+ * Deletes tastings past the retention period (wines, guests, sessions, ratings follow via cascade)
+ * and expired guest sessions. Runs when a tasting is created – no scheduler needed on Vercel or Docker.
+ */
+export async function purgeExpired(db: Db, now: Date = new Date()): Promise<void> {
+  const cutoff = new Date(now.getTime() - RETENTION_DAYS * 86_400_000)
+  await db.delete(tastings).where(lte(tastings.createdAt, cutoff))
+  await db.delete(sessions).where(lt(sessions.expiresAt, now))
 }
 
 export type AdminLoginResult =

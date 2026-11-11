@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { asc, eq } from 'drizzle-orm'
 import { createTestDb } from '@/test/db'
 import type { Db } from '@/db/types'
-import { participants, ratingCriteria, tastings, wines } from '@/db/schema'
+import { participants, ratingCriteria, sessions, tastings, wines } from '@/db/schema'
+import { joinTasting } from './participants'
 import {
   MAX_PIN_ATTEMPTS,
   createTasting,
   deleteTasting,
   getTastingByCode,
+  purgeExpired,
   setTastingStatus,
   updateTastingSettings,
   verifyAdminPin,
@@ -129,5 +131,41 @@ describe('deleteTasting', () => {
     expect(await db.select().from(participants)).toEqual([])
     expect(await db.select().from(ratingCriteria).where(eq(ratingCriteria.tastingId, t.id))).toEqual([])
     expect(await getTastingByCode(db, other.code)).not.toBeNull()
+  })
+})
+
+describe('retention', () => {
+  const DAY = 86_400_000
+  const backdate = (id: string, days: number) =>
+    db.update(tastings).set({ createdAt: new Date(Date.now() - days * DAY) }).where(eq(tastings.id, id))
+
+  it('deletes tastings older than 90 days with everything in them', async () => {
+    const old = await createTasting(db, input)
+    const fresh = await createTasting(db, input)
+    await db.insert(wines).values({ tastingId: old.id, position: 1, name: 'Alt' })
+    await joinTasting(db, old.id, 'Anna')
+    await backdate(old.id, 91)
+    await backdate(fresh.id, 89)
+
+    await purgeExpired(db)
+
+    expect((await db.select().from(tastings)).map((t) => t.id)).toEqual([fresh.id])
+    expect(await db.select().from(wines)).toEqual([])
+    expect(await db.select().from(participants)).toEqual([])
+  })
+
+  it('removes expired guest sessions', async () => {
+    const t = await createTasting(db, input)
+    await joinTasting(db, t.id, 'Anna', new Date(Date.now() - 31 * DAY))
+    await joinTasting(db, t.id, 'Ben')
+    await purgeExpired(db)
+    expect(await db.select().from(sessions)).toHaveLength(1)
+  })
+
+  it('treats an expired tasting as gone when looked up by code', async () => {
+    const t = await createTasting(db, input)
+    await backdate(t.id, 91)
+    expect(await getTastingByCode(db, t.code)).toBeNull()
+    expect(await db.select().from(tastings)).toEqual([])
   })
 })

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ScoringExplainer } from '@/components/scoring-explainer'
+import { RETENTION_DAYS } from '@/lib/tasting/retention'
 import { PRESET_KEYS, PRESETS, type PresetKey } from '@/lib/tasting/presets'
 
 export function CreateTastingForm() {
@@ -92,6 +93,9 @@ export function CreateTastingForm() {
           className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.4em]"
         />
         <p className="mt-1.5 text-sm text-muted-foreground">4–12 Ziffern. Damit verwaltest du das Tasting später.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Nach {RETENTION_DAYS} Tagen wird das Tasting mit allen Bewertungen automatisch gelöscht.
+        </p>
         <FieldError errors={errors.pin} />
       </div>
 

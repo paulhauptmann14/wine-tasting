@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
 import { Newsreader } from 'next/font/google'
+import { SiteFooter } from '@/components/site-footer'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { VercelAnalytics } from '@/components/vercel-analytics'
 import { THEME_COLORS, THEME_COOKIE, parseTheme } from '@/lib/theme'
@@ -40,6 +41,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         </div>
         {/* Own wrapper instead of overflow on body: that would propagate to the viewport */}
         <div className="overflow-x-clip">{children}</div>
+        <SiteFooter />
         {/* Vercel only – the analytics endpoint doesn't exist when running in Docker */}
         {process.env.VERCEL === '1' && <VercelAnalytics />}
       </body>
