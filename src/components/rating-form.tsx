@@ -3,10 +3,12 @@
 import { useActionState, useState } from 'react'
 import { BottomBar } from '@/components/bottom-bar'
 import { StarRating } from '@/components/star-rating'
+import { textLink, textLinkFocus } from '@/components/styles'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { FormAction } from '@/lib/action-state'
+import { cn } from '@/lib/utils'
 
 type Criterion = { id: string; name: string; scaleMin: number; scaleMax: number }
 
@@ -59,6 +61,12 @@ export function RatingForm({ action, criteria, initialValues, initialNotes, isLa
       {state?.message && (
         <p role="alert" className="text-sm text-destructive">
           {state.message}
+          {/* Full reload: the wine at this number has changed, the form must start over */}
+          {state.reload && (
+            <a href="" className={cn(textLink, textLinkFocus, 'flex w-fit text-foreground')}>
+              Seite neu laden
+            </a>
+          )}
         </p>
       )}
 

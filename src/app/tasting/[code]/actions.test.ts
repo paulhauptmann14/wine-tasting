@@ -29,7 +29,9 @@ const form = () => {
   fd.set('c_c1', '4')
   return fd
 }
-const save = (wineId = WINE_ID) => saveRatingAction('8GXBW5', wineId, undefined, form())
+// shownPosition = the number the guest saw when the page was rendered
+const save = (wineId = WINE_ID, shownPosition: unknown = 1) =>
+  saveRatingAction('8GXBW5', wineId, shownPosition, undefined, form())
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -54,6 +56,22 @@ it('refuses ratings before the start and after the end', async () => {
   expect(await save()).toEqual({ message: 'Das Tasting hat noch nicht begonnen.' })
   vi.mocked(requireTasting).mockResolvedValue(tasting('finished') as never)
   await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5/results')
+  expect(saveRating).not.toHaveBeenCalled()
+})
+
+it('refuses when the wine got another number since the page was opened (shuffled or moved)', async () => {
+  // The guest looks at "Wein #2" – meanwhile that wine moved to #4, so the glass in front of them is another wine
+  vi.mocked(getWineById).mockResolvedValue({ id: WINE_ID, position: 4 } as never)
+  const result = await save(WINE_ID, 2)
+  expect(result).toMatchObject({ reload: true })
+  expect(result?.message).toMatch(/Reihenfolge.*geändert.*Wein #2/)
+  expect(saveRating).not.toHaveBeenCalled()
+})
+
+it('treats a tampered position like a changed order', async () => {
+  for (const bad of ['2', 0, 1.5, null]) {
+    expect(await save(WINE_ID, bad)).toMatchObject({ reload: true })
+  }
   expect(saveRating).not.toHaveBeenCalled()
 })
 

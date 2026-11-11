@@ -85,7 +85,7 @@ export default async function WinePage({ params, searchParams }: Props) {
 
         <RatingForm
           key={wine.id}
-          action={saveRatingAction.bind(null, tasting.code, wine.id)}
+          action={saveRatingAction.bind(null, tasting.code, wine.id, wine.position)}
           criteria={criteria.map(({ id, name, scaleMin, scaleMax }) => ({ id, name, scaleMin, scaleMax }))}
           initialValues={existing?.values ?? {}}
           initialNotes={existing?.notes ?? ''}

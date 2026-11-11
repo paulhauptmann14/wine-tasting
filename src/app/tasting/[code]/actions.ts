@@ -7,7 +7,7 @@ import { getCurrentParticipant, setParticipantCookie } from '@/lib/auth/particip
 import type { ActionState } from '@/lib/action-state'
 import { requireTasting } from '@/lib/data'
 import { canJoin, canRate } from '@/lib/tasting/rules'
-import { formValue, idSchema, invalid, joinSchema, parseRatingForm } from '@/lib/validation'
+import { formValue, idSchema, invalid, joinSchema, parseRatingForm, positionSchema } from '@/lib/validation'
 import { listCriteria } from '@/server/criteria'
 import { joinTasting } from '@/server/participants'
 import { saveRating } from '@/server/ratings'
@@ -34,6 +34,7 @@ export async function joinAction(code: string, _prev: ActionState, formData: For
 export async function saveRatingAction(
   code: string,
   wineId: string,
+  shownPosition: unknown,
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
@@ -45,6 +46,16 @@ export async function saveRatingAction(
 
   const wine = idSchema.safeParse(wineId).success ? await getWineById(db, tasting.id, wineId) : null
   if (!wine) return { message: 'Diesen Wein gibt es nicht mehr.' }
+  // The host reordered or shuffled while this page was open: the glass in front of the guest is now
+  // another wine. Don't guess where the stars belong – ask for a reload instead.
+  const shown = positionSchema.safeParse(shownPosition)
+  if (!shown.success || shown.data !== wine.position) {
+    const label = shown.success ? `Wein #${shown.data}` : 'Dieser Wein'
+    return {
+      reload: true,
+      message: `Der Gastgeber hat die Reihenfolge gerade geändert – ${label} ist jetzt ein anderer. Lade die Seite neu und bewerte noch einmal.`,
+    }
+  }
   const parsed = parseRatingForm(formData, await listCriteria(db, tasting.id))
   if (!parsed.ok) return { fieldErrors: parsed.fieldErrors, message: 'Bitte vergib für jedes Kriterium Sterne.' }
 

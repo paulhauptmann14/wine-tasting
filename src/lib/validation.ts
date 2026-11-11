@@ -86,6 +86,8 @@ export const criterionNameSchema = z.object({
 /** Bound arguments of server actions come from the client – always validate. */
 export const idSchema = z.uuid()
 export const directionSchema = z.enum(['up', 'down'])
+/** A wine number as shown to the guest ("Wein #n") */
+export const positionSchema = z.number().int().min(1)
 export type Direction = z.infer<typeof directionSchema>
 export const statusSchema = z.enum(STATUS_KEYS)
 

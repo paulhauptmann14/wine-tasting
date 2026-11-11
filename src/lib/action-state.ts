@@ -5,6 +5,8 @@ export type ActionState =
       message?: string
       fieldErrors?: Record<string, string[] | undefined>
       values?: Record<string, string>
+      /** The page is stale (e.g. wines were reordered) – offer a reload instead of retrying */
+      reload?: boolean
     }
   | undefined
 
