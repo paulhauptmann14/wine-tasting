@@ -4,7 +4,7 @@ import { ringPath } from './ring-path'
 export const APP_ICON_COLORS = {
   wine: '#8e1538',
   wineDark: '#ff4f7b',
-  background: '#f4f4f6',
+  background: '#f2f2f7',
 } as const
 
 const SEED = 5

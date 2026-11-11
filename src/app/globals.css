@@ -41,10 +41,12 @@
   --color-star: var(--star);
   --color-star-edge: var(--star-edge);
 
-  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-plex-serif), ui-serif, Georgia, serif;
-  --font-display: var(--font-plex-serif), ui-serif, Georgia, serif;
-  --font-mono: var(--font-plex), ui-monospace, monospace;
+  /* System font for everything you operate (SF Pro, Roboto, Segoe) – optical sizes and Dynamic Type for free */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  /* Serif for titles, wine names and scores: New York on Apple devices, Newsreader elsewhere */
+  --font-heading: ui-serif, var(--font-newsreader), Georgia, serif;
+  --font-display: ui-serif, var(--font-newsreader), Georgia, serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace;
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -56,8 +58,8 @@
 }
 
 /*
- * light-dark(light, dark):
- * Light "daylight & bordeaux", dark "graphite & rosé".
+ * light-dark(light, dark), modelled on Apple's system colors:
+ * neutral grouped grays, true black in dark mode, wine as the only accent.
  * color-scheme decides which value applies – system or toggle.
  */
 :root {
@@ -68,24 +70,27 @@
   --star-edge: light-dark(#c27800, #ffc857);
 
   --radius: 0.625rem;
-  --background: light-dark(#f4f4f6, #121214);
-  --foreground: light-dark(#17141b, #f4f4f6);
-  --card: light-dark(#ffffff, #1c1c21);
+  --background: light-dark(#f2f2f7, #000000);
+  --foreground: light-dark(#000000, #ffffff);
+  --card: light-dark(#ffffff, #1c1c1e);
   --card-foreground: var(--foreground);
   --popover: var(--card);
   --popover-foreground: var(--foreground);
   --primary: var(--wine);
-  --primary-foreground: light-dark(#ffffff, #121214);
-  --secondary: light-dark(#e8e7ed, #26262c);
+  --primary-foreground: light-dark(#ffffff, #000000);
+  --secondary: light-dark(#e5e5ea, #2c2c2e);
   --secondary-foreground: var(--foreground);
-  --muted: light-dark(#ecebf0, #1c1c21);
-  --muted-foreground: light-dark(#6f6a78, #8b8b96);
+  --muted: light-dark(#e5e5ea, #1c1c1e);
+  /* Apple's secondary label, slightly darker in light mode to keep 4.5:1 on the gray background */
+  --muted-foreground: light-dark(#6c6c70, #8e8e93);
   --accent: var(--secondary);
   --accent-foreground: var(--foreground);
-  --destructive: light-dark(#c0262d, #ff6b6b);
-  --border: light-dark(rgb(23 20 27 / 0.1), rgb(244 244 246 / 0.1));
-  --input: light-dark(rgb(23 20 27 / 0.16), rgb(244 244 246 / 0.16));
-  --ring: light-dark(#8e1538, #ffc857);
+  /* Apple's increased-contrast reds – the default systemRed is too light for text */
+  --destructive: light-dark(#d70015, #ff6961);
+  /* Apple separators */
+  --border: light-dark(rgb(60 60 67 / 0.22), rgb(84 84 88 / 0.6));
+  --input: light-dark(rgb(60 60 67 / 0.3), rgb(235 235 245 / 0.2));
+  --ring: var(--wine);
 }
 
 :root[data-theme="light"] {
