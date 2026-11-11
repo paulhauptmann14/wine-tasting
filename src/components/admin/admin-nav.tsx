@@ -27,7 +27,7 @@ export function AdminNav({ code }: { code: string }) {
             key={tab.label}
             href={href}
             aria-current={pathname === href ? 'page' : undefined}
-            className="-mb-px flex h-12 shrink-0 items-center border-b-2 border-transparent text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:underline aria-[current=page]:border-wine aria-[current=page]:font-medium aria-[current=page]:text-foreground lg:mb-0 lg:border-b-0 lg:border-l-2 lg:pl-4"
+            className="-mb-px flex h-12 shrink-0 items-center border-b-2 border-transparent text-sm text-muted-foreground outline-none transition-opacity duration-100 hover:text-foreground active:opacity-50 focus-visible:text-foreground focus-visible:underline aria-[current=page]:border-wine aria-[current=page]:font-medium aria-[current=page]:text-foreground lg:mb-0 lg:border-b-0 lg:border-l-2 lg:pl-4"
           >
             {tab.label}
           </Link>

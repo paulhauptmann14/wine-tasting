@@ -5,7 +5,7 @@ import { JoinByCodeForm } from '@/components/join-by-code-form'
 import { cn } from '@/lib/utils'
 
 const textLink =
-  'inline-flex h-12 items-center font-medium underline decoration-border decoration-2 underline-offset-[6px] outline-none hover:decoration-wine focus-visible:decoration-wine'
+  'inline-flex h-12 items-center font-medium underline decoration-border decoration-2 underline-offset-[6px] outline-none transition-opacity duration-100 hover:decoration-wine active:opacity-50 focus-visible:decoration-wine'
 /** Laptop: host actions as large rows instead of small text links */
 const hostLink = cn(
   textLink,

@@ -139,7 +139,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
             href={`/tasting/${tasting.code}/results`}
             className={cn(
               next
-                ? 'inline-flex h-12 items-center justify-center font-medium underline decoration-border decoration-2 underline-offset-[6px] hover:decoration-wine lg:justify-start lg:px-4'
+                ? 'inline-flex h-12 items-center justify-center font-medium underline decoration-border decoration-2 underline-offset-[6px] transition-opacity duration-100 hover:decoration-wine active:opacity-50 lg:justify-start lg:px-4'
                 : buttonVariants({ size: 'lg' }),
               !next && 'h-14 text-base lg:px-8',
             )}

@@ -47,7 +47,7 @@ export default async function WinePage({ params, searchParams }: Props) {
   return (
     <TastingSplit aside={<WineList items={items} currentPosition={position} savedPosition={savedPosition} />}>
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <Link href={`/tasting/${tasting.code}`} className="inline-flex h-12 items-center hover:text-foreground lg:hidden">
+        <Link href={`/tasting/${tasting.code}`} className="inline-flex h-12 items-center hover:text-foreground transition-opacity duration-100 active:opacity-50 lg:hidden">
           ‹ Alle Weine
         </Link>
         <div className="ml-auto flex items-center gap-4">

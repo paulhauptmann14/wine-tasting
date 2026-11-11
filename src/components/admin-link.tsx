@@ -11,7 +11,7 @@ export function AdminLink({ code, className }: { code: string; className?: strin
     <Link
       href={`/tasting/${code}/admin`}
       className={cn(
-        'inline-flex h-12 items-center gap-1.5 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:underline',
+        'inline-flex h-12 items-center gap-1.5 text-sm text-muted-foreground outline-none transition-opacity duration-100 hover:text-foreground active:opacity-50 focus-visible:text-foreground focus-visible:underline',
         className,
       )}
     >

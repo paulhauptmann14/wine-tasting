@@ -34,3 +34,11 @@ it('supports arrow keys', async () => {
   await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}')
   expect(formValue()).toBe('5')
 })
+
+it('names the chosen step below the criterion', async () => {
+  render(<Harness />)
+  await userEvent.click(screen.getByRole('radio', { name: '4 von 5 Sternen' }))
+  expect(screen.getByRole('radiogroup', { name: 'Aroma' })).toHaveAccessibleDescription('sehr gut')
+  await userEvent.click(screen.getByRole('radio', { name: '1 von 5 Sternen' }))
+  expect(screen.getByText('schwach')).toBeVisible()
+})

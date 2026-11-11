@@ -26,7 +26,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ code: 
         {participant && tasting.status === 'active' ? (
           <Link
             href={`/tasting/${tasting.code}`}
-            className="inline-flex h-12 items-center text-sm whitespace-nowrap text-muted-foreground hover:text-foreground"
+            className="inline-flex h-12 items-center text-sm whitespace-nowrap text-muted-foreground hover:text-foreground transition-opacity duration-100 active:opacity-50"
           >
             ‹ Alle Weine
           </Link>

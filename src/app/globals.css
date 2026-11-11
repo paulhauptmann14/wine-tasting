@@ -111,6 +111,10 @@
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  /* Every control gives its own press feedback, so the gray system tap flash goes */
+  a, button, label, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
   html {
     @apply font-sans;
   }
@@ -143,6 +147,14 @@
 }
 .reveal-up { animation: reveal-up 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+/* Star tapped: a short pop confirms the choice (no long overshoot – a tap carries no momentum) */
+@keyframes star-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+.star-pop { animation: star-pop 260ms cubic-bezier(0.34, 1.4, 0.64, 1); transform-origin: center; }
+
 @keyframes live-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
@@ -150,7 +162,7 @@
 .live-dot { animation: live-pulse 2s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ring-draw, .ring-soak, .ring-soak .ring-fill, .reveal-up, .live-dot {
+  .ring-draw, .ring-soak, .ring-soak .ring-fill, .reveal-up, .live-dot, .star-pop {
     animation: none !important;
   }
 }

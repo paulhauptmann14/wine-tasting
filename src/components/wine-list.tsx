@@ -15,7 +15,7 @@ export function WineList({ items, currentPosition, savedPosition }: ListProps) {
           <Link
             href={item.href}
             aria-current={item.position === currentPosition ? 'page' : undefined}
-            className="group -mx-2 flex min-h-[4.5rem] items-center gap-4 rounded-lg px-2 py-2 outline-none hover:bg-card focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card"
+            className="group -mx-2 flex min-h-[4.5rem] items-center gap-4 rounded-lg px-2 py-2 outline-none transition-colors duration-100 hover:bg-card active:bg-secondary focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card"
           >
             <GlassRing
               seed={item.position}
@@ -54,7 +54,7 @@ export function WineRingStrip({ items, currentPosition, savedPosition }: ListPro
           href={item.href}
           aria-current={item.position === currentPosition ? 'page' : undefined}
           aria-label={`${item.title}, ${STATE_TEXT[item.state]}`}
-          className="grid size-12 shrink-0 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card"
+          className="grid size-12 shrink-0 place-items-center rounded-full outline-none transition-transform duration-100 ease-out active:scale-90 focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card"
         >
           <GlassRing
             seed={item.position}

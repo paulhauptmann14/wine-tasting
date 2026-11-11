@@ -16,7 +16,7 @@ export default function NotFound() {
         </p>
         <JoinByCodeForm className="relative mt-8 lg:max-w-md" layout="row" />
       </div>
-      <Link href="/" className="mt-8 inline-flex h-12 items-center text-sm text-muted-foreground hover:text-foreground">
+      <Link href="/" className="mt-8 inline-flex h-12 items-center text-sm text-muted-foreground hover:text-foreground transition-opacity duration-100 active:opacity-50">
         ‹ Zur Startseite
       </Link>
     </PageShell>

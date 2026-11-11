@@ -18,7 +18,8 @@ async function joinAs(page: Page, code: string, name: string) {
   await page.goto(`/tasting/${code}`)
   await page.getByLabel('Wie heißt du?').fill(name)
   await page.getByRole('button', { name: 'Beitreten' }).click()
-  await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()
+  // The counter exists with and without blind tasting (wine names differ)
+  await expect(page.getByText(/\d+ von \d+ bewertet/)).toBeVisible()
 }
 
 async function rateWines(page: Page, scores: number[], notes: string[] = []) {
@@ -37,10 +38,13 @@ async function rateWines(page: Page, scores: number[], notes: string[] = []) {
 }
 
 test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, testInfo) => {
-  // Host creates the tasting (blind tasting is preselected)
+  // Host creates the tasting and turns blind tasting on (off by default)
   await page.goto('/')
   await page.getByRole('link', { name: 'Tasting erstellen' }).click()
   await page.getByLabel('Name der Verkostung').fill('E2E Weinabend')
+  const createBlind = page.getByRole('switch', { name: 'Blindverkostung' })
+  await expect(createBlind).not.toBeChecked()
+  await createBlind.click()
   await page.getByText('Einfach', { exact: true }).click()
   await page.getByLabel('Admin-PIN').fill('1234')
   await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
@@ -198,11 +202,11 @@ test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, bro
   // Blind tasting saves instantly when toggled – no extra button
   await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
   const blindSwitch = page.getByRole('switch', { name: 'Blindverkostung' })
-  await expect(blindSwitch).toBeChecked()
+  await expect(blindSwitch).not.toBeChecked()
   await blindSwitch.click()
   await expect(page.getByText('Gespeichert.')).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('switch', { name: 'Blindverkostung' })).not.toBeChecked()
+  await expect(page.getByRole('switch', { name: 'Blindverkostung' })).toBeChecked()
 
   // Deleting only after typing the code
   const deleteButton = page.getByRole('button', { name: 'Endgültig löschen' })
