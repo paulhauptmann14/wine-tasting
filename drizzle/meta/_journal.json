@@ -36,6 +36,13 @@
       "when": 1794391393090,
       "tag": "0004_pin_lock_count",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794400707669,
+      "tag": "0005_drop_unused_columns",
+      "breakpoints": true
     }
   ]
 }

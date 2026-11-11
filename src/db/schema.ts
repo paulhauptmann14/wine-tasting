@@ -27,7 +27,6 @@ export const tastings = pgTable('tasting', {
   code: text('code').notNull().unique(),
   name: text('name').notNull(),
   blindTasting: boolean('blind_tasting').notNull().default(false),
-  // guessing_enabled is still in the database until the drop migration (step 2) – unused, default false
   status: tastingStatus('status').notNull().default('setup'),
   scale: ratingScale('scale').notNull().default('five'),
   adminPinHash: text('admin_pin_hash').notNull(),
@@ -80,7 +79,6 @@ export const ratingCriteria = pgTable('rating_criteria', {
     .notNull()
     .references(() => tastings.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  // type is still in the database until the drop migration (step 2) – unused, always 'stars'
   scaleMin: integer('scale_min').notNull().default(1),
   scaleMax: integer('scale_max').notNull().default(5),
   weight: smallint('weight').notNull().default(1),
