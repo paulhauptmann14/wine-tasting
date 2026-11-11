@@ -1,7 +1,7 @@
 /**
  * Width and gutter of the page frame – the single source for the page containers
  * (PageShell, FormPage, TastingSplit, LegalPage, home → page; admin layout → admin; TableView → table)
- * and for the site header and footer, so wordmark, content and footer links share one left edge.
+ * and for the site header and footer, so logo, content and footer links share one left edge.
  */
 export type SiteFrame = 'page' | 'admin' | 'table'
 

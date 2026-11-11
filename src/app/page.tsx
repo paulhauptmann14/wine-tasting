@@ -47,7 +47,7 @@ export default function HomePage() {
           className="pointer-events-none absolute top-0 right-[calc((100%-100vw)/2-120px)] hidden xl:inline-grid"
         />
 
-        {/* The wordmark lives in the site header – same spot on every page */}
+        {/* The logo (glass mark) lives in the site header – same spot on every page */}
         <div className="lg:mt-34 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
           <section aria-labelledby="join-heading" className="relative mt-30 lg:mt-0">
             <p className="text-sm text-muted-foreground">Eingeladen?</p>

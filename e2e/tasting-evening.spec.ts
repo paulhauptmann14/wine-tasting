@@ -217,16 +217,19 @@ test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, bro
   await expect(page.getByRole('heading', { name: 'Tasting nicht gefunden' })).toBeVisible()
 })
 
-test('Der Schriftzug oben führt aus der Verwaltung zurück zur Startseite', async ({ page }) => {
+test('Das Glas oben führt aus der Verwaltung zurück zur Startseite', async ({ page }) => {
   await createTasting(page, 'E2E Kopfzeile')
 
   // One site header, the admin area is the page's main content
   await expect(page.getByRole('banner')).toHaveCount(1)
   await expect(page.getByRole('main')).toHaveCount(1)
 
-  await page.getByRole('banner').getByRole('link', { name: 'Wine Tasting' }).click()
+  // Symbol only – the link is found by its accessible name
+  const homeLink = page.getByRole('banner').getByRole('link', { name: 'Wine Tasting – zur Startseite' })
+  await expect(homeLink).toHaveText('')
+  await homeLink.click()
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(page.getByRole('banner').getByRole('link', { name: 'Wine Tasting' })).toHaveAttribute('aria-current', 'page')
+  await expect(homeLink).toHaveAttribute('aria-current', 'page')
 })
 
 test('unbekannter Code zeigt die Fehlerseite', async ({ page }) => {

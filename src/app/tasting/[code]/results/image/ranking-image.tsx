@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { ImageResponse } from 'next/og'
 import type { CSSProperties } from 'react'
-import { APP_ICON_COLORS } from '@/lib/app-icon'
+import { APP_ICON_COLORS, svgDataUri } from '@/lib/app-icon'
+import { glassMarkSvg } from '@/lib/glass-mark'
 import { ringPath } from '@/lib/ring-path'
 import type { RankingCard, RankingCardLayout, RankingCardWine } from '@/lib/tasting/ranking-card'
 
@@ -40,25 +41,26 @@ const SERIF = 'Newsreader'
 const SANS = 'Inter'
 
 /** The glass ring from <GlassRing> as SVG – absolute dash lengths because resvg ignores pathLength. */
-function ringSvg(seed: number, bold = false): string {
+function ringSvg(seed: number): string {
   const rim = ringPath(seed + 3, 40.5)
   const c = 2 * Math.PI * 40.5
   const dash = (...parts: number[]) => parts.map((p) => (p * c).toFixed(1)).join(' ')
-  const w = bold ? 1.25 : 1
   return [
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">',
     `<g transform="rotate(${(seed * 47) % 360} 50 50)" stroke="${COLORS.wine}" fill="none">`,
     `<path d="${ringPath(seed, 38)}" stroke="none" fill="${COLORS.wine}" fill-opacity="0.07"/>`,
     `<path d="${ringPath(seed + 7, 37)}" stroke-opacity="0.3" stroke-width="1"/>`,
-    `<path d="${rim}" stroke-opacity="0.85" stroke-width="${4.5 * w}" stroke-linecap="round" stroke-dasharray="${dash(0.82, 1)}"/>`,
-    `<path d="${rim}" stroke-opacity="0.6" stroke-width="${7.5 * w}" stroke-linecap="round" stroke-dasharray="${dash(0.2, 1)}" stroke-dashoffset="${dash(-0.45)}"/>`,
+    `<path d="${rim}" stroke-opacity="0.85" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="${dash(0.82, 1)}"/>`,
+    `<path d="${rim}" stroke-opacity="0.6" stroke-width="7.5" stroke-linecap="round" stroke-dasharray="${dash(0.2, 1)}" stroke-dashoffset="${dash(-0.45)}"/>`,
     '</g>',
     '</svg>',
   ].join('')
 }
 
-const ringUri = (seed: number, bold?: boolean) =>
-  `data:image/svg+xml;base64,${Buffer.from(ringSvg(seed, bold)).toString('base64')}`
+const ringUri = (seed: number) => svgDataUri(ringSvg(seed))
+
+// The logo; bold because shared images are mostly seen shrunk to a phone's width
+const MARK_URI = svgDataUri(glassMarkSvg({ color: COLORS.wine, bold: true }))
 
 /** Same size in every ring of an image, from the widest score ("20,0", "100") so it stays inside the rim. */
 function scoreFontSize(maxScore: string, size: number) {
@@ -222,7 +224,7 @@ function Card({ card }: { card: RankingCard }) {
       <img src={ringUri(7)} width={320} height={320} alt="" style={{ position: 'absolute', top: -120, right: -110 }} />
 
       <div style={{ display: 'flex', alignItems: 'center', fontSize: 24, fontWeight: 500, color: COLORS.wine }}>
-        <img src={ringUri(5, true)} width={34} height={34} alt="" style={{ marginRight: 12 }} />
+        <img src={MARK_URI} width={40} height={40} alt="" style={{ marginRight: 12 }} />
         Wine Tasting
       </div>
       <div
