@@ -137,7 +137,7 @@ export function ResultsView({
           </div>
         </li>
         {runnersUp.length > 0 && (
-          <li className="grid grid-cols-2 gap-6 sm:max-w-md">
+          <li className="grid grid-cols-2 gap-6 sm:max-w-md md:max-w-none">
             {runnersUp.map((wine, i) => (
               <div key={wine.wineId}>
                 <p className="text-sm font-medium text-wine">Platz {wine.rank}</p>

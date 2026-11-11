@@ -15,6 +15,10 @@ export default defineConfig({
   projects: [
     { name: 'mobile', use: { ...devices['Pixel 7'], channel: 'chrome', viewport: { width: 390, height: 844 } } },
     {
+      name: 'tablet',
+      use: { ...devices['Desktop Chrome'], channel: 'chrome', viewport: { width: 834, height: 1194 }, hasTouch: true },
+    },
+    {
       name: 'laptop',
       use: { ...devices['Desktop Chrome'], channel: 'chrome', viewport: { width: 1366, height: 768 } },
     },

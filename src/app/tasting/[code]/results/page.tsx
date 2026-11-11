@@ -39,7 +39,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ code: 
           <StatusPill status={tasting.status} />
         </div>
       </div>
-      <h1 className="mt-4 font-display text-4xl leading-tight lg:text-5xl">{tasting.name}</h1>
+      <h1 className="mt-4 font-display text-4xl md:text-5xl leading-tight lg:text-5xl">{tasting.name}</h1>
       <ResultsSection tasting={tasting} isAdmin={admin} />
     </PageShell>
   )

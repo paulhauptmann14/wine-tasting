@@ -77,7 +77,7 @@ export default async function WinePage({ params, searchParams }: Props) {
           </GlassRing>
           <div className="min-w-0">
             {!showName && <p className="text-sm text-muted-foreground">Blind verkostet</p>}
-            <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight lg:text-4xl">{title}</h1>
+            <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight md:text-4xl">{title}</h1>
             {subtitle && <p className="mt-1 text-muted-foreground">{subtitle}</p>}
           </div>
         </header>

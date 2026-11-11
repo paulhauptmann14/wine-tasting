@@ -34,7 +34,7 @@ function Arrow() {
 export default function HomePage() {
   return (
     // Phone: narrow sheet. Laptop: opened up into two columns instead of a centered card
-    <main className="mx-auto w-full max-w-[480px] px-4 pt-6 pb-32 sm:px-6 lg:max-w-[1100px] lg:pt-4 lg:pb-16">
+    <main className="mx-auto w-full max-w-[480px] sm:max-w-[720px] px-4 pt-6 pb-32 sm:px-6 lg:max-w-[1100px] lg:pt-4 lg:pb-16">
       <div className="relative">
         <div className="lg:hidden">
           <CornerStain seed={5} />
@@ -53,7 +53,7 @@ export default function HomePage() {
             <p className="text-sm text-muted-foreground">Eingeladen?</p>
             <h1
               id="join-heading"
-              className="mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight lg:max-w-[14ch] lg:text-6xl lg:leading-[1.02]"
+              className="mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight md:text-5xl lg:max-w-[14ch] lg:text-6xl lg:leading-[1.02]"
             >
               Gib den Code vom Gastgeber ein.
             </h1>
