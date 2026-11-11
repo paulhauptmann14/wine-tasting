@@ -1,12 +1,13 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useRef, useState } from 'react'
 import { BottomBar } from '@/components/bottom-bar'
 import { StarRating } from '@/components/star-rating'
 import { textLink, textLinkFocus } from '@/components/styles'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { useRevealErrors } from '@/components/use-reveal-errors'
 import type { FormAction } from '@/lib/action-state'
 import { cn } from '@/lib/utils'
 
@@ -22,11 +23,13 @@ type RatingFormProps = {
 
 export function RatingForm({ action, criteria, initialValues, initialNotes, isLast }: RatingFormProps) {
   const [state, formAction, pending] = useActionState(action, undefined)
+  const formRef = useRef<HTMLFormElement>(null)
+  useRevealErrors(formRef, state)
   const [values, setValues] = useState<Record<string, number>>(initialValues)
   const [notes, setNotes] = useState(initialNotes)
 
   return (
-    <form action={formAction} noValidate className="mt-8 grid gap-8">
+    <form ref={formRef} action={formAction} noValidate className="mt-8 grid gap-8">
       <div className="border-t border-border">
         {criteria.map((c) => (
           <StarRating

@@ -1,18 +1,21 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useRef } from 'react'
 import { manageLoginAction } from '@/app/manage/actions'
 import { BottomBar } from '@/components/bottom-bar'
 import { FieldError } from '@/components/field-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useRevealErrors } from '@/components/use-reveal-errors'
 
 export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
   const [state, action, pending] = useActionState(manageLoginAction, undefined)
+  const formRef = useRef<HTMLFormElement>(null)
+  useRevealErrors(formRef, state)
   const errors = state?.fieldErrors ?? {}
   return (
-    <form action={action} noValidate className="grid gap-6">
+    <form ref={formRef} action={action} noValidate className="grid gap-6">
       <div>
         <Label htmlFor="code">Code</Label>
         <Input

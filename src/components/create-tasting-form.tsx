@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useRef } from 'react'
 import { createTastingAction } from '@/app/new/actions'
 import { BottomBar } from '@/components/bottom-bar'
 import { FieldError } from '@/components/field-error'
@@ -9,16 +9,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { PresetPicker } from '@/components/preset-picker'
+import { useRevealErrors } from '@/components/use-reveal-errors'
 import { RETENTION_DAYS } from '@/lib/tasting/retention'
 import type { PresetKey } from '@/lib/tasting/presets'
 
 export function CreateTastingForm() {
   const [state, action, pending] = useActionState(createTastingAction, undefined)
+  const formRef = useRef<HTMLFormElement>(null)
+  useRevealErrors(formRef, state)
   const errors = state?.fieldErrors ?? {}
   const preset = (state?.values?.preset ?? 'five') as PresetKey
 
   return (
-    <form action={action} noValidate className="grid gap-8">
+    <form ref={formRef} action={action} noValidate className="grid gap-8">
       <div>
         <Label htmlFor="name">Name der Verkostung</Label>
         <Input

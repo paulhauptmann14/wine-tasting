@@ -1,17 +1,20 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useRef } from 'react'
 import { BottomBar } from '@/components/bottom-bar'
 import { FieldError } from '@/components/field-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useRevealErrors } from '@/components/use-reveal-errors'
 import type { FormAction } from '@/lib/action-state'
 
 export function JoinForm({ action }: { action: FormAction }) {
   const [state, formAction, pending] = useActionState(action, undefined)
+  const formRef = useRef<HTMLFormElement>(null)
+  useRevealErrors(formRef, state)
   return (
-    <form action={formAction} noValidate className="relative mt-10">
+    <form ref={formRef} action={formAction} noValidate className="relative mt-10">
       <Label htmlFor="name" className="text-base">
         Wie heißt du?
       </Label>
