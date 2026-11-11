@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { asc, eq } from 'drizzle-orm'
 import { createTestDb } from '@/test/db'
+import { forceStatus } from '@/test/factories'
 import type { Db } from '@/db/types'
 import { participants, ratingCriteria, sessions, tastings, wines } from '@/db/schema'
 import { PRESETS } from '@/lib/tasting/presets'
 import { joinTasting } from './participants'
+import { StructureLockedError } from './structure'
 import {
   MAX_PIN_ATTEMPTS,
   createTasting,
@@ -131,6 +133,15 @@ describe('renameTasting / setBlindTasting', () => {
     expect(await getTastingByCode(db, t.code)).toMatchObject({ name: 'Neu', blindTasting: t.blindTasting })
     await setBlindTasting(db, t.id, !t.blindTasting)
     expect(await getTastingByCode(db, t.code)).toMatchObject({ name: 'Neu', blindTasting: !t.blindTasting })
+  })
+
+  it('refuses to switch blind mode once the tasting runs – names would be revealed', async () => {
+    const t = await createTasting(db, input)
+    for (const status of ['active', 'finished'] as const) {
+      await forceStatus(db, t.id, status)
+      await expect(setBlindTasting(db, t.id, false)).rejects.toBeInstanceOf(StructureLockedError)
+    }
+    expect((await getTastingByCode(db, t.code))?.blindTasting).toBe(true)
   })
 })
 

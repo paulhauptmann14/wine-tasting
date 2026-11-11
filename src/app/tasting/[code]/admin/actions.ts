@@ -9,7 +9,6 @@ import { clearParticipantCookie } from '@/lib/auth/participant-session'
 import type { ActionState } from '@/lib/action-state'
 import { getAdminTasting } from '@/lib/data'
 import { normalizeCode } from '@/lib/tasting/code'
-import { canEditStructure } from '@/lib/tasting/rules'
 import {
   criterionNameSchema,
   directionSchema,
@@ -50,15 +49,17 @@ export async function updateSettingsAction(code: string, _prev: ActionState, fd:
   return { ok: true, message: 'Gespeichert.' }
 }
 
-/** The switch saves instantly. Setup only – otherwise names would be revealed mid-tasting. */
+/** The switch saves instantly. Setup only – the service enforces it, otherwise names would be revealed mid-tasting. */
 export async function updateBlindTastingAction(code: string, blindTasting: unknown): Promise<ActionState> {
   const tasting = await getAdminTasting(code)
   const parsed = z.boolean().safeParse(blindTasting)
   if (!parsed.success) return INVALID
-  if (!canEditStructure(tasting.status)) {
-    return { message: 'Lässt sich nur in der Vorbereitung ändern.' }
+  try {
+    await setBlindTasting(db, tasting.id, parsed.data)
+  } catch (error) {
+    if (error instanceof StructureLockedError) return { message: 'Lässt sich nur in der Vorbereitung ändern.' }
+    throw error
   }
-  await setBlindTasting(db, tasting.id, parsed.data)
   refresh(tasting.code)
   return { ok: true }
 }

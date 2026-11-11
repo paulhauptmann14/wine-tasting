@@ -8,6 +8,7 @@ import { lockMinutes } from '@/lib/auth/pin-lockout'
 import { isExpired, retentionCutoff } from '@/lib/tasting/retention'
 import { canTransition, type TastingStatus } from '@/lib/tasting/rules'
 import { countCriteria } from './criteria'
+import { assertStructureEditable } from './structure'
 import { countWines } from './wines'
 
 export type Tasting = typeof tastings.$inferSelect
@@ -130,8 +131,12 @@ export async function renameTasting(db: Db, tastingId: string, name: string): Pr
   await db.update(tastings).set({ name }).where(eq(tastings.id, tastingId))
 }
 
+/** Setup only (StructureLockedError otherwise) – switching later would reveal or re-hide names mid-tasting. */
 export async function setBlindTasting(db: Db, tastingId: string, blindTasting: boolean): Promise<void> {
-  await db.update(tastings).set({ blindTasting }).where(eq(tastings.id, tastingId))
+  await db.transaction(async (tx) => {
+    await assertStructureEditable(tx, tastingId)
+    await tx.update(tastings).set({ blindTasting }).where(eq(tastings.id, tastingId))
+  })
 }
 
 export async function setTastingStatus(
