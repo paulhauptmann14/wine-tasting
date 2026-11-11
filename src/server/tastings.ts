@@ -1,12 +1,14 @@
 import { and, eq, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/types'
-import { ratingCriteria, sessions, tastings, wines } from '@/db/schema'
+import { ratingCriteria, sessions, tastings } from '@/db/schema'
 import { generateCode, normalizeCode } from '@/lib/tasting/code'
 import { PRESETS, type PresetKey } from '@/lib/tasting/presets'
 import { hashPin, verifyPin } from '@/lib/auth/pin'
 import { lockMinutes } from '@/lib/auth/pin-lockout'
 import { isExpired, retentionCutoff } from '@/lib/tasting/retention'
 import { canTransition, type TastingStatus } from '@/lib/tasting/rules'
+import { countCriteria } from './criteria'
+import { countWines } from './wines'
 
 export type Tasting = typeof tastings.$inferSelect
 
@@ -77,7 +79,7 @@ export async function purgeExpired(db: Db, now: Date = new Date()): Promise<{ ta
   return { tastings: deletedTastings.length, sessions: deletedSessions.length }
 }
 
-export type AdminLoginResult =
+type AdminLoginResult =
   | { ok: true; tasting: Tasting }
   | { ok: false; reason: 'not_found' | 'wrong_pin' }
   | { ok: false; reason: 'locked'; lockedUntil: Date }
@@ -124,12 +126,12 @@ export async function verifyAdminPin(
   return { ok: false, reason: 'wrong_pin' }
 }
 
-export async function updateTastingSettings(
-  db: Db,
-  tastingId: string,
-  input: { name: string; blindTasting: boolean },
-): Promise<void> {
-  await db.update(tastings).set(input).where(eq(tastings.id, tastingId))
+export async function renameTasting(db: Db, tastingId: string, name: string): Promise<void> {
+  await db.update(tastings).set({ name }).where(eq(tastings.id, tastingId))
+}
+
+export async function setBlindTasting(db: Db, tastingId: string, blindTasting: boolean): Promise<void> {
+  await db.update(tastings).set({ blindTasting }).where(eq(tastings.id, tastingId))
 }
 
 export async function setTastingStatus(
@@ -141,8 +143,8 @@ export async function setTastingStatus(
     const [tasting] = await tx.select().from(tastings).where(eq(tastings.id, tastingId)).for('update')
     if (!tasting) return { ok: false, reason: 'Tasting nicht gefunden.' } as const
     const check = canTransition(tasting.status, to, {
-      wineCount: await tx.$count(wines, eq(wines.tastingId, tastingId)),
-      criteriaCount: await tx.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId)),
+      wineCount: await countWines(tx, tastingId),
+      criteriaCount: await countCriteria(tx, tastingId),
     })
     if (!check.ok) return check
     await tx.update(tastings).set({ status: to }).where(eq(tastings.id, tastingId))

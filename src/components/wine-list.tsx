@@ -1,9 +1,8 @@
 import Link from 'next/link'
 import { GlassRing } from '@/components/glass-ring'
 import { cn } from '@/lib/utils'
-import type { RingState, WineListItem } from '@/server/participant-view'
-
-const STATE_TEXT: Record<RingState, string> = { open: 'offen', incomplete: 'ergänzen', done: 'bewertet' }
+import { RING_STATE_TEXT } from '@/lib/tasting/progress'
+import type { WineListItem } from '@/server/participant-view'
 
 type ListProps = { items: WineListItem[]; currentPosition?: number; savedPosition?: number }
 
@@ -35,7 +34,7 @@ export function WineList({ items, currentPosition, savedPosition }: ListProps) {
                 item.state === 'done' ? 'text-muted-foreground' : 'font-medium text-foreground',
               )}
             >
-              {STATE_TEXT[item.state]}
+              {RING_STATE_TEXT[item.state]}
             </span>
           </Link>
         </li>
@@ -53,7 +52,7 @@ export function WineRingStrip({ items, currentPosition, savedPosition }: ListPro
           key={item.position}
           href={item.href}
           aria-current={item.position === currentPosition ? 'page' : undefined}
-          aria-label={`${item.title}, ${STATE_TEXT[item.state]}`}
+          aria-label={`${item.title}, ${RING_STATE_TEXT[item.state]}`}
           className="grid size-12 shrink-0 place-items-center rounded-full outline-none transition-transform duration-100 ease-out active:scale-90 focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card"
         >
           <GlassRing

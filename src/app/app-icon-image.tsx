@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og'
-import { APP_ICON_COLORS, appIconDataUri } from './app-icon'
+import { APP_ICON_COLORS, appIconDataUri } from '@/lib/app-icon'
 
 /** The glass ring as a solid PNG tile – for home screens, where transparency isn't allowed. */
 export function appIconImage(size: number): ImageResponse {

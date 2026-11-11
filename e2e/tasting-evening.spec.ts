@@ -1,41 +1,5 @@
-import { expect, test, type Browser, type Page, type TestInfo } from '@playwright/test'
-
-/** Separate browser context per guest, using the current project's device (phone/laptop). */
-async function newGuest(browser: Browser, testInfo: TestInfo): Promise<Page> {
-  const u = testInfo.project.use
-  const context = await browser.newContext({
-    baseURL: u.baseURL,
-    viewport: u.viewport,
-    userAgent: u.userAgent,
-    deviceScaleFactor: u.deviceScaleFactor,
-    isMobile: u.isMobile,
-    hasTouch: u.hasTouch,
-  })
-  return context.newPage()
-}
-
-async function joinAs(page: Page, code: string, name: string) {
-  await page.goto(`/tasting/${code}`)
-  await page.getByLabel('Wie heißt du?').fill(name)
-  await page.getByRole('button', { name: 'Beitreten' }).click()
-  // The counter exists with and without blind tasting (wine names differ)
-  await expect(page.getByText(/\d+ von \d+ bewertet/)).toBeVisible()
-}
-
-async function rateWines(page: Page, scores: number[], notes: string[] = []) {
-  await page.getByRole('link', { name: /Wein #1/ }).first().click()
-  for (const [i, stars] of scores.entries()) {
-    await expect(page.getByRole('heading', { name: `Wein #${i + 1}` })).toBeVisible()
-    const groups = page.getByRole('radiogroup')
-    for (let g = 0; g < (await groups.count()); g++) {
-      await groups.nth(g).getByRole('radio', { name: `${stars} von 5 Sternen` }).click()
-    }
-    if (notes[i]) await page.getByLabel('Was schmeckst du?').fill(notes[i])
-    const isLast = i === scores.length - 1
-    await page.getByRole('button', { name: isLast ? 'Speichern & fertig' : 'Speichern & weiter' }).click()
-  }
-  await expect(page.getByText(`${scores.length} von ${scores.length} bewertet`)).toBeVisible()
-}
+import { expect, test, type Page } from '@playwright/test'
+import { addWines, createTasting, joinAs, newGuest, rateWines, startTasting, tastingCode } from './helpers'
 
 test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, testInfo) => {
   // Host creates the tasting and turns blind tasting on (off by default)
@@ -49,7 +13,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await page.getByLabel('Admin-PIN').fill('1234')
   await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
   await page.waitForURL(/\/tasting\/[2-9A-HJ-NP-Z]{6}\/admin$/)
-  const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
+  const code = tastingCode(page)
 
   // Table view on its own device: only the code, no joining
   const table = await newGuest(browser, testInfo)
@@ -138,11 +102,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
 })
 
 test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ page, browser }, testInfo) => {
-  await page.goto('/new')
-  await page.getByLabel('Name der Verkostung').fill('E2E Geheim')
-  await page.getByLabel('Admin-PIN').fill('1234')
-  await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
-  await page.waitForURL(/\/admin$/)
+  await createTasting(page, 'E2E Geheim')
 
   // Record a real client navigation by the host (RSC request with router state)
   const captured = page.waitForRequest((r) => r.headers()['rsc'] === '1' && r.url().includes('/admin/wines'))
@@ -163,17 +123,9 @@ test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ pag
 })
 
 test('Gastgeber kommt vom Gäste-Gerät mit der PIN in die Verwaltung', async ({ page, browser }, testInfo) => {
-  await page.goto('/new')
-  await page.getByLabel('Name der Verkostung').fill('E2E Zweitgerät')
-  await page.getByLabel('Admin-PIN').fill('1234')
-  await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
-  await page.waitForURL(/\/admin$/)
-  const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
-  await page.getByRole('link', { name: 'Weine', exact: true }).click()
-  await page.getByLabel('Name', { exact: true }).fill('Riesling')
-  await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
-  await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
-  await page.getByRole('button', { name: 'Tasting starten' }).click()
+  const code = await createTasting(page, 'E2E Zweitgerät')
+  await addWines(page, ['Riesling'])
+  await startTasting(page)
 
   // The guest phone is in the middle of the tasting and knows the PIN
   const phone = await newGuest(browser, testInfo)
@@ -202,20 +154,9 @@ async function swipe(page: Page, fromX: number, toX: number) {
 }
 
 test('Gäste wischen zwischen den Weinen, ungespeicherte Sterne halten sie auf', async ({ page, browser }, testInfo) => {
-  await page.goto('/new')
-  await page.getByLabel('Name der Verkostung').fill('E2E Wischen')
-  await page.getByLabel('Admin-PIN').fill('1234')
-  await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
-  await page.waitForURL(/\/admin$/)
-  const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
-  await page.getByRole('link', { name: 'Weine', exact: true }).click()
-  for (const name of ['Riesling', 'Silvaner']) {
-    await page.getByLabel('Name', { exact: true }).fill(name)
-    await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
-    await expect(page.getByText(name, { exact: true })).toBeVisible()
-  }
-  await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
-  await page.getByRole('button', { name: 'Tasting starten' }).click()
+  const code = await createTasting(page, 'E2E Wischen')
+  await addWines(page, ['Riesling', 'Silvaner'])
+  await startTasting(page)
 
   const guest = await newGuest(browser, testInfo)
   await joinAs(guest, code, 'Anna')
@@ -239,16 +180,8 @@ test('Gäste wischen zwischen den Weinen, ungespeicherte Sterne halten sie auf',
 })
 
 test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, browser }, testInfo) => {
-  await page.goto('/new')
-  await page.getByLabel('Name der Verkostung').fill('E2E Aufräumen')
-  await page.getByLabel('Admin-PIN').fill('1234')
-  await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
-  await page.waitForURL(/\/admin$/)
-  const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
-  await page.getByRole('link', { name: 'Weine', exact: true }).click()
-  await page.getByLabel('Name', { exact: true }).fill('Silvaner')
-  await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
-  await expect(page.getByText('Silvaner', { exact: true })).toBeVisible()
+  const code = await createTasting(page, 'E2E Aufräumen')
+  await addWines(page, ['Silvaner'])
 
   const guest = await newGuest(browser, testInfo)
   await guest.goto(`/tasting/${code}`)
@@ -289,7 +222,10 @@ test('unbekannter Code zeigt die Fehlerseite', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Tasting nicht gefunden' })).toBeVisible()
 })
 
-test('Sicherheits-Header, robots.txt und App-Icons', async ({ request }) => {
+// Only talks to the server – one device is enough
+test('Sicherheits-Header, robots.txt und App-Icons', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name !== 'laptop')
+
   const home = await request.get('/')
   expect(home.headers()['x-content-type-options']).toBe('nosniff')
   expect(home.headers()['referrer-policy']).toBe('same-origin')

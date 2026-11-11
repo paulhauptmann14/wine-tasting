@@ -1,6 +1,8 @@
 import { and, asc, eq, max } from 'drizzle-orm'
 import type { Db } from '@/db/types'
 import { ratingCriteria } from '@/db/schema'
+import { moveInOrder } from '@/lib/tasting/order'
+import type { Direction } from '@/lib/validation'
 import { assertStructureEditable } from './structure'
 
 export type Criterion = typeof ratingCriteria.$inferSelect
@@ -14,6 +16,10 @@ export async function listCriteria(db: Db, tastingId: string): Promise<Criterion
     .from(ratingCriteria)
     .where(eq(ratingCriteria.tastingId, tastingId))
     .orderBy(asc(ratingCriteria.position))
+}
+
+export async function countCriteria(db: Db, tastingId: string): Promise<number> {
+  return db.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId))
 }
 
 export async function addCriterion(db: Db, tastingId: string, name: string): Promise<Criterion> {
@@ -62,15 +68,11 @@ export async function moveCriterion(
   db: Db,
   tastingId: string,
   criterionId: string,
-  direction: 'up' | 'down',
+  direction: Direction,
 ): Promise<void> {
   await db.transaction(async (tx) => {
     await assertStructureEditable(tx, tastingId)
-    const ids = (await listCriteria(tx, tastingId)).map((c) => c.id)
-    const from = ids.indexOf(criterionId)
-    const to = direction === 'up' ? from - 1 : from + 1
-    if (from < 0 || to < 0 || to >= ids.length) return
-    ;[ids[from], ids[to]] = [ids[to], ids[from]]
-    await renumber(tx, ids)
+    const ids = moveInOrder((await listCriteria(tx, tastingId)).map((c) => c.id), criterionId, direction)
+    if (ids) await renumber(tx, ids)
   })
 }

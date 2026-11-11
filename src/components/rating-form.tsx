@@ -6,12 +6,12 @@ import { StarRating } from '@/components/star-rating'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import type { ActionState } from '@/lib/action-state'
+import type { FormAction } from '@/lib/action-state'
 
 type Criterion = { id: string; name: string; scaleMin: number; scaleMax: number }
 
 type RatingFormProps = {
-  action: (prev: ActionState, fd: FormData) => Promise<ActionState>
+  action: FormAction
   criteria: Criterion[]
   initialValues: Record<string, number>
   initialNotes: string

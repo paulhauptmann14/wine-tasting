@@ -48,7 +48,7 @@ export function ConfirmSubmit({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel variant="ghost">Abbrechen</AlertDialogCancel>
+          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
           <form action={action}>
             {Object.entries(hiddenFields).map(([name, value]) => (
               <input key={name} type="hidden" name={name} value={value} />

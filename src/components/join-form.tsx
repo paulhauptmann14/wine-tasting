@@ -6,9 +6,9 @@ import { FieldError } from '@/components/field-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { ActionState } from '@/lib/action-state'
+import type { FormAction } from '@/lib/action-state'
 
-export function JoinForm({ action }: { action: (prev: ActionState, fd: FormData) => Promise<ActionState> }) {
+export function JoinForm({ action }: { action: FormAction }) {
   const [state, formAction, pending] = useActionState(action, undefined)
   return (
     <form action={formAction} noValidate className="relative mt-10">

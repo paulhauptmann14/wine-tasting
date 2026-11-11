@@ -1,18 +1,17 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { z } from 'zod'
 import { db } from '@/db/client'
 import { setAdminCookie } from '@/lib/auth/admin-session'
 import { formatWait } from '@/lib/auth/pin-lockout'
 import type { ActionState } from '@/lib/action-state'
-import { adminLoginSchema, formValue } from '@/lib/validation'
+import { adminLoginSchema, formValue, invalid } from '@/lib/validation'
 import { verifyAdminPin } from '@/server/tastings'
 
 export async function manageLoginAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const raw = { code: formValue(formData, 'code'), pin: formValue(formData, 'pin') }
   const parsed = adminLoginSchema.safeParse(raw)
-  if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values: { code: raw.code } }
+  if (!parsed.success) return invalid(parsed.error, { code: raw.code })
 
   const result = await verifyAdminPin(db, parsed.data.code, parsed.data.pin)
   if (!result.ok) {

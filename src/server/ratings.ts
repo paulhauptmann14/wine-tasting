@@ -1,19 +1,20 @@
-import { and, count, eq } from 'drizzle-orm'
+import { and, count, eq, sql } from 'drizzle-orm'
 import type { Db } from '@/db/types'
-import { ratingCriteria, ratingValues, ratings } from '@/db/schema'
+import { ratingValues, ratings } from '@/db/schema'
+import { ratingState, type RingState } from '@/lib/tasting/progress'
+import { countCriteria } from './criteria'
 
 export async function saveRating(
   db: Db,
   input: { participantId: string; wineId: string; values: Record<string, number>; notes: string | null },
-  now: Date = new Date(),
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const [rating] = await tx
       .insert(ratings)
-      .values({ participantId: input.participantId, wineId: input.wineId, notes: input.notes, createdAt: now, updatedAt: now })
+      .values({ participantId: input.participantId, wineId: input.wineId, notes: input.notes })
       .onConflictDoUpdate({
         target: [ratings.participantId, ratings.wineId],
-        set: { notes: input.notes, updatedAt: now },
+        set: { notes: input.notes, updatedAt: sql`now()` },
       })
       .returning({ id: ratings.id })
     await tx.delete(ratingValues).where(eq(ratingValues.ratingId, rating.id))
@@ -47,13 +48,13 @@ export async function getParticipantProgress(
   db: Db,
   tastingId: string,
   participantId: string,
-): Promise<Map<string, 'complete' | 'incomplete'>> {
-  const criteriaCount = await db.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId))
+): Promise<Map<string, RingState>> {
+  const criteriaCount = await countCriteria(db, tastingId)
   const rows = await db
     .select({ wineId: ratings.wineId, valueCount: count(ratingValues.id) })
     .from(ratings)
     .leftJoin(ratingValues, eq(ratingValues.ratingId, ratings.id))
     .where(eq(ratings.participantId, participantId))
     .groupBy(ratings.wineId)
-  return new Map(rows.map((r) => [r.wineId, r.valueCount >= criteriaCount ? 'complete' : 'incomplete']))
+  return new Map(rows.map((r) => [r.wineId, ratingState(r.valueCount, criteriaCount)]))
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeResults, formatScore, toScale, type ResultsInput } from './results'
+import { computeResults, formatScaled, formatScore, toScale, type ResultsInput } from './results'
 
 const wine = (id: string, position: number, name = `Wein ${id}`) => ({
   id, position, name, vintage: 2020 + position, grapeVariety: 'Riesling', sweetness: 'medium' as const, wineType: 'white' as const,
@@ -103,4 +103,10 @@ describe('formatScore', () => {
     expect(formatScore(87.6, 'hundred')).toBe('88')
     expect(formatScore(16.25, 'twenty')).toBe('16,3')
   })
+})
+
+it('formats a star average as the score of the rating system', () => {
+  expect(formatScaled(4, 'hundred')).toBe('90')
+  expect(formatScaled(4, 'twenty')).toBe('16,0')
+  expect(formatScaled(null, 'five')).toBe('–')
 })

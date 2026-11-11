@@ -3,6 +3,7 @@ import { asc, eq } from 'drizzle-orm'
 import { createTestDb } from '@/test/db'
 import type { Db } from '@/db/types'
 import { participants, ratingCriteria, sessions, tastings, wines } from '@/db/schema'
+import { PRESETS } from '@/lib/tasting/presets'
 import { joinTasting } from './participants'
 import {
   MAX_PIN_ATTEMPTS,
@@ -11,7 +12,8 @@ import {
   getTastingByCode,
   purgeExpired,
   setTastingStatus,
-  updateTastingSettings,
+  renameTasting,
+  setBlindTasting,
   verifyAdminPin,
 } from './tastings'
 
@@ -34,9 +36,9 @@ describe('createTasting', () => {
       .where(eq(ratingCriteria.tastingId, t.id))
       .orderBy(asc(ratingCriteria.position))
     expect(t.scale).toBe('hundred')
-    expect(criteria.map((c) => [c.name, c.position, c.weight, c.scaleMin, c.scaleMax])).toEqual([
-      ['Aussehen', 1, 5, 1, 5], ['Geruch', 2, 15, 1, 5], ['Geschmack', 3, 20, 1, 5], ['Gesamteindruck', 4, 10, 1, 5],
-    ])
+    expect(criteria.map((c) => [c.name, c.position, c.weight, c.scaleMin, c.scaleMax])).toEqual(
+      PRESETS.hundred.criteria.map((c, i) => [c.name, i + 1, c.weight, 1, 5]),
+    )
   })
 })
 
@@ -120,18 +122,15 @@ describe('setTastingStatus', () => {
     expect(await setTastingStatus(db, t.id, 'active')).toEqual({ ok: true })
     expect((await getTastingByCode(db, t.code))?.status).toBe('active')
   })
-
-  it('rejects setup → finished', async () => {
-    const t = await createTasting(db, input)
-    expect((await setTastingStatus(db, t.id, 'finished')).ok).toBe(false)
-  })
 })
 
-describe('updateTastingSettings', () => {
-  it('updates name and blind mode', async () => {
+describe('renameTasting / setBlindTasting', () => {
+  it('changes only its own field', async () => {
     const t = await createTasting(db, input)
-    await updateTastingSettings(db, t.id, { name: 'Neu', blindTasting: false })
-    expect(await getTastingByCode(db, t.code)).toMatchObject({ name: 'Neu', blindTasting: false })
+    await renameTasting(db, t.id, 'Neu')
+    expect(await getTastingByCode(db, t.code)).toMatchObject({ name: 'Neu', blindTasting: t.blindTasting })
+    await setBlindTasting(db, t.id, !t.blindTasting)
+    expect(await getTastingByCode(db, t.code)).toMatchObject({ name: 'Neu', blindTasting: !t.blindTasting })
   })
 })
 

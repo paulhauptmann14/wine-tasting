@@ -3,7 +3,7 @@ import { ScoringExplainer } from '@/components/scoring-explainer'
 import { wineDetails } from '@/lib/tasting/display'
 import type { TastingStatus } from '@/lib/tasting/rules'
 import { SCALES, type Scale } from '@/lib/tasting/presets'
-import { formatScore, toScale, type Results, type WineResult } from '@/lib/tasting/results'
+import { formatScaled, formatScore, type Results, type WineResult } from '@/lib/tasting/results'
 import { cn } from '@/lib/utils'
 
 function WineIdentity({ wine, revealed, delayMs, size = 'md' }: { wine: WineResult; revealed: boolean; delayMs: number; size?: 'lg' | 'md' }) {
@@ -48,7 +48,7 @@ function ScoreRing({
   delayMs: number
   scale: Scale
 }) {
-  const score = formatScore(toScale(wine.score, scale), scale)
+  const score = formatScaled(wine.score, scale)
   const max = SCALES[scale].max
   return (
     <div className="relative shrink-0">
@@ -102,12 +102,12 @@ function WineNotes({ wines, notes }: { wines: WineResult[]; notes: Record<string
 export function ResultsView({
   results,
   status,
-  scale = 'five',
+  scale,
   notes,
 }: {
   results: Results
   status: TastingStatus
-  scale?: Scale
+  scale: Scale
   notes?: Record<string, string[]>
 }) {
   const revealed = status === 'finished'
@@ -164,7 +164,7 @@ export function ResultsView({
               <div className="min-w-0 flex-1">
                 <WineIdentity wine={wine} revealed={revealed} delayMs={1100 + i * 80} />
               </div>
-              <span className="font-display text-xl font-medium">{formatScore(toScale(wine.score, scale), scale)}</span>
+              <span className="font-display text-xl font-medium">{formatScaled(wine.score, scale)}</span>
             </li>
           ))}
         </ol>
@@ -217,7 +217,7 @@ export function ResultsView({
                   key={w.wineId}
                   className="border-t border-border px-3 py-2 text-right font-semibold text-wine"
                 >
-                  {formatScore(toScale(w.score, scale), scale)}
+                  {formatScaled(w.score, scale)}
                 </td>
               ))}
             </tr>

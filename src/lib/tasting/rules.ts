@@ -1,4 +1,5 @@
-export type TastingStatus = 'setup' | 'active' | 'finished'
+export const STATUS_KEYS = ['setup', 'active', 'finished'] as const
+export type TastingStatus = (typeof STATUS_KEYS)[number]
 
 export const STATUS_LABELS: Record<TastingStatus, string> = {
   setup: 'Vorbereitung',

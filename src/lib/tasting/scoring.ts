@@ -1,7 +1,6 @@
 import { SCALES, type Scale } from './presets'
 
-export type Scoring = {
-  scale: Scale
+type Scoring = {
   max: number
   /** Points every wine starts with (Parker: 50) */
   base: number
@@ -15,7 +14,6 @@ export function scoring(scale: Scale, criteria: readonly { name: string; weight:
   const { base, max } = SCALES[scale]
   const total = criteria.reduce((sum, c) => sum + c.weight, 0)
   return {
-    scale,
     max,
     base,
     equalWeights: criteria.every((c) => c.weight === criteria[0]?.weight),

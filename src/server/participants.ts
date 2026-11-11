@@ -1,8 +1,9 @@
 import { and, asc, count, eq, gt } from 'drizzle-orm'
 import type { Db } from '@/db/types'
-import { participants, ratingCriteria, ratingValues, ratings, sessions, wines } from '@/db/schema'
+import { participants, ratingValues, ratings, sessions, wines } from '@/db/schema'
 import { generateSessionToken, hashToken } from '@/lib/auth/tokens'
-import type { RingState } from './participant-view'
+import { ratingState, type RingState } from '@/lib/tasting/progress'
+import { countCriteria } from './criteria'
 
 const SESSION_TTL_DAYS = 30
 
@@ -57,12 +58,12 @@ export async function removeParticipant(db: Db, tastingId: string, participantId
 export async function listParticipantProgress(db: Db, tastingId: string) {
   const [people, wineRows, criteriaCount, valueCounts] = await Promise.all([
     db
-      .select({ id: participants.id, name: participants.name, createdAt: participants.createdAt })
+      .select({ id: participants.id, name: participants.name })
       .from(participants)
       .where(eq(participants.tastingId, tastingId))
       .orderBy(asc(participants.createdAt)),
     db.select({ id: wines.id }).from(wines).where(eq(wines.tastingId, tastingId)).orderBy(asc(wines.position)),
-    db.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId)),
+    countCriteria(db, tastingId),
     db
       .select({ participantId: ratings.participantId, wineId: ratings.wineId, valueCount: count(ratingValues.id) })
       .from(ratings)
@@ -74,11 +75,7 @@ export async function listParticipantProgress(db: Db, tastingId: string) {
 
   const counts = new Map(valueCounts.map((r) => [`${r.participantId}:${r.wineId}`, r.valueCount]))
   return people.map((person) => {
-    const states: RingState[] = wineRows.map((wine) => {
-      const valueCount = counts.get(`${person.id}:${wine.id}`)
-      if (valueCount === undefined) return 'open'
-      return valueCount >= criteriaCount ? 'done' : 'incomplete'
-    })
+    const states: RingState[] = wineRows.map((wine) => ratingState(counts.get(`${person.id}:${wine.id}`), criteriaCount))
     return { ...person, wines: states, doneCount: states.filter((s) => s === 'done').length }
   })
 }

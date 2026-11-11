@@ -1,11 +1,9 @@
 import { db } from '@/db/client'
 import { getTasting } from '@/lib/data'
-import { rankingImage } from '@/lib/ranking-image'
+import { rankingImage } from './ranking-image'
 import { rankingCard, rankingImageFilename } from '@/lib/tasting/ranking-card'
-import { computeResults } from '@/lib/tasting/results'
-import { canSeeWineNames } from '@/lib/tasting/rules'
 import { countParticipants } from '@/server/participants'
-import { loadResultsInput } from '@/server/results-data'
+import { loadResults } from '@/server/results-data'
 
 // The status can go back from "finished" to "active" – never keep a copy anywhere
 const NO_STORE = { 'Cache-Control': 'private, no-store' }
@@ -18,11 +16,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
     return new Response('Nicht gefunden', { status: 404, headers: NO_STORE })
   }
 
-  const [input, guestCount] = await Promise.all([loadResultsInput(db, tasting.id), countParticipants(db, tasting.id)])
-  const results = computeResults({
-    ...input,
-    revealNames: canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin: false }),
-  })
+  const [results, guestCount] = await Promise.all([loadResults(db, tasting, false), countParticipants(db, tasting.id)])
   const card = rankingCard(results, tasting.scale, {
     tastingName: tasting.name,
     guestCount,

@@ -1,5 +1,5 @@
 import { type Scale } from '@/lib/tasting/presets'
-import { formatScore, toScale } from '@/lib/tasting/results'
+import { formatScaled } from '@/lib/tasting/results'
 import { formatPoints, scoring } from '@/lib/tasting/scoring'
 import { cn } from '@/lib/utils'
 
@@ -47,7 +47,7 @@ export function ScoringExplainer({
             {heaviest && (
               <p>
                 Beispiel: 4 Sterne bei {heaviest.name} bringen {formatPoints((heaviest.points * 4) / 5)} von{' '}
-                {formatPoints(heaviest.points)} Punkten. Überall 4 Sterne ergeben {formatScore(toScale(4, scale), scale)}.
+                {formatPoints(heaviest.points)} Punkten. Überall 4 Sterne ergeben {formatScaled(4, scale)}.
               </p>
             )}
           </>

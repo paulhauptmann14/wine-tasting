@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { Wine } from 'lucide-react'
-import { notFound, redirect } from 'next/navigation'
 import { AdminNav } from '@/components/admin/admin-nav'
 import { TastingCode } from '@/components/tasting-code'
 import { buttonVariants } from '@/components/ui/button'
 import { requireAdmin } from '@/lib/auth/admin-session'
-import { getTasting } from '@/lib/data'
+import { requireTasting } from '@/lib/data'
 import { STATUS_LABELS } from '@/lib/tasting/rules'
 import { cn } from '@/lib/utils'
 
@@ -18,9 +17,7 @@ export default async function AdminLayout({
   params: Promise<{ code: string }>
 }) {
   const { code } = await params
-  const tasting = await getTasting(code)
-  if (!tasting) notFound()
-  if (tasting.code !== code) redirect(`/tasting/${tasting.code}/admin`)
+  const tasting = await requireTasting(code, '/admin')
   await requireAdmin(tasting)
 
   return (

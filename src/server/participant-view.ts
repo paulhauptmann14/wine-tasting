@@ -1,11 +1,11 @@
 import type { Db } from '@/db/types'
 import { wineTitle } from '@/lib/tasting/display'
+import type { RingState } from '@/lib/tasting/progress'
 import { canSeeWineNames } from '@/lib/tasting/rules'
 import { getParticipantProgress } from './ratings'
 import type { Tasting } from './tastings'
 import { listWines } from './wines'
 
-export type RingState = 'open' | 'incomplete' | 'done'
 export type WineListItem = {
   position: number
   title: string
@@ -25,11 +25,10 @@ export async function getWineListItems(
   ])
   const showNames = canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin: false })
   return wineRows.map((wine) => {
-    const p = progress.get(wine.id)
     return {
       position: wine.position,
       ...wineTitle(wine, showNames),
-      state: p === 'complete' ? 'done' : p === 'incomplete' ? 'incomplete' : 'open',
+      state: progress.get(wine.id) ?? 'open',
       href: `/tasting/${tasting.code}/wine/${wine.position}`,
     }
   })

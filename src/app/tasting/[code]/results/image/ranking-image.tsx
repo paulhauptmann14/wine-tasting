@@ -3,11 +3,11 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { ImageResponse } from 'next/og'
 import type { CSSProperties } from 'react'
-import { APP_ICON_COLORS } from './app-icon'
-import { ringPath } from './ring-path'
-import type { RankingCard, RankingCardLayout, RankingCardWine } from './tasting/ranking-card'
+import { APP_ICON_COLORS } from '@/lib/app-icon'
+import { ringPath } from '@/lib/ring-path'
+import type { RankingCard, RankingCardLayout, RankingCardWine } from '@/lib/tasting/ranking-card'
 
-export const RANKING_IMAGE_SIZE = { width: 1080, height: 1350 } as const
+const RANKING_IMAGE_SIZE = { width: 1080, height: 1350 } as const
 
 /** Concrete values of the light theme tokens in globals.css – images can't use CSS variables. */
 const COLORS = {
@@ -118,11 +118,22 @@ function Place({ rank, size }: { rank: number; size: number }) {
 /** Ring and type sizes per layout – fewer wines get more room instead of an empty sheet. */
 const SIZES: Record<
   RankingCardLayout,
-  { winnerRing: number; winnerName: number; runnerRing: number; runnerName: number; runnerDetail: number; podiumGap: number; rowHeight: number }
+  {
+    winnerRing: number
+    winnerName: number
+    winnerPlace: number
+    runnerRing: number
+    runnerName: number
+    runnerDetail: number
+    /** Runner-up text below the top of its ring */
+    runnerTop: number
+    podiumGap: number
+    rowHeight: number
+  }
 > = {
-  stacked: { winnerRing: 280, winnerName: 60, runnerRing: 200, runnerName: 44, runnerDetail: 24, podiumGap: 48, rowHeight: 0 },
-  roomy: { winnerRing: 280, winnerName: 60, runnerRing: 164, runnerName: 36, runnerDetail: 22, podiumGap: 56, rowHeight: 80 },
-  compact: { winnerRing: 200, winnerName: 50, runnerRing: 148, runnerName: 30, runnerDetail: 22, podiumGap: 36, rowHeight: 64 },
+  stacked: { winnerRing: 280, winnerName: 60, winnerPlace: 28, runnerRing: 200, runnerName: 44, runnerDetail: 24, runnerTop: 0, podiumGap: 48, rowHeight: 0 },
+  roomy: { winnerRing: 280, winnerName: 60, winnerPlace: 28, runnerRing: 164, runnerName: 36, runnerDetail: 22, runnerTop: 28, podiumGap: 56, rowHeight: 80 },
+  compact: { winnerRing: 200, winnerName: 50, winnerPlace: 26, runnerRing: 148, runnerName: 30, runnerDetail: 22, runnerTop: 12, podiumGap: 36, rowHeight: 64 },
 }
 
 function Podium({ card }: { card: RankingCard }) {
@@ -134,42 +145,39 @@ function Podium({ card }: { card: RankingCard }) {
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <ScoreRing wine={winner} size={s.winnerRing} card={card} />
         <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 36, flex: 1, minWidth: 0 }}>
-          <Place rank={winner.rank} size={card.layout === 'compact' ? 26 : 28} />
+          <Place rank={winner.rank} size={s.winnerPlace} />
           <Identity wine={winner} nameSize={s.winnerName} detailSize={24} />
         </div>
       </div>
 
       {runnersUp.length > 0 && (
         <div style={{ display: 'flex', flexDirection: stacked ? 'column' : 'row', marginTop: s.podiumGap }}>
-          {runnersUp.map((wine, i) =>
-            stacked ? (
-              // One below the other, like the winner: the image has room for it
-              <div key={wine.wineId} style={{ display: 'flex', alignItems: 'center', marginTop: i === 0 ? 0 : 32 }}>
-                <ScoreRing wine={wine} size={s.runnerRing} card={card} />
-                <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 32, flex: 1, minWidth: 0 }}>
-                  <Place rank={wine.rank} size={24} />
-                  <Identity wine={wine} nameSize={s.runnerName} detailSize={s.runnerDetail} />
-                </div>
+          {runnersUp.map((wine, i) => (
+            <div
+              key={wine.wineId}
+              style={
+                stacked
+                  ? // One below the other, like the winner: the image has room for it
+                    { display: 'flex', alignItems: 'center', marginTop: i === 0 ? 0 : 32 }
+                  : { display: 'flex', alignItems: 'flex-start', width: '50%', paddingRight: 24 }
+              }
+            >
+              <ScoreRing wine={wine} size={s.runnerRing} card={card} />
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  marginLeft: stacked ? 32 : 20,
+                  paddingTop: s.runnerTop,
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                <Place rank={wine.rank} size={stacked ? 24 : 22} />
+                <Identity wine={wine} nameSize={s.runnerName} detailSize={s.runnerDetail} />
               </div>
-            ) : (
-              <div key={wine.wineId} style={{ display: 'flex', alignItems: 'flex-start', width: '50%', paddingRight: 24 }}>
-                <ScoreRing wine={wine} size={s.runnerRing} card={card} />
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    marginLeft: 20,
-                    paddingTop: card.layout === 'roomy' ? 28 : 12,
-                    flex: 1,
-                    minWidth: 0,
-                  }}
-                >
-                  <Place rank={wine.rank} size={22} />
-                  <Identity wine={wine} nameSize={s.runnerName} detailSize={s.runnerDetail} />
-                </div>
-              </div>
-            ),
-          )}
+            </div>
+          ))}
         </div>
       )}
     </div>

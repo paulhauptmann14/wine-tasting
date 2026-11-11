@@ -1,17 +1,8 @@
 import { SCALES, type Scale } from './presets'
-import type { Sweetness } from './sweetness'
-import type { WineType } from './wine-type'
+import type { WineDetails, WineLike } from './display'
 
 export type ResultsInput = {
-  wines: {
-    id: string
-    position: number
-    name: string
-    vintage: number | null
-    grapeVariety: string | null
-    sweetness: Sweetness | null
-    wineType: WineType | null
-  }[]
+  wines: ({ id: string } & WineLike)[]
   criteria: { id: string; name: string; position: number; weight: number }[]
   ratings: { participantId: string; wineId: string; values: Record<string, number> }[]
   revealNames: boolean
@@ -22,15 +13,11 @@ export type WineResult = {
   position: number
   label: string
   name: string | null
-  vintage: number | null
-  grapeVariety: string | null
-  sweetness: Sweetness | null
-  wineType: WineType | null
   score: number | null
   rank: number | null
   ratingCount: number
   criterionAverages: Record<string, number | null>
-}
+} & WineDetails
 
 export type Results = {
   criteria: { id: string; name: string; weight: number }[]
@@ -97,3 +84,6 @@ export function formatScore(value: number | null, scale: Scale = 'five'): string
   const digits = SCALES[scale].decimals
   return value.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 }
+
+/** A 1–5 star average as the score in the tasting's rating system, e.g. "87" or "4,2". */
+export const formatScaled = (score: number | null, scale: Scale) => formatScore(toScale(score, scale), scale)

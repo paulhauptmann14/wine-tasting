@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Download, Share } from 'lucide-react'
+import { textLink, textLinkFocus } from '@/components/styles'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 const FALLBACK_NAME = 'wine-tasting-ergebnis.png'
 const ERROR_TEXT = 'Das Bild ging nicht. Versuch es noch einmal.'
 
-const textLink =
-  'inline-flex h-12 shrink-0 items-center justify-center font-medium underline decoration-border decoration-2 underline-offset-[6px] outline-none transition-opacity duration-100 hover:decoration-wine active:opacity-50 focus-visible:decoration-wine lg:justify-start lg:px-4'
+const imageLink = cn(textLink, textLinkFocus, 'shrink-0 justify-center lg:justify-start lg:px-4')
 
 /** Reads the file name from Content-Disposition (RFC 6266), falling back to a neutral name. */
 function fileNameFrom(header: string | null): string {
@@ -131,7 +132,7 @@ export function ShareResultsImage({ code, title }: { code: string; title: string
           {share ? <Share className="size-5" aria-hidden /> : <Download className="size-5" aria-hidden />}
           {pending ? 'Bild wird erstellt …' : share ? 'Ergebnis als Bild teilen' : 'Bild herunterladen'}
         </Button>
-        <a href={imageUrl} target="_blank" rel="noopener" className={textLink}>
+        <a href={imageUrl} target="_blank" rel="noopener" className={imageLink}>
           Bild öffnen
         </a>
       </div>

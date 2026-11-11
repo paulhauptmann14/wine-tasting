@@ -39,14 +39,17 @@ export function WineSwipe({
   useEffect(() => {
     if (prevHref) router.prefetch(prevHref)
     if (nextHref) router.prefetch(nextHref)
-    return () => cancelAnimationFrame(frame.current)
   }, [router, prevHref, nextHref])
+
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
 
   useEffect(() => {
     if (!hint) return
     const timer = setTimeout(() => setHint(false), 3500)
     return () => clearTimeout(timer)
   }, [hint])
+
+  const width = () => root.current?.offsetWidth ?? window.innerWidth
 
   function apply(value: number) {
     x.current = value
@@ -118,10 +121,9 @@ export function WineSwipe({
     g.samples.push({ t: e.timeStamp, x: e.clientX })
     g.samples = g.samples.filter((s) => e.timeStamp - s.t <= VELOCITY_WINDOW)
 
-    const width = root.current?.offsetWidth ?? window.innerWidth
     const raw = g.from + dx - Math.sign(dx) * SLOP
     const blocked = dirty.current || (raw > 0 && !prevHref) || (raw < 0 && !nextHref)
-    apply(blocked ? rubberband(raw, width) : raw)
+    apply(blocked ? rubberband(raw, width()) : raw)
   }
 
   function onPointerEnd(e: React.PointerEvent) {
@@ -142,21 +144,21 @@ export function WineSwipe({
     const lastSample = g.samples[g.samples.length - 1]
     const span = lastSample.t - first.t
     const velocity = span > 0 ? ((lastSample.x - first.x) / span) * 1000 : 0
-    const width = root.current?.offsetWidth ?? window.innerWidth
 
     if (dirty.current) {
       if (Math.abs(x.current) > SLOP) setHint(true)
       animateTo(0, velocity)
       return
     }
-    const decision = decideSwipe({ offset: x.current, velocity, width, hasPrev: !!prevHref, hasNext: !!nextHref })
+    const w = width()
+    const decision = decideSwipe({ offset: x.current, velocity, width: w, hasPrev: !!prevHref, hasNext: !!nextHref })
     if (!decision) {
       animateTo(0, velocity)
       return
     }
     const href = decision === 'next' ? nextHref! : prevHref!
     router.push(href)
-    animateTo(decision === 'next' ? -width : width, velocity)
+    animateTo(decision === 'next' ? -w : w, velocity)
   }
 
   return (
@@ -178,11 +180,11 @@ export function WineSwipe({
       {/* Floats above the wine instead of pushing the content down while it shows */}
       <p
         aria-live="polite"
-        className={cn(
+        className={
           hint
             ? 'material-sheet pointer-events-none absolute inset-x-0 top-2 z-10 rounded-xl border-l-2 border-wine px-4 py-3 text-sm animate-in fade-in-0 duration-200'
-            : 'sr-only',
-        )}
+            : 'sr-only'
+        }
       >
         {hint ? 'Speichere erst – sonst gehen deine Sterne verloren.' : ''}
       </p>

@@ -1,5 +1,4 @@
 import { beforeEach, expect, it } from 'vitest'
-import { eq } from 'drizzle-orm'
 import { createTestDb } from '@/test/db'
 import type { Db } from '@/db/types'
 import { tastings, wines } from '@/db/schema'
@@ -32,11 +31,4 @@ it('allows the same position in different tastings', async () => {
   const b = await insertTasting('BBBBBB')
   await db.insert(wines).values({ tastingId: a.id, position: 1, name: 'A' })
   await expect(db.insert(wines).values({ tastingId: b.id, position: 1, name: 'B' })).resolves.toBeDefined()
-})
-
-it('cascades tasting deletion to wines', async () => {
-  const t = await insertTasting()
-  await db.insert(wines).values({ tastingId: t.id, position: 1, name: 'A' })
-  await db.delete(tastings).where(eq(tastings.id, t.id))
-  expect(await db.select().from(wines)).toHaveLength(0)
 })

@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { CornerStain } from '@/components/corner-stain'
 import { JoinByCodeForm } from '@/components/join-by-code-form'
 import { PageShell } from '@/components/page-shell'
+import { backLink } from '@/components/styles'
+import { cn } from '@/lib/utils'
 
 export default function NotFound() {
   return (
@@ -16,7 +18,7 @@ export default function NotFound() {
         </p>
         <JoinByCodeForm className="relative mt-8 lg:max-w-md" layout="row" />
       </div>
-      <Link href="/" className="mt-8 inline-flex h-12 items-center text-sm text-muted-foreground hover:text-foreground transition-opacity duration-100 active:opacity-50">
+      <Link href="/" className={cn('mt-8', backLink)}>
         ‹ Zur Startseite
       </Link>
     </PageShell>

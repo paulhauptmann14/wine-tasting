@@ -1,31 +1,21 @@
 'use client'
 
 import { useActionState, useEffect, useId, useState } from 'react'
-import { ArrowDown, ArrowUp, Pencil, Trash2 } from 'lucide-react'
 import { addWineAction, deleteWineAction, moveWineAction, updateWineAction } from '@/app/tasting/[code]/admin/actions'
-import { ConfirmSubmit } from '@/components/admin/confirm-submit'
+import { RowActions } from '@/components/admin/row-actions'
 import { FieldError } from '@/components/field-error'
 import { GlassRing } from '@/components/glass-ring'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { marginNote } from '@/components/styles'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { ActionState } from '@/lib/action-state'
-import { wineDetails } from '@/lib/tasting/display'
+import type { FormAction } from '@/lib/action-state'
+import { wineDetails, type WineLike } from '@/lib/tasting/display'
 import { WINE_LOCK_HINT } from '@/lib/tasting/rules'
-import { SWEETNESS_KEYS, SWEETNESS_LABELS, type Sweetness } from '@/lib/tasting/sweetness'
-import { WINE_TYPE_KEYS, WINE_TYPE_LABELS, type WineType } from '@/lib/tasting/wine-type'
-import { cn } from '@/lib/utils'
+import { SWEETNESS_KEYS, SWEETNESS_LABELS } from '@/lib/tasting/sweetness'
+import { WINE_TYPE_KEYS, WINE_TYPE_LABELS } from '@/lib/tasting/wine-type'
 
-type WineRowData = {
-  id: string
-  position: number
-  name: string
-  vintage: number | null
-  grapeVariety: string | null
-  sweetness: Sweetness | null
-  wineType: WineType | null
-}
-type FormAction = (prev: ActionState, fd: FormData) => Promise<ActionState>
+type WineRowData = { id: string } & WineLike
 
 /** Native select styled like <Input> – on phones it opens the system picker. */
 function ChoiceField<K extends string>({
@@ -173,7 +163,6 @@ function WineRow({
 }) {
   const [editing, setEditing] = useState(false)
   const subtitle = wineDetails(wine)
-  const iconButton = cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-12')
 
   return (
     <li className="border-b border-border py-3">
@@ -185,37 +174,25 @@ function WineRow({
           <p className="truncate font-medium">{wine.name}</p>
           {subtitle && <p className="truncate text-sm text-muted-foreground">{subtitle}</p>}
         </div>
-        <div className="-mr-2 ml-auto flex shrink-0">
-          <form action={moveWineAction.bind(null, code, wine.id, 'up')}>
-            <button type="submit" disabled={isFirst} aria-label={`Wein #${wine.position} nach oben`} className={iconButton}>
-              <ArrowUp className="size-5" />
-            </button>
-          </form>
-          <form action={moveWineAction.bind(null, code, wine.id, 'down')}>
-            <button type="submit" disabled={isLast} aria-label={`Wein #${wine.position} nach unten`} className={iconButton}>
-              <ArrowDown className="size-5" />
-            </button>
-          </form>
-          <button
-            type="button"
-            onClick={() => setEditing((v) => !v)}
-            aria-label={`Wein #${wine.position} bearbeiten`}
-            aria-expanded={editing}
-            className={iconButton}
-          >
-            <Pencil className="size-5" />
-          </button>
-          <ConfirmSubmit
-            action={deleteWineAction.bind(null, code, wine.id)}
-            trigger={<Trash2 className="size-5" />}
-            triggerLabel={`Wein #${wine.position} löschen`}
-            disabled={locked}
-            triggerClassName={iconButton}
-            title={`Wein #${wine.position} löschen?`}
-            description="Alle Bewertungen dieses Weins werden ebenfalls gelöscht. Die folgenden Weine rücken eine Nummer nach vorn."
-            confirmLabel="Löschen"
-          />
-        </div>
+        <RowActions
+          label={`Wein #${wine.position}`}
+          moveUp={moveWineAction.bind(null, code, wine.id, 'up')}
+          moveDown={moveWineAction.bind(null, code, wine.id, 'down')}
+          upDisabled={isFirst}
+          downDisabled={isLast}
+          editLabel={`Wein #${wine.position} bearbeiten`}
+          editing={editing}
+          onToggleEdit={() => setEditing((v) => !v)}
+          remove={{
+            action: deleteWineAction.bind(null, code, wine.id),
+            disabled: locked,
+            label: `Wein #${wine.position} löschen`,
+            title: `Wein #${wine.position} löschen?`,
+            description:
+              'Alle Bewertungen dieses Weins werden ebenfalls gelöscht. Die folgenden Weine rücken eine Nummer nach vorn.',
+            confirmLabel: 'Löschen',
+          }}
+        />
       </div>
       {editing && (
         <div className="mt-3 pb-2">
@@ -234,7 +211,7 @@ function WineRow({
 export function WineManager({ code, wines, locked }: { code: string; wines: WineRowData[]; locked: boolean }) {
   return (
     <div className="grid grid-cols-1 gap-8">
-      {locked && <p className="border-l-2 border-wine pl-3 text-sm text-muted-foreground">{WINE_LOCK_HINT}</p>}
+      {locked && <p className={marginNote}>{WINE_LOCK_HINT}</p>}
       {wines.length === 0 ? (
         <p className="text-muted-foreground">Noch keine Weine. Füg den ersten hinzu.</p>
       ) : (

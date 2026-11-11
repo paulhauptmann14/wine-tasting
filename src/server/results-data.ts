@@ -1,8 +1,10 @@
 import { and, asc, eq, isNotNull } from 'drizzle-orm'
 import type { Db } from '@/db/types'
 import { ratingValues, ratings, wines } from '@/db/schema'
-import type { ResultsInput } from '@/lib/tasting/results'
+import { computeResults, type Results, type ResultsInput } from '@/lib/tasting/results'
+import { canSeeWineNames } from '@/lib/tasting/rules'
 import { listCriteria } from './criteria'
+import type { Tasting } from './tastings'
 import { listWines } from './wines'
 
 export async function loadResultsInput(db: Db, tastingId: string): Promise<Omit<ResultsInput, 'revealNames'>> {
@@ -35,6 +37,22 @@ export async function loadResultsInput(db: Db, tastingId: string): Promise<Omit<
     criteria: criteriaRows.map(({ id, name, position, weight }) => ({ id, name, position, weight })),
     ratings: [...grouped.values()],
   }
+}
+
+/**
+ * Results as this viewer may see them: the server decides about names – guests only see
+ * blind wines once the tasting is finished.
+ */
+export async function loadResults(
+  db: Db,
+  tasting: Pick<Tasting, 'id' | 'status' | 'blindTasting'>,
+  isAdmin: boolean,
+): Promise<Results> {
+  const input = await loadResultsInput(db, tasting.id)
+  return computeResults({
+    ...input,
+    revealNames: canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin }),
+  })
 }
 
 /**

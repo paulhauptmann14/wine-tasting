@@ -1,12 +1,19 @@
 import { z } from 'zod'
+import type { ActionState } from '@/lib/action-state'
 import { normalizeCode } from '@/lib/tasting/code'
 import { PRESET_KEYS } from '@/lib/tasting/presets'
+import { STATUS_KEYS } from '@/lib/tasting/rules'
 import { SWEETNESS_KEYS } from '@/lib/tasting/sweetness'
 import { WINE_TYPE_KEYS } from '@/lib/tasting/wine-type'
 
 export function formValue(fd: FormData, key: string): string {
   const value = fd.get(key)
   return typeof value === 'string' ? value : ''
+}
+
+/** Failed parse → field errors for the form, plus the entered values so nothing gets lost. */
+export function invalid(error: z.ZodError, values?: Record<string, string>): ActionState {
+  return { fieldErrors: z.flattenError(error).fieldErrors, values }
 }
 
 const tastingName = z
@@ -24,7 +31,6 @@ export const createTastingSchema = z.object({
 
 export const settingsSchema = z.object({
   name: tastingName,
-  blindTasting: z.boolean(),
 })
 
 export const joinSchema = z.object({
@@ -80,9 +86,11 @@ export const criterionNameSchema = z.object({
 /** Bound arguments of server actions come from the client – always validate. */
 export const idSchema = z.uuid()
 export const directionSchema = z.enum(['up', 'down'])
+export type Direction = z.infer<typeof directionSchema>
+export const statusSchema = z.enum(STATUS_KEYS)
 
-export type RatingCriterionScale = { id: string; scaleMin: number; scaleMax: number }
-export type ParsedRating =
+type RatingCriterionScale = { id: string; scaleMin: number; scaleMax: number }
+type ParsedRating =
   | { ok: true; values: Record<string, number>; notes: string | null }
   | { ok: false; fieldErrors: Record<string, string[]> }
 

@@ -2,14 +2,16 @@ import Link from 'next/link'
 import { CopyLinkButton } from '@/components/admin/copy-link-button'
 import { StatusControl } from '@/components/admin/status-control'
 import { CopyCodeButton } from '@/components/copy-code-button'
-import { getBaseUrl } from '@/lib/base-url'
+import { textLink } from '@/components/styles'
+import { getJoinUrl } from '@/lib/base-url'
 import { getAdminTasting } from '@/lib/data'
 import { joinQrSvg } from '@/lib/qr'
+import { cn } from '@/lib/utils'
 
 export default async function SharePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
   const tasting = await getAdminTasting(code)
-  const url = `${await getBaseUrl()}/tasting/${tasting.code}`
+  const url = await getJoinUrl(tasting.code)
   const svg = await joinQrSvg(url)
 
   return (
@@ -37,7 +39,7 @@ export default async function SharePage({ params }: { params: Promise<{ code: st
           <Link
             href={`/tasting/${tasting.code}/table`}
             target="_blank"
-            className="mt-2 inline-flex h-12 items-center font-medium underline decoration-border decoration-2 underline-offset-[6px] transition-opacity duration-100 hover:decoration-wine active:opacity-50"
+            className={cn('mt-2', textLink)}
           >
             Tisch-Ansicht öffnen
           </Link>

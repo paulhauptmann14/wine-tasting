@@ -7,3 +7,6 @@ export type ActionState =
       values?: Record<string, string>
     }
   | undefined
+
+/** Server action as useActionState expects it. */
+export type FormAction = (prev: ActionState, fd: FormData) => Promise<ActionState>

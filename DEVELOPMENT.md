@@ -2,7 +2,7 @@
 
 ## Lokal starten
 
-Voraussetzungen: Node.js ≥ 20.9, Docker Desktop, Google Chrome (für die E2E-Tests).
+Voraussetzungen: Node.js ≥ 20.12, Docker Desktop, Google Chrome (für die E2E-Tests).
 
 ```bash
 npm install
@@ -33,7 +33,7 @@ npm run dev -- -H 0.0.0.0
 | `DATABASE_URL` | ja | Postgres-Verbindung |
 | `SESSION_SECRET` | ja | Schlüssel zum Signieren des Admin-Cookies, mind. 32 Zeichen |
 | `APP_URL` | nein | Feste Basis-URL für QR-Codes; sonst aus dem Request-Host |
-| `MIGRATION_DATABASE_URL` | nein | Abweichende Verbindung nur für `db:migrate` (z. B. Session-Pooler bei Supabase) |
+| `MIGRATION_DATABASE_URL` | nein | Abweichende Verbindung nur für Migrationen (`db:migrate`, `db:migrate:prod`), z. B. Session-Pooler bei Supabase |
 | `CRON_SECRET` | nein | Schützt den täglichen Aufräum-Job `/api/cron/purge`, mind. 16 Zeichen. Ohne die Variable antwortet die Route immer mit 401 |
 
 ## Tests
@@ -62,13 +62,15 @@ src/
 ├── app/            Seiten und Server Actions
 │   ├── page.tsx, new/, manage/          Start, Tasting erstellen, Admin-Login
 │   ├── impressum/, datenschutz/         Rechtliches
+│   ├── api/cron/purge/                  Aufräum-Job
+│   ├── pwa-icon/                        App-Icons
 │   └── tasting/[code]/                  Gäste: beitreten, Weine, Bewertung, Ergebnisse
 │       ├── table/                       Tisch-Ansicht für iPad oder Fernseher
 │       └── admin/                       Verwaltung (Teilen, Allgemein, Weine, Bewertung, …)
 ├── components/     UI (Glasrand-Ring, Sterne, Ergebnisse, Admin-Editoren, shadcn/ui)
 ├── db/             Drizzle-Schema, DB-Client
 ├── server/         Datenbank-Logik (bekommt `db` als Parameter, getestet mit PGlite)
-├── lib/            Reine Logik: Regeln, Ergebnisberechnung, Validierung, Auth-Bausteine
+├── lib/            Logik ohne DB-Schicht: Regeln, Ergebnisse, Validierung, Auth- und Session-Helfer
 └── test/           Test-Helfer
 drizzle/            SQL-Migrationen
 e2e/                Playwright-Tests

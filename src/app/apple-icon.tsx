@@ -1,4 +1,4 @@
-import { appIconImage } from '@/lib/app-icon-image'
+import { appIconImage } from './app-icon-image'
 
 export const size = { width: 180, height: 180 }
 export const contentType = 'image/png'

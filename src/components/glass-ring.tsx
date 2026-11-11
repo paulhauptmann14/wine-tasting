@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { ringPath } from '@/lib/ring-path'
-import type { RingState } from '@/server/participant-view'
+import type { RingState } from '@/lib/tasting/progress'
 
 type GlassRingProps = {
   seed: number

@@ -2,13 +2,13 @@ import Link from 'next/link'
 import { CornerStain } from '@/components/corner-stain'
 import { GlassRing } from '@/components/glass-ring'
 import { JoinByCodeForm } from '@/components/join-by-code-form'
+import { textLink, textLinkFocus } from '@/components/styles'
 import { cn } from '@/lib/utils'
 
-const textLink =
-  'inline-flex h-12 items-center font-medium underline decoration-border decoration-2 underline-offset-[6px] outline-none transition-opacity duration-100 hover:decoration-wine active:opacity-50 focus-visible:decoration-wine'
 /** Laptop: host actions as large rows instead of small text links */
 const hostLink = cn(
   textLink,
+  textLinkFocus,
   'group lg:h-16 lg:w-full lg:justify-between lg:border-b lg:border-border lg:font-display lg:text-2xl lg:no-underline lg:hover:text-wine lg:focus-visible:text-wine',
 )
 

@@ -2,21 +2,18 @@ import { Trash2 } from 'lucide-react'
 import { ConfirmSubmit } from '@/components/admin/confirm-submit'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { GlassRing } from '@/components/glass-ring'
-import { buttonVariants } from '@/components/ui/button'
+import { iconButtonClass } from '@/components/ui/button'
 import { db } from '@/db/client'
 import { getAdminTasting } from '@/lib/data'
+import { RING_STATE_TEXT } from '@/lib/tasting/progress'
 import { cn } from '@/lib/utils'
 import { listParticipantProgress } from '@/server/participants'
-import type { RingState } from '@/server/participant-view'
 import { removeParticipantAction } from '../actions'
-
-const STATE_TEXT: Record<RingState, string> = { open: 'offen', incomplete: 'ergänzen', done: 'bewertet' }
 
 export default async function ParticipantsPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
   const tasting = await getAdminTasting(code)
   const people = await listParticipantProgress(db, tasting.id)
-  const iconButton = cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-12 shrink-0')
 
   if (people.length === 0) {
     return (
@@ -41,7 +38,7 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
                 action={removeParticipantAction.bind(null, tasting.code, p.id)}
                 trigger={<Trash2 className="size-5" />}
                 triggerLabel={`${p.name} entfernen`}
-                triggerClassName={iconButton}
+                triggerClassName={cn(iconButtonClass, 'shrink-0')}
                 title={`${p.name} entfernen?`}
                 description="Die Bewertungen dieser Person werden gelöscht und zählen nicht mehr im Ergebnis. Sie kann danach neu beitreten."
                 confirmLabel="Entfernen"
@@ -51,7 +48,7 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
             <ol aria-label={`Fortschritt von ${p.name}`} className="-mt-1 flex flex-wrap gap-1 pb-1">
               {p.wines.map((state, i) => (
                 <li key={i}>
-                  <GlassRing seed={i + 1} state={state} size={28} label={`Wein #${i + 1}: ${STATE_TEXT[state]}`}>
+                  <GlassRing seed={i + 1} state={state} size={28} label={`Wein #${i + 1}: ${RING_STATE_TEXT[state]}`}>
                     <span className="text-[10px] font-medium">{i + 1}</span>
                   </GlassRing>
                 </li>

@@ -1,11 +1,10 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { z } from 'zod'
 import { db } from '@/db/client'
 import { setAdminCookie } from '@/lib/auth/admin-session'
 import type { ActionState } from '@/lib/action-state'
-import { createTastingSchema, formValue } from '@/lib/validation'
+import { createTastingSchema, formValue, invalid } from '@/lib/validation'
 import { createTasting } from '@/server/tastings'
 
 export async function createTastingAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -17,10 +16,7 @@ export async function createTastingAction(_prev: ActionState, formData: FormData
   }
   const parsed = createTastingSchema.safeParse(raw)
   if (!parsed.success) {
-    return {
-      fieldErrors: z.flattenError(parsed.error).fieldErrors,
-      values: { name: raw.name, preset: raw.preset, blindTasting: raw.blindTasting ? 'on' : 'off' },
-    }
+    return invalid(parsed.error, { name: raw.name, preset: raw.preset, blindTasting: raw.blindTasting ? 'on' : 'off' })
   }
   const tasting = await createTasting(db, parsed.data)
   await setAdminCookie(tasting.code, tasting.id)

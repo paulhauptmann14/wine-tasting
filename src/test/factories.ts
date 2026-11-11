@@ -3,6 +3,7 @@ import type { Db } from '@/db/types'
 import { tastings } from '@/db/schema'
 import type { PresetKey } from '@/lib/tasting/presets'
 import type { TastingStatus } from '@/lib/tasting/rules'
+import type { WineInput } from '@/lib/validation'
 import { createTasting, type Tasting } from '@/server/tastings'
 
 export async function seedTasting(
@@ -16,10 +17,21 @@ export async function seedTasting(
     pin: '1234',
   })
   if (!opts.status || opts.status === tasting.status) return tasting
-  const [updated] = await db
-    .update(tastings)
-    .set({ status: opts.status })
-    .where(eq(tastings.id, tasting.id))
-    .returning()
+  return forceStatus(db, tasting.id, opts.status)
+}
+
+/** Sets the status directly, skipping the transition rules of setTastingStatus. */
+export async function forceStatus(db: Db, tastingId: string, status: TastingStatus): Promise<Tasting> {
+  const [updated] = await db.update(tastings).set({ status }).where(eq(tastings.id, tastingId)).returning()
   return updated
 }
+
+/** A wine with only a name – the details stay empty unless given. */
+export const wineInput = (name: string, overrides: Partial<WineInput> = {}): WineInput => ({
+  name,
+  vintage: null,
+  grapeVariety: null,
+  sweetness: null,
+  wineType: null,
+  ...overrides,
+})

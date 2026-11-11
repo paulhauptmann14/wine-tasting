@@ -15,17 +15,19 @@ import {
   directionSchema,
   formValue,
   idSchema,
+  invalid,
   settingsSchema,
+  statusSchema,
+  type Direction,
   wineSchema,
 } from '@/lib/validation'
 import { addCriterion, deleteCriterion, moveCriterion, renameCriterion } from '@/server/criteria'
 import { StructureLockedError } from '@/server/structure'
 import { removeParticipant } from '@/server/participants'
-import { deleteTasting, setTastingStatus, updateTastingSettings } from '@/server/tastings'
+import { deleteTasting, renameTasting, setBlindTasting, setTastingStatus } from '@/server/tastings'
 import { addWine, deleteWine, moveWine, updateWine } from '@/server/wines'
 
 const refresh = (code: string) => revalidatePath(`/tasting/${code}`, 'layout')
-const statusSchema = z.enum(['setup', 'active', 'finished'])
 const INVALID: ActionState = { message: 'Ungültige Anfrage. Bitte lade die Seite neu.' }
 
 /** Silently ignore locked structure changes (tasting running) – the UI disables the buttons anyway. */
@@ -40,10 +42,10 @@ async function unlessLocked(change: () => Promise<unknown>): Promise<void> {
 export async function updateSettingsAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const tasting = await getAdminTasting(code)
   // Name only – the blind tasting switch saves itself instantly (updateBlindTastingAction)
-  const raw = { name: formValue(fd, 'name'), blindTasting: tasting.blindTasting }
+  const raw = { name: formValue(fd, 'name') }
   const parsed = settingsSchema.safeParse(raw)
-  if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values: { name: raw.name } }
-  await updateTastingSettings(db, tasting.id, parsed.data)
+  if (!parsed.success) return invalid(parsed.error, { name: raw.name })
+  await renameTasting(db, tasting.id, parsed.data.name)
   refresh(tasting.code)
   return { ok: true, message: 'Gespeichert.' }
 }
@@ -56,7 +58,7 @@ export async function updateBlindTastingAction(code: string, blindTasting: unkno
   if (!canEditStructure(tasting.status)) {
     return { message: 'Lässt sich nur in der Vorbereitung ändern.' }
   }
-  await updateTastingSettings(db, tasting.id, { name: tasting.name, blindTasting: parsed.data })
+  await setBlindTasting(db, tasting.id, parsed.data)
   refresh(tasting.code)
   return { ok: true }
 }
@@ -83,7 +85,7 @@ export async function addWineAction(code: string, _prev: ActionState, fd: FormDa
   const tasting = await getAdminTasting(code)
   const raw = wineRaw(fd)
   const parsed = wineSchema.safeParse(raw)
-  if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values: raw }
+  if (!parsed.success) return invalid(parsed.error, raw)
   await addWine(db, tasting.id, parsed.data)
   refresh(tasting.code)
   return { ok: true }
@@ -99,7 +101,7 @@ export async function updateWineAction(
   if (!idSchema.safeParse(wineId).success) return INVALID
   const raw = wineRaw(fd)
   const parsed = wineSchema.safeParse(raw)
-  if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values: raw }
+  if (!parsed.success) return invalid(parsed.error, raw)
   await updateWine(db, tasting.id, wineId, parsed.data)
   refresh(tasting.code)
   return { ok: true }
@@ -112,7 +114,7 @@ export async function deleteWineAction(code: string, wineId: string): Promise<vo
   refresh(tasting.code)
 }
 
-export async function moveWineAction(code: string, wineId: string, direction: 'up' | 'down'): Promise<void> {
+export async function moveWineAction(code: string, wineId: string, direction: Direction): Promise<void> {
   const tasting = await getAdminTasting(code)
   if (!idSchema.safeParse(wineId).success || !directionSchema.safeParse(direction).success) return
   await moveWine(db, tasting.id, wineId, direction)
@@ -123,7 +125,7 @@ export async function addCriterionAction(code: string, _prev: ActionState, fd: F
   const tasting = await getAdminTasting(code)
   const raw = { name: formValue(fd, 'name') }
   const parsed = criterionNameSchema.safeParse(raw)
-  if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values: raw }
+  if (!parsed.success) return invalid(parsed.error, raw)
   try {
     await addCriterion(db, tasting.id, parsed.data.name)
   } catch (error) {
@@ -144,7 +146,7 @@ export async function renameCriterionAction(
   if (!idSchema.safeParse(criterionId).success) return INVALID
   const raw = { name: formValue(fd, 'name') }
   const parsed = criterionNameSchema.safeParse(raw)
-  if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values: raw }
+  if (!parsed.success) return invalid(parsed.error, raw)
   await renameCriterion(db, tasting.id, criterionId, parsed.data.name)
   refresh(tasting.code)
   return { ok: true }
@@ -158,7 +160,7 @@ export async function deleteCriterionAction(code: string, criterionId: string): 
   refresh(tasting.code)
 }
 
-export async function moveCriterionAction(code: string, criterionId: string, direction: 'up' | 'down'): Promise<void> {
+export async function moveCriterionAction(code: string, criterionId: string, direction: Direction): Promise<void> {
   const tasting = await getAdminTasting(code)
   if (!idSchema.safeParse(criterionId).success || !directionSchema.safeParse(direction).success) return
   await unlessLocked(() => moveCriterion(db, tasting.id, criterionId, direction))

@@ -1,6 +1,6 @@
 import { wineDetails } from './display'
 import { SCALES, type Scale } from './presets'
-import { formatScore, toScale, type Results, type WineResult } from './results'
+import { formatScaled, formatScore, type Results, type WineResult } from './results'
 
 /** Podium plus rows that still fit 1080 × 1350 legibly; the rest becomes "+ N weitere". */
 export const MAX_CARD_ROWS = 10
@@ -16,22 +16,17 @@ const FALLBACK_TITLE = 'Unsere Weinprobe'
  */
 export type RankingCardLayout = 'stacked' | 'roomy' | 'compact'
 
+type Budget = { name: number; detail: number }
 /**
- * Characters per slot, so the image never has to clamp a name (two lines on the podium, one in rows).
- * Index: winner, runners-up; rows share one line with the details.
+ * Characters per podium slot (winner, runners-up), so the image never has to clamp a name (two lines
+ * on the podium). Details count whole parts only, so nothing is cut mid-word.
  */
-const NAME_BUDGET: Record<RankingCardLayout, readonly [number, number]> = {
-  stacked: [38, 44],
-  roomy: [38, 26],
-  compact: [44, 30],
+const PODIUM_BUDGET: Record<RankingCardLayout, readonly [Budget, Budget]> = {
+  stacked: [{ name: 38, detail: 48 }, { name: 44, detail: 48 }],
+  roomy: [{ name: 38, detail: 48 }, { name: 26, detail: 22 }],
+  compact: [{ name: 44, detail: 48 }, { name: 30, detail: 24 }],
 }
 const MAX_ROW_NAME = 38
-/** Details per slot in characters – whole parts only, so nothing is cut mid-word */
-const DETAIL_BUDGET: Record<RankingCardLayout, readonly [number, number]> = {
-  stacked: [48, 48],
-  roomy: [48, 22],
-  compact: [48, 24],
-}
 /** Rows share one line between name (serif, wider) and details (smaller sans) */
 const ROW_BUDGET = 66
 const NAME_TO_DETAIL_WIDTH = 1.25
@@ -62,7 +57,7 @@ export type RankingCard = {
   footer: string
 }
 
-export type RankingCardMeta = {
+type RankingCardMeta = {
   tastingName: string
   guestCount: number
   date: Date
@@ -123,18 +118,6 @@ function layoutFor(rankedCount: number): RankingCardLayout {
   return rows <= 0 ? 'stacked' : rows <= 3 ? 'roomy' : 'compact'
 }
 
-const slot = (index: number) => (index === 0 ? 0 : 1)
-
-function nameBudget(layout: RankingCardLayout, index: number) {
-  return index < PODIUM_SIZE ? NAME_BUDGET[layout][slot(index)] : MAX_ROW_NAME
-}
-
-function detailBudget(layout: RankingCardLayout, index: number, name: string) {
-  return index < PODIUM_SIZE
-    ? DETAIL_BUDGET[layout][slot(index)]
-    : Math.floor(ROW_BUDGET - Array.from(name).length * NAME_TO_DETAIL_WIDTH)
-}
-
 /** Details with each part made drawable; parts with nothing left disappear. */
 function cardDetails(details: string | null): string | null {
   const parts = details?.split(SEPARATOR).map(cardText).filter(Boolean) ?? []
@@ -146,14 +129,17 @@ export function rankingCard(results: Results, scale: Scale, meta: RankingCardMet
   const ranked = results.wines.filter((w): w is WineResult & { rank: number } => w.rank !== null)
   const layout = layoutFor(ranked.length)
   const shown = ranked.slice(0, MAX_CARD_ROWS).map((w, i) => {
-    const name = truncate(cardText(w.name ?? '') || w.label, nameBudget(layout, i))
+    const budget = i < PODIUM_SIZE ? PODIUM_BUDGET[layout][i === 0 ? 0 : 1] : null
+    const name = truncate(cardText(w.name ?? '') || w.label, budget?.name ?? MAX_ROW_NAME)
+    // Rows share one line with the details
+    const detailBudget = budget?.detail ?? Math.floor(ROW_BUDGET - Array.from(name).length * NAME_TO_DETAIL_WIDTH)
     return {
       wineId: w.wineId,
       position: w.position,
       rank: w.rank,
       name,
-      details: w.name ? fitDetails(cardDetails(wineDetails(w)), detailBudget(layout, i, name)) : null,
-      score: formatScore(toScale(w.score, scale), scale),
+      details: w.name ? fitDetails(cardDetails(wineDetails(w)), detailBudget) : null,
+      score: formatScaled(w.score, scale),
     }
   })
   const { max } = SCALES[scale]

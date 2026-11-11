@@ -1,21 +1,20 @@
 'use client'
 
 import { useActionState, useEffect, useId, useState } from 'react'
-import { ArrowDown, ArrowUp, Pencil, Trash2 } from 'lucide-react'
 import {
   addCriterionAction,
   deleteCriterionAction,
   moveCriterionAction,
   renameCriterionAction,
 } from '@/app/tasting/[code]/admin/actions'
-import { ConfirmSubmit } from '@/components/admin/confirm-submit'
+import { RowActions } from '@/components/admin/row-actions'
 import { FieldError } from '@/components/field-error'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { marginNote } from '@/components/styles'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { ActionState } from '@/lib/action-state'
+import type { FormAction } from '@/lib/action-state'
 import { STRUCTURE_LOCK_HINT } from '@/lib/tasting/rules'
-import { cn } from '@/lib/utils'
 
 type CriterionData = { id: string; name: string; position: number }
 
@@ -26,7 +25,7 @@ function NameForm({
   submitLabel,
   onDone,
 }: {
-  action: (prev: ActionState, fd: FormData) => Promise<ActionState>
+  action: FormAction
   initial?: string
   label: string
   submitLabel: string
@@ -74,43 +73,29 @@ function CriterionRow({
   locked: boolean
 }) {
   const [editing, setEditing] = useState(false)
-  const iconButton = cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-12')
   return (
     <li className="border-b border-border py-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="w-6 text-right text-sm text-muted-foreground">{criterion.position}</span>
         <p className="min-w-40 flex-1 truncate font-medium">{criterion.name}</p>
-        <div className="-mr-2 ml-auto flex shrink-0">
-          <form action={moveCriterionAction.bind(null, code, criterion.id, 'up')}>
-            <button type="submit" disabled={locked || isFirst} aria-label={`${criterion.name} nach oben`} className={iconButton}>
-              <ArrowUp className="size-5" />
-            </button>
-          </form>
-          <form action={moveCriterionAction.bind(null, code, criterion.id, 'down')}>
-            <button type="submit" disabled={locked || isLast} aria-label={`${criterion.name} nach unten`} className={iconButton}>
-              <ArrowDown className="size-5" />
-            </button>
-          </form>
-          <button
-            type="button"
-            onClick={() => setEditing((v) => !v)}
-            aria-label={`${criterion.name} umbenennen`}
-            aria-expanded={editing}
-            className={iconButton}
-          >
-            <Pencil className="size-5" />
-          </button>
-          <ConfirmSubmit
-            action={deleteCriterionAction.bind(null, code, criterion.id)}
-            trigger={<Trash2 className="size-5" />}
-            triggerLabel={`${criterion.name} entfernen`}
-            triggerClassName={iconButton}
-            disabled={locked || isOnly}
-            title={`„${criterion.name}“ entfernen?`}
-            description="Alle bereits vergebenen Sterne für dieses Kriterium werden gelöscht."
-            confirmLabel="Entfernen"
-          />
-        </div>
+        <RowActions
+          label={criterion.name}
+          moveUp={moveCriterionAction.bind(null, code, criterion.id, 'up')}
+          moveDown={moveCriterionAction.bind(null, code, criterion.id, 'down')}
+          upDisabled={locked || isFirst}
+          downDisabled={locked || isLast}
+          editLabel={`${criterion.name} umbenennen`}
+          editing={editing}
+          onToggleEdit={() => setEditing((v) => !v)}
+          remove={{
+            action: deleteCriterionAction.bind(null, code, criterion.id),
+            disabled: locked || isOnly,
+            label: `${criterion.name} entfernen`,
+            title: `„${criterion.name}“ entfernen?`,
+            description: 'Alle bereits vergebenen Sterne für dieses Kriterium werden gelöscht.',
+            confirmLabel: 'Entfernen',
+          }}
+        />
       </div>
       {editing && (
         <div className="mt-3 pb-2">
@@ -138,7 +123,7 @@ export function CriteriaManager({
 }) {
   return (
     <div className="grid grid-cols-1 gap-8">
-      {locked && <p className="border-l-2 border-wine pl-3 text-sm text-muted-foreground">{STRUCTURE_LOCK_HINT}</p>}
+      {locked && <p className={marginNote}>{STRUCTURE_LOCK_HINT}</p>}
       <ol className="grid grid-cols-1 border-t border-border">
         {criteria.map((c, i) => (
           <CriterionRow

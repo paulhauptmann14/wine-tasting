@@ -9,13 +9,18 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
+// Relative imports: drizzle-kit loads this file without the '@/' alias
+import { SCALE_KEYS } from '../lib/tasting/presets'
+import { STATUS_KEYS } from '../lib/tasting/rules'
+import { SWEETNESS_KEYS } from '../lib/tasting/sweetness'
+import { WINE_TYPE_KEYS } from '../lib/tasting/wine-type'
 
 const timestamptz = (name: string) => timestamp(name, { withTimezone: true })
 
-export const tastingStatus = pgEnum('tasting_status', ['setup', 'active', 'finished'])
-export const wineSweetness = pgEnum('wine_sweetness', ['dry', 'off_dry', 'medium', 'sweet'])
-export const ratingScale = pgEnum('rating_scale', ['five', 'twenty', 'hundred'])
-export const wineType = pgEnum('wine_type', ['red', 'white', 'rose', 'sparkling'])
+export const tastingStatus = pgEnum('tasting_status', STATUS_KEYS)
+export const wineSweetness = pgEnum('wine_sweetness', SWEETNESS_KEYS)
+export const ratingScale = pgEnum('rating_scale', SCALE_KEYS)
+export const wineType = pgEnum('wine_type', WINE_TYPE_KEYS)
 
 export const tastings = pgTable('tasting', {
   id: uuid('id').primaryKey().defaultRandom(),

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { appIconImage } from '@/lib/app-icon-image'
+import { appIconImage } from '@/app/app-icon-image'
 
 /** PNG icons for the web app manifest (Android home screen). */
 const PWA_ICON_SIZES = [192, 512] as const

@@ -1,12 +1,12 @@
 import { GlassRing } from '@/components/glass-ring'
 import { wineDetails } from '@/lib/tasting/display'
 import { SCALES, type Scale } from '@/lib/tasting/presets'
-import { formatScore, toScale, type WineResult } from '@/lib/tasting/results'
+import { formatScaled, type WineResult } from '@/lib/tasting/results'
 import type { TastingStatus } from '@/lib/tasting/rules'
-import type { RingState } from '@/server/participant-view'
+import type { RingState } from '@/lib/tasting/progress'
 import { cn } from '@/lib/utils'
 
-export type TableWine = { id: string; position: number; title: string; ratingCount: number }
+type TableWine = { id: string; position: number; title: string; ratingCount: number }
 
 /**
  * Big-screen view for the table (iPad, TV): join QR before the start, progress while tasting,
@@ -102,7 +102,8 @@ function Progress({
   guests: number
   wines: TableWine[]
 }) {
-  const done = wines.reduce((sum, w) => sum + Math.min(w.ratingCount, guests), 0)
+  const rated = wines.map((w) => ({ ...w, rated: Math.min(w.ratingCount, guests) }))
+  const done = rated.reduce((sum, w) => sum + w.rated, 0)
   return (
     <section className="mt-10 lg:mt-14">
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -123,14 +124,14 @@ function Progress({
       </div>
 
       <ol className="mt-10 grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:mt-14 lg:grid-cols-4 xl:grid-cols-5">
-        {wines.map((w) => (
+        {rated.map((w) => (
           <li key={w.id} className="flex flex-col items-center text-center">
             <GlassRing seed={w.position} state={ringState(w.ratingCount, guests)} size={140}>
               <span className="font-display text-5xl font-medium">{w.position}</span>
             </GlassRing>
             <p className="mt-3 w-full truncate font-display text-xl">{w.title}</p>
             <p className="text-sm text-muted-foreground">
-              {Math.min(w.ratingCount, guests)} von {guests}
+              {w.rated} von {guests}
             </p>
           </li>
         ))}
@@ -145,7 +146,7 @@ function Podium({ wines, scale }: { wines: WineResult[]; scale: Scale }) {
     return <p className="mt-16 font-display text-3xl text-muted-foreground">Keine Bewertungen abgegeben.</p>
   }
   const [winner, ...rest] = ranked
-  const score = (w: WineResult) => formatScore(toScale(w.score, scale), scale)
+  const details = wineDetails(winner)
   const max = SCALES[scale].max
 
   return (
@@ -154,7 +155,7 @@ function Podium({ wines, scale }: { wines: WineResult[]; scale: Scale }) {
       <div className="mt-6 flex flex-col items-start gap-8 md:flex-row md:items-center lg:gap-14">
         <GlassRing seed={winner.position} size={260} animation="soak" delayMs={300}>
           <span className="flex flex-col items-center">
-            <span className="font-display text-8xl font-medium">{score(winner)}</span>
+            <span className="font-display text-8xl font-medium">{formatScaled(winner.score, scale)}</span>
             <span className="text-muted-foreground">von {max}</span>
           </span>
         </GlassRing>
@@ -164,7 +165,7 @@ function Podium({ wines, scale }: { wines: WineResult[]; scale: Scale }) {
           <p className="reveal-up font-display text-4xl leading-tight font-medium md:text-5xl lg:text-7xl" style={{ animationDelay: '700ms' }}>
             {winner.name ?? winner.label}
           </p>
-          {wineDetails(winner) && <p className="mt-2 text-muted-foreground lg:text-xl">{wineDetails(winner)}</p>}
+          {details && <p className="mt-2 text-muted-foreground lg:text-xl">{details}</p>}
         </div>
       </div>
 
@@ -177,7 +178,7 @@ function Podium({ wines, scale }: { wines: WineResult[]; scale: Scale }) {
                 <p className="truncate font-display text-2xl lg:text-3xl">{w.name ?? w.label}</p>
                 {w.name && <p className="truncate text-sm text-muted-foreground">{w.label}</p>}
               </div>
-              <span className="font-display text-3xl font-medium lg:text-4xl">{score(w)}</span>
+              <span className="font-display text-3xl font-medium lg:text-4xl">{formatScaled(w.score, scale)}</span>
             </li>
           ))}
         </ol>

@@ -4,14 +4,16 @@ import { saveRatingAction } from '../../actions'
 import { AdminLink } from '@/components/admin-link'
 import { GlassRing } from '@/components/glass-ring'
 import { RatingForm } from '@/components/rating-form'
+import { backLink } from '@/components/styles'
 import { TastingSplit } from '@/components/tasting-split'
 import { WineList, WineRingStrip } from '@/components/wine-list'
 import { WineSwipe } from '@/components/wine-swipe'
 import { db } from '@/db/client'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
-import { getTasting } from '@/lib/data'
+import { requireTasting } from '@/lib/data'
 import { wineTitle } from '@/lib/tasting/display'
 import { canRate, canSeeWineNames } from '@/lib/tasting/rules'
+import { cn } from '@/lib/utils'
 import { listCriteria } from '@/server/criteria'
 import { getWineListItems } from '@/server/participant-view'
 import { getRating } from '@/server/ratings'
@@ -23,9 +25,8 @@ export default async function WinePage({ params, searchParams }: Props) {
   const { code, nr } = await params
   const { saved, from } = await searchParams
   const position = Number(nr)
-  const tasting = await getTasting(code)
-  if (!tasting || !Number.isInteger(position) || position < 1) notFound()
-  if (tasting.code !== code) redirect(`/tasting/${tasting.code}/wine/${position}`)
+  if (!Number.isInteger(position) || position < 1) notFound()
+  const tasting = await requireTasting(code, `/wine/${position}`)
 
   const participant = await getCurrentParticipant(tasting)
   if (!participant) redirect(`/tasting/${tasting.code}`)
@@ -52,7 +53,7 @@ export default async function WinePage({ params, searchParams }: Props) {
   return (
     <TastingSplit aside={<WineList items={items} currentPosition={position} savedPosition={savedPosition} />}>
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <Link href={`/tasting/${tasting.code}`} className="inline-flex h-12 items-center hover:text-foreground transition-opacity duration-100 active:opacity-50 lg:hidden">
+        <Link href={`/tasting/${tasting.code}`} className={cn(backLink, 'lg:hidden')}>
           ‹ Alle Weine
         </Link>
         <div className="ml-auto flex items-center gap-4">

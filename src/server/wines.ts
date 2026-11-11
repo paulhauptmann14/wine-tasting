@@ -1,13 +1,18 @@
 import { and, asc, eq, max } from 'drizzle-orm'
 import type { Db } from '@/db/types'
 import { wines } from '@/db/schema'
-import type { WineInput } from '@/lib/validation'
+import { moveInOrder } from '@/lib/tasting/order'
+import type { Direction, WineInput } from '@/lib/validation'
 import { assertStructureEditable } from './structure'
 
 export type Wine = typeof wines.$inferSelect
 
 export async function listWines(db: Db, tastingId: string): Promise<Wine[]> {
   return db.select().from(wines).where(eq(wines.tastingId, tastingId)).orderBy(asc(wines.position))
+}
+
+export async function countWines(db: Db, tastingId: string): Promise<number> {
+  return db.$count(wines, eq(wines.tastingId, tastingId))
 }
 
 export async function getWineByPosition(db: Db, tastingId: string, position: number): Promise<Wine | null> {
@@ -85,16 +90,12 @@ export async function moveWine(
   db: Db,
   tastingId: string,
   wineId: string,
-  direction: 'up' | 'down',
+  direction: Direction,
 ): Promise<void> {
   // Allowed in every phase: wines are often poured in a different order than planned.
   // Ratings belong to the wine id, so they move along with it.
   await db.transaction(async (tx) => {
-    const ids = await orderedIds(tx, tastingId)
-    const from = ids.indexOf(wineId)
-    const to = direction === 'up' ? from - 1 : from + 1
-    if (from < 0 || to < 0 || to >= ids.length) return
-    ;[ids[from], ids[to]] = [ids[to], ids[from]]
-    await renumber(tx, ids)
+    const ids = moveInOrder(await orderedIds(tx, tastingId), wineId, direction)
+    if (ids) await renumber(tx, ids)
   })
 }

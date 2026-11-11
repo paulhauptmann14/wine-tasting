@@ -2,8 +2,8 @@ import { beforeEach, expect, it } from 'vitest'
 import { createTestDb } from '@/test/db'
 import { seedTasting } from '@/test/factories'
 import type { Db } from '@/db/types'
-import { participants, ratingValues, ratings, tastings, wines } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { participants, ratingValues, ratings, wines } from '@/db/schema'
+import { PRESETS } from '@/lib/tasting/presets'
 import { StructureLockedError } from './structure'
 import { addCriterion, deleteCriterion, listCriteria, moveCriterion, renameCriterion } from './criteria'
 
@@ -34,7 +34,7 @@ it('deletes a criterion with its rating values and renumbers', async () => {
     { ratingId: r.id, criterionId: geruch.id, value: 5 },
   ])
   expect(await deleteCriterion(db, t.id, aussehen.id)).toEqual({ ok: true })
-  expect(await names(t.id)).toEqual(['1:Geruch', '2:Geschmack', '3:Gesamteindruck'])
+  expect(await names(t.id)).toEqual(PRESETS.hundred.criteria.slice(1).map((c, i) => `${i + 1}:${c.name}`))
   expect((await db.select().from(ratingValues)).map((v) => v.criterionId)).toEqual([geruch.id])
 })
 
@@ -56,13 +56,15 @@ it('only touches criteria of the given tasting', async () => {
 })
 
 it('refuses to add, delete or move criteria once the tasting has started', async () => {
-  const t = await seedTasting(db, { preset: 'hundred' })
+  const t = await seedTasting(db, { preset: 'hundred', status: 'active' })
   const [first] = await listCriteria(db, t.id)
-  await db.update(tastings).set({ status: 'active' }).where(eq(tastings.id, t.id))
   await expect(addCriterion(db, t.id, 'Abgang')).rejects.toThrow(StructureLockedError)
   await expect(deleteCriterion(db, t.id, first.id)).rejects.toThrow(StructureLockedError)
   await expect(moveCriterion(db, t.id, first.id, 'down')).rejects.toThrow(StructureLockedError)
   // Renaming stays allowed
   await renameCriterion(db, t.id, first.id, 'Optik')
-  expect((await listCriteria(db, t.id)).map((c) => c.name)).toEqual(['Optik', 'Geruch', 'Geschmack', 'Gesamteindruck'])
+  expect((await listCriteria(db, t.id)).map((c) => c.name)).toEqual([
+    'Optik',
+    ...PRESETS.hundred.criteria.slice(1).map((c) => c.name),
+  ])
 })

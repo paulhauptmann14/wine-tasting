@@ -1,43 +1,18 @@
-import { expect, test, type Browser, type Page, type TestInfo } from '@playwright/test'
-
-/** Separate browser context for the guest, using the current project's device (phone/laptop). */
-async function newGuest(browser: Browser, testInfo: TestInfo): Promise<Page> {
-  const u = testInfo.project.use
-  const context = await browser.newContext({
-    baseURL: u.baseURL,
-    viewport: u.viewport,
-    userAgent: u.userAgent,
-    deviceScaleFactor: u.deviceScaleFactor,
-    isMobile: u.isMobile,
-    hasTouch: u.hasTouch,
-  })
-  return context.newPage()
-}
+import { expect, test } from '@playwright/test'
+import { addWines, createTasting, joinAs, newGuest, startTasting } from './helpers'
 
 // Phones share the image, browsers without file sharing download it
 const SHARE_OR_DOWNLOAD = /^(Ergebnis als Bild teilen|Bild herunterladen)$/
 
 test('Endergebnis lässt sich erst nach dem Ende als Bild teilen', async ({ page, browser }, testInfo) => {
-  await page.goto('/new')
-  await page.getByLabel('Name der Verkostung').fill('E2E Bildabend')
-  await page.getByLabel('Admin-PIN').fill('1234')
-  await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
-  await page.waitForURL(/\/admin$/)
-  const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
+  const code = await createTasting(page, 'E2E Bildabend')
   const imageUrl = `/tasting/${code}/results/image`
-
-  await page.getByRole('link', { name: 'Weine', exact: true }).click()
-  await page.getByLabel('Name', { exact: true }).fill('Riesling')
-  await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
-  await expect(page.getByText('Riesling', { exact: true })).toBeVisible()
-  await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
-  await page.getByRole('button', { name: 'Tasting starten' }).click()
+  await addWines(page, ['Riesling'])
+  await startTasting(page)
 
   // One guest rates the wine
   const guest = await newGuest(browser, testInfo)
-  await guest.goto(`/tasting/${code}`)
-  await guest.getByLabel('Wie heißt du?').fill('Anna')
-  await guest.getByRole('button', { name: 'Beitreten' }).click()
+  await joinAs(guest, code, 'Anna')
   await expect(guest.getByText('0 von 1 bewertet')).toBeVisible()
   await guest.goto(`/tasting/${code}/wine/1`)
   const groups = guest.getByRole('radiogroup')

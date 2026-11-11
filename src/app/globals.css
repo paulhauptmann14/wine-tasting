@@ -21,8 +21,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
@@ -30,8 +28,6 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -44,7 +40,6 @@
   /* System font for everything you operate (SF Pro, Roboto, Segoe) – optical sizes and Dynamic Type for free */
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   /* Serif for titles, wine names and scores: New York on Apple devices, Newsreader elsewhere */
-  --font-heading: ui-serif, var(--font-newsreader), Georgia, serif;
   --font-display: ui-serif, var(--font-newsreader), Georgia, serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace;
 
@@ -56,13 +51,10 @@
   --ease-pop: cubic-bezier(0.34, 1.4, 0.64, 1);
   --ease-draw: cubic-bezier(0.65, 0, 0.35, 1);
 
-  --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 /*
@@ -81,8 +73,6 @@
   --background: light-dark(#f2f2f7, #000000);
   --foreground: light-dark(#000000, #ffffff);
   --card: light-dark(#ffffff, #1c1c1e);
-  --card-foreground: var(--foreground);
-  --popover: var(--card);
   --popover-foreground: var(--foreground);
   --primary: var(--wine);
   --primary-foreground: light-dark(#ffffff, #000000);
@@ -91,8 +81,6 @@
   --muted: light-dark(#e5e5ea, #1c1c1e);
   /* Apple's secondary label, slightly darker in light mode to keep 4.5:1 on the gray background */
   --muted-foreground: light-dark(#6c6c70, #8e8e93);
-  --accent: var(--secondary);
-  --accent-foreground: var(--foreground);
   /* Apple's increased-contrast reds – the default systemRed is too light for text */
   --destructive: light-dark(#d70015, #ff6961);
   /* Apple separators */
@@ -188,12 +176,8 @@
   from { transform: scale(0.94); opacity: 0.4; filter: blur(1.5px); }
   to { transform: scale(1); opacity: 1; filter: blur(0); }
 }
-@keyframes fill-soak {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 .ring-soak { animation: ring-soak 900ms var(--ease-fluid) both; }
-.ring-soak .ring-fill { animation: fill-soak 1200ms 200ms ease-out both; }
+.ring-soak .ring-fill { animation: fade-in 1200ms 200ms ease-out both; }
 
 @keyframes reveal-up {
   from { opacity: 0; transform: translateY(8px); }

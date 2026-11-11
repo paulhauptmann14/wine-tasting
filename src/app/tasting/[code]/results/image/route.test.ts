@@ -1,15 +1,15 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 import { getTasting } from '@/lib/data'
-import { rankingImage } from '@/lib/ranking-image'
+import { rankingImage } from './ranking-image'
 import { GET } from './route'
 
 vi.mock('@/db/client', () => ({ db: {} }))
 vi.mock('@/lib/data', () => ({ getTasting: vi.fn() }))
 vi.mock('@/server/participants', () => ({ countParticipants: vi.fn(async () => 3) }))
 vi.mock('@/server/results-data', () => ({
-  loadResultsInput: vi.fn(async () => ({ wines: [], criteria: [], ratings: [] })),
+  loadResults: vi.fn(async () => ({ wines: [], criteria: [] })),
 }))
-vi.mock('@/lib/ranking-image', () => ({
+vi.mock('./ranking-image', () => ({
   rankingImage: vi.fn(async (_card: unknown, headers: Record<string, string>) => new Response('png', { headers })),
 }))
 
