@@ -9,7 +9,6 @@ import {
   getParticipantBySessionToken,
   joinTasting,
   listParticipantProgress,
-  listParticipants,
   removeParticipant,
 } from './participants'
 
@@ -45,26 +44,6 @@ it('allows duplicate names as separate participants', async () => {
   expect(a.participant.id).not.toBe(b.participant.id)
 })
 
-it('lists participants in join order counting only complete ratings', async () => {
-  const t = await seedTasting(db, { preset: 'simple' })
-  const [gesamt] = await db.select().from(ratingCriteria).where(eq(ratingCriteria.tastingId, t.id))
-  const [w1, w2] = await db
-    .insert(wines)
-    .values([
-      { tastingId: t.id, position: 1, name: 'R' },
-      { tastingId: t.id, position: 2, name: 'S' },
-    ])
-    .returning()
-  const anna = await joinTasting(db, t.id, 'Anna', now)
-  await joinTasting(db, t.id, 'Ben', new Date(now.getTime() + 1000))
-  const [complete] = await db.insert(ratings).values({ participantId: anna.participant.id, wineId: w1.id }).returning()
-  await db.insert(ratingValues).values({ ratingId: complete.id, criterionId: gesamt.id, value: 4 })
-  // A rating without values doesn't count – same as in the guest view
-  await db.insert(ratings).values({ participantId: anna.participant.id, wineId: w2.id })
-  const list = await listParticipants(db, t.id)
-  expect(list.map((p) => [p.name, p.ratingCount])).toEqual([['Anna', 1], ['Ben', 0]])
-})
-
 it('removes a participant with sessions and ratings, only within its tasting', async () => {
   const t = await seedTasting(db, { preset: 'simple' })
   const other = await seedTasting(db)
@@ -75,7 +54,7 @@ it('removes a participant with sessions and ratings, only within its tasting', a
   expect(await removeParticipant(db, other.id, anna.participant.id)).toBe(false)
   expect(await removeParticipant(db, t.id, anna.participant.id)).toBe(true)
 
-  expect(await listParticipants(db, t.id)).toEqual([])
+  expect(await countParticipants(db, t.id)).toBe(0)
   expect(await db.select().from(ratings)).toEqual([])
   expect(await getParticipantBySessionToken(db, t.id, anna.token, now)).toBeNull()
 })
