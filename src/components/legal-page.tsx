@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { backLink } from '@/components/styles'
+import { SITE_FRAME_CLASSES } from '@/lib/site-frame'
+import { cn } from '@/lib/utils'
 
 /** Reading layout for Impressum and privacy policy: one comfortable column, plain hierarchy. */
 export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <main className="mx-auto w-full max-w-[480px] px-4 pt-6 pb-16 sm:max-w-[720px] sm:px-6 lg:pt-4">
+    // Reading column: stays at the sm width on laptops too
+    <main className={cn('mx-auto w-full pt-6 pb-16 lg:pt-4', SITE_FRAME_CLASSES.page, 'lg:max-w-[720px]')}>
       <Link href="/" className={backLink}>
         ‹ Zur Startseite
       </Link>

@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
 import { Newsreader } from 'next/font/google'
 import { SiteFooter } from '@/components/site-footer'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { SiteHeader } from '@/components/site-header'
 import { VercelAnalytics } from '@/components/vercel-analytics'
 import { THEME_COLORS, THEME_COOKIE, parseTheme } from '@/lib/theme'
 import './globals.css'
@@ -36,9 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="de" data-theme={theme} className={newsreader.variable}>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
-        <div className="mx-auto flex w-full max-w-[1100px] justify-end px-2 pt-2 sm:px-4">
-          <ThemeToggle initial={theme} />
-        </div>
+        <SiteHeader theme={theme} />
         {/* Own wrapper instead of overflow on body: that would propagate to the viewport */}
         <div className="overflow-x-clip">{children}</div>
         <SiteFooter />

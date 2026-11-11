@@ -3,6 +3,7 @@ import { CornerStain } from '@/components/corner-stain'
 import { GlassRing } from '@/components/glass-ring'
 import { JoinByCodeForm } from '@/components/join-by-code-form'
 import { textLink, textLinkFocus } from '@/components/styles'
+import { SITE_FRAME_CLASSES } from '@/lib/site-frame'
 import { cn } from '@/lib/utils'
 
 /** Laptop: host actions as large rows instead of small text links */
@@ -34,7 +35,7 @@ function Arrow() {
 export default function HomePage() {
   return (
     // Phone: narrow sheet. Laptop: opened up into two columns instead of a centered card
-    <main className="mx-auto w-full max-w-[480px] sm:max-w-[720px] px-4 pt-6 pb-32 sm:px-6 lg:max-w-[1100px] lg:pt-4 lg:pb-16">
+    <main className={cn('mx-auto w-full pt-6 pb-32 lg:pt-4 lg:pb-16', SITE_FRAME_CLASSES.page)}>
       <div className="relative">
         <div className="lg:hidden">
           <CornerStain seed={5} />
@@ -46,10 +47,9 @@ export default function HomePage() {
           className="pointer-events-none absolute top-0 right-[calc((100%-100vw)/2-120px)] hidden xl:inline-grid"
         />
 
-        <p className="relative font-display text-lg font-medium">Wine Tasting</p>
-
-        <div className="lg:mt-28 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
-          <section aria-labelledby="join-heading" className="relative mt-24 lg:mt-0">
+        {/* The wordmark lives in the site header – same spot on every page */}
+        <div className="lg:mt-34 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
+          <section aria-labelledby="join-heading" className="relative mt-30 lg:mt-0">
             <p className="text-sm text-muted-foreground">Eingeladen?</p>
             <h1
               id="join-heading"

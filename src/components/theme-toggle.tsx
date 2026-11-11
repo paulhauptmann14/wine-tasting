@@ -49,7 +49,7 @@ export function ThemeToggle({ initial }: { initial?: Theme }) {
       type="button"
       onClick={toggle}
       aria-label={next === 'dark' ? 'Dunkles Design' : 'Helles Design'}
-      className="grid size-11 place-items-center rounded-full text-muted-foreground outline-none transition-[color,background-color,transform] duration-100 active:scale-90 hover:bg-card hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      className="grid size-12 place-items-center rounded-full text-muted-foreground outline-none transition-[color,background-color,transform] duration-100 active:scale-90 hover:bg-card hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
     >
       {next === 'dark' ? <Moon className="size-5" aria-hidden /> : <Sun className="size-5" aria-hidden />}
     </button>

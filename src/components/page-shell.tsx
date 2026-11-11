@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { SITE_FRAME_CLASSES } from '@/lib/site-frame'
 import { cn } from '@/lib/utils'
 
 /**
@@ -9,8 +10,9 @@ export function PageShell({ children, width = 'narrow' }: { children: ReactNode;
   return (
     <main
       className={cn(
-        'mx-auto w-full max-w-[480px] sm:max-w-[720px] px-4 pt-6 pb-32 sm:px-6 lg:pb-16',
-        width === 'narrow' && 'lg:max-w-[1100px] lg:pt-4',
+        'mx-auto w-full pt-6 pb-32 lg:pb-16',
+        SITE_FRAME_CLASSES.page,
+        width === 'narrow' && 'lg:pt-4',
         width === 'wide' && 'lg:max-w-[960px] lg:pt-12',
       )}
     >

@@ -4,6 +4,7 @@ import { SCALES, type Scale } from '@/lib/tasting/presets'
 import { formatScaled, type WineResult } from '@/lib/tasting/results'
 import type { TastingStatus } from '@/lib/tasting/rules'
 import type { RingState } from '@/lib/tasting/progress'
+import { SITE_FRAME_CLASSES } from '@/lib/site-frame'
 import { cn } from '@/lib/utils'
 
 type TableWine = { id: string; position: number; title: string; ratingCount: number }
@@ -34,7 +35,7 @@ export function TableView({
   scale: Scale
 }) {
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-4 pt-4 pb-16 sm:px-8 lg:px-12 lg:pt-8">
+    <main className={cn('mx-auto w-full pt-4 pb-16 sm:pt-8', SITE_FRAME_CLASSES.table)}>
       <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
         <h1 className="font-display text-4xl leading-[1.05] font-medium tracking-tight md:text-5xl lg:text-7xl">
           {name}

@@ -6,6 +6,7 @@ import { TastingCode } from '@/components/tasting-code'
 import { buttonVariants } from '@/components/ui/button'
 import { requireAdmin } from '@/lib/auth/admin-session'
 import { requireTasting } from '@/lib/data'
+import { SITE_FRAME_CLASSES } from '@/lib/site-frame'
 import { STATUS_LABELS } from '@/lib/tasting/rules'
 import { cn } from '@/lib/utils'
 
@@ -21,7 +22,12 @@ export default async function AdminLayout({
   await requireAdmin(tasting)
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] px-4 pt-4 pb-24 sm:px-6 lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-x-12 lg:pt-8">
+    <main
+      className={cn(
+        'mx-auto w-full pt-4 pb-24 lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-x-12 lg:pt-8',
+        SITE_FRAME_CLASSES.admin,
+      )}
+    >
       <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 lg:col-span-2 lg:mb-10">
         <div className="min-w-0">
           <TastingCode code={tasting.code} />
@@ -43,6 +49,6 @@ export default async function AdminLayout({
       </header>
       <AdminNav code={tasting.code} />
       <section className="min-w-0">{children}</section>
-    </div>
+    </main>
   )
 }
