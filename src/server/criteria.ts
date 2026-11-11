@@ -1,9 +1,11 @@
-import { and, asc, eq, max } from 'drizzle-orm'
+import { and, asc, count, eq, max } from 'drizzle-orm'
 import type { Db } from '@/db/types'
-import { ratingCriteria } from '@/db/schema'
+import { participants, ratingCriteria, ratings, tastings } from '@/db/schema'
 import { moveInOrder } from '@/lib/tasting/order'
+import { PRESETS, type PresetKey } from '@/lib/tasting/presets'
+import { canEditStructure } from '@/lib/tasting/rules'
 import type { Direction } from '@/lib/validation'
-import { assertStructureEditable } from './structure'
+import { StructureLockedError, assertStructureEditable } from './structure'
 
 export type Criterion = typeof ratingCriteria.$inferSelect
 
@@ -20,6 +22,51 @@ export async function listCriteria(db: Db, tastingId: string): Promise<Criterion
 
 export async function countCriteria(db: Db, tastingId: string): Promise<number> {
   return db.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId))
+}
+
+/** The criteria rows of a preset for one tasting (names, weights, positions 1..n). */
+export const presetCriteriaRows = (tastingId: string, preset: PresetKey) =>
+  PRESETS[preset].criteria.map(({ name, weight }, i) => ({ tastingId, name, weight, position: i + 1 }))
+
+export async function countTastingRatings(db: Db, tastingId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(ratings)
+    .innerJoin(participants, eq(ratings.participantId, participants.id))
+    .where(eq(participants.tastingId, tastingId))
+  return row.n
+}
+
+/**
+ * Switches the rating system: sets the scale and replaces ALL criteria with the preset's.
+ * Setup only (StructureLockedError otherwise) and only while nobody has rated – replacing the
+ * criteria would delete rating values via cascade. Check and change share one transaction
+ * with the tasting row locked, so a concurrent status change is serialized. Known gap: rating
+ * writes don't take that lock, so a rating that is still uncommitted while this runs is not seen.
+ */
+export async function applyPreset(
+  db: Db,
+  tastingId: string,
+  preset: PresetKey,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  return db.transaction(async (tx) => {
+    const [tasting] = await tx
+      .select({ status: tastings.status })
+      .from(tastings)
+      .where(eq(tastings.id, tastingId))
+      .for('update')
+    if (!tasting || !canEditStructure(tasting.status)) throw new StructureLockedError()
+    if ((await countTastingRatings(tx, tastingId)) > 0) {
+      return {
+        ok: false,
+        reason: 'Es gibt schon Bewertungen. Das Bewertungssystem lässt sich nur ändern, solange noch niemand bewertet hat.',
+      } as const
+    }
+    await tx.update(tastings).set({ scale: PRESETS[preset].scale }).where(eq(tastings.id, tastingId))
+    await tx.delete(ratingCriteria).where(eq(ratingCriteria.tastingId, tastingId))
+    await tx.insert(ratingCriteria).values(presetCriteriaRows(tastingId, preset))
+    return { ok: true } as const
+  })
 }
 
 export async function addCriterion(db: Db, tastingId: string, name: string): Promise<Criterion> {

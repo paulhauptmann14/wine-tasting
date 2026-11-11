@@ -1,11 +1,20 @@
-import { beforeEach, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestDb } from '@/test/db'
 import { seedTasting } from '@/test/factories'
 import type { Db } from '@/db/types'
-import { participants, ratingValues, ratings, wines } from '@/db/schema'
+import { participants, ratingValues, ratings, tastings, wines } from '@/db/schema'
 import { PRESETS } from '@/lib/tasting/presets'
 import { StructureLockedError } from './structure'
-import { addCriterion, deleteCriterion, listCriteria, moveCriterion, renameCriterion } from './criteria'
+import {
+  addCriterion,
+  applyPreset,
+  countTastingRatings,
+  deleteCriterion,
+  listCriteria,
+  moveCriterion,
+  renameCriterion,
+} from './criteria'
 
 let db: Db
 beforeEach(async () => {
@@ -67,4 +76,73 @@ it('refuses to add, delete or move criteria once the tasting has started', async
     'Optik',
     ...PRESETS.hundred.criteria.slice(1).map((c) => c.name),
   ])
+})
+
+const addRating = async (tastingId: string) => {
+  const [wine] = await db.insert(wines).values({ tastingId, position: 1, name: 'R' }).returning()
+  const [p] = await db.insert(participants).values({ tastingId, name: 'P' }).returning()
+  await db.insert(ratings).values({ participantId: p.id, wineId: wine.id })
+}
+const scaleOf = async (tastingId: string) =>
+  (await db.select({ scale: tastings.scale }).from(tastings).where(eq(tastings.id, tastingId)))[0].scale
+const presetNames = (key: keyof typeof PRESETS) => PRESETS[key].criteria.map((c, i) => `${i + 1}:${c.name}`)
+
+describe('applyPreset', () => {
+  it('replaces scale and criteria with the preset (gapless positions, weights copied)', async () => {
+    const t = await seedTasting(db, { preset: 'simple' })
+    await addCriterion(db, t.id, 'Abgang')
+    expect(await applyPreset(db, t.id, 'hundred')).toEqual({ ok: true })
+    expect(await scaleOf(t.id)).toBe('hundred')
+    expect((await listCriteria(db, t.id)).map((c) => [c.position, c.name, c.weight])).toEqual(
+      PRESETS.hundred.criteria.map((c, i) => [i + 1, c.name, c.weight]),
+    )
+  })
+
+  it('switches between presets that share a scale', async () => {
+    const t = await seedTasting(db, { preset: 'five' })
+    expect(await applyPreset(db, t.id, 'simple')).toEqual({ ok: true })
+    expect(await names(t.id)).toEqual(['1:Gesamt'])
+    expect(await scaleOf(t.id)).toBe('five')
+  })
+
+  it('refuses once the tasting has started', async () => {
+    const t = await seedTasting(db, { preset: 'five', status: 'active' })
+    await expect(applyPreset(db, t.id, 'hundred')).rejects.toThrow(StructureLockedError)
+    expect(await scaleOf(t.id)).toBe('five')
+    expect(await names(t.id)).toEqual(presetNames('five'))
+  })
+
+  it('refuses when ratings exist (tasting went back to setup) and keeps everything', async () => {
+    const t = await seedTasting(db, { preset: 'five' })
+    await addRating(t.id)
+    const result = await applyPreset(db, t.id, 'hundred')
+    expect(result).toMatchObject({ ok: false })
+    expect(result.ok === false && result.reason).toMatch(/Bewertungen/)
+    expect(await scaleOf(t.id)).toBe('five')
+    expect(await names(t.id)).toEqual(presetNames('five'))
+  })
+
+  it('leaves other tastings untouched', async () => {
+    const t = await seedTasting(db, { preset: 'five' })
+    const other = await seedTasting(db, { preset: 'twenty' })
+    await addRating(other.id)
+    await applyPreset(db, t.id, 'simple')
+    expect(await scaleOf(other.id)).toBe('twenty')
+    expect(await names(other.id)).toEqual(presetNames('twenty'))
+  })
+
+  it('refuses an unknown tasting', async () => {
+    await expect(applyPreset(db, '00000000-0000-0000-0000-000000000000', 'simple')).rejects.toThrow(
+      StructureLockedError,
+    )
+  })
+})
+
+it('counts the ratings of one tasting only', async () => {
+  const t = await seedTasting(db, { preset: 'five' })
+  const other = await seedTasting(db, { preset: 'five' })
+  await addRating(other.id)
+  expect(await countTastingRatings(db, t.id)).toBe(0)
+  await addRating(t.id)
+  expect(await countTastingRatings(db, t.id)).toBe(1)
 })

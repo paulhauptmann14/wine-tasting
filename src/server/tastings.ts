@@ -7,7 +7,7 @@ import { hashPin, verifyPin } from '@/lib/auth/pin'
 import { lockMinutes } from '@/lib/auth/pin-lockout'
 import { isExpired, retentionCutoff } from '@/lib/tasting/retention'
 import { canTransition, type TastingStatus } from '@/lib/tasting/rules'
-import { countCriteria } from './criteria'
+import { countCriteria, presetCriteriaRows } from './criteria'
 import { assertStructureEditable } from './structure'
 import { countWines } from './wines'
 
@@ -36,14 +36,7 @@ export async function createTasting(
         .onConflictDoNothing({ target: tastings.code })
         .returning()
       if (!tasting) continue
-      await tx.insert(ratingCriteria).values(
-        PRESETS[input.preset].criteria.map(({ name, weight }, i) => ({
-          tastingId: tasting.id,
-          name,
-          weight,
-          position: i + 1,
-        })),
-      )
+      await tx.insert(ratingCriteria).values(presetCriteriaRows(tasting.id, input.preset))
       return tasting
     }
     throw new Error('Could not generate a unique tasting code')

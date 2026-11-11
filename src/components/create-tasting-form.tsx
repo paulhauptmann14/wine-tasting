@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState } from 'react'
 import { createTastingAction } from '@/app/new/actions'
 import { BottomBar } from '@/components/bottom-bar'
 import { FieldError } from '@/components/field-error'
@@ -8,15 +8,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { ScoringExplainer } from '@/components/scoring-explainer'
+import { PresetPicker } from '@/components/preset-picker'
 import { RETENTION_DAYS } from '@/lib/tasting/retention'
-import { PRESET_KEYS, PRESETS, type PresetKey } from '@/lib/tasting/presets'
+import type { PresetKey } from '@/lib/tasting/presets'
 
 export function CreateTastingForm() {
   const [state, action, pending] = useActionState(createTastingAction, undefined)
   const errors = state?.fieldErrors ?? {}
-  const preset = state?.values?.preset ?? 'five'
-  const [selected, setSelected] = useState<PresetKey>(preset as PresetKey)
+  const preset = (state?.values?.preset ?? 'five') as PresetKey
 
   return (
     <form action={action} noValidate className="grid gap-8">
@@ -48,37 +47,11 @@ export function CreateTastingForm() {
         />
       </div>
 
-      <fieldset>
-        <legend className="text-sm font-medium">Bewertungssystem</legend>
-        <p className="mt-1 text-sm text-muted-foreground">Du kannst die Kriterien danach noch anpassen.</p>
-        <div className="mt-3 grid gap-2">
-          {PRESET_KEYS.map((key) => (
-            <label
-              key={key}
-              className="flex min-h-14 cursor-pointer flex-col justify-center rounded-xl border border-border bg-background/40 px-4 py-3 lg:bg-card transition-[border-color,transform] duration-100 ease-out active:scale-[0.99] has-[:checked]:border-wine has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
-            >
-              <input
-                type="radio"
-                name="preset"
-                value={key}
-                defaultChecked={preset === key}
-                onChange={() => setSelected(key)}
-                className="sr-only"
-              />
-              <span className="font-medium">{PRESETS[key].label}</span>
-              <span className="text-sm text-muted-foreground">{PRESETS[key].hint}</span>
-              <span className="mt-1 text-sm">{PRESETS[key].criteria.map((c) => c.name).join(' · ')}</span>
-            </label>
-          ))}
-        </div>
-        <FieldError errors={errors.preset} />
-        {PRESETS[selected] && (
-          <div className="mt-6">
-            <p className="text-sm font-medium">So wird gerechnet</p>
-            <ScoringExplainer scale={PRESETS[selected].scale} criteria={PRESETS[selected].criteria} className="mt-2" />
-          </div>
-        )}
-      </fieldset>
+      <PresetPicker
+        hint="Du kannst die Kriterien danach noch anpassen."
+        defaultValue={preset}
+        errors={errors.preset}
+      />
 
       <div>
         <Label htmlFor="pin">Admin-PIN</Label>

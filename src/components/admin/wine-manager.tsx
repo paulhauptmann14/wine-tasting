@@ -1,19 +1,33 @@
 'use client'
 
+import { Shuffle } from 'lucide-react'
 import { useActionState, useEffect, useId, useState } from 'react'
-import { addWineAction, deleteWineAction, moveWineAction, updateWineAction } from '@/app/tasting/[code]/admin/actions'
+import {
+  addWineAction,
+  deleteWineAction,
+  moveWineAction,
+  shuffleWinesAction,
+  updateWineAction,
+} from '@/app/tasting/[code]/admin/actions'
 import { RowActions } from '@/components/admin/row-actions'
 import { FieldError } from '@/components/field-error'
 import { GlassRing } from '@/components/glass-ring'
-import { marginNote } from '@/components/styles'
+import { marginNote, textLink, textLinkFocus } from '@/components/styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { FormAction } from '@/lib/action-state'
 import { wineDetails, type WineLike } from '@/lib/tasting/display'
-import { WINE_LOCK_HINT } from '@/lib/tasting/rules'
+import {
+  SHUFFLE_RUNNING_HINT,
+  SHUFFLE_TOO_FEW_HINT,
+  WINE_LOCK_HINT,
+  canShuffleWines,
+  type TastingStatus,
+} from '@/lib/tasting/rules'
 import { SWEETNESS_KEYS, SWEETNESS_LABELS } from '@/lib/tasting/sweetness'
 import { WINE_TYPE_KEYS, WINE_TYPE_LABELS } from '@/lib/tasting/wine-type'
+import { cn } from '@/lib/utils'
 
 type WineRowData = { id: string } & WineLike
 
@@ -208,7 +222,70 @@ function WineRow({
   )
 }
 
-export function WineManager({ code, wines, locked }: { code: string; wines: WineRowData[]; locked: boolean }) {
+/** Shuffles the wines nobody has rated yet. Hidden once the tasting is finished. */
+function ShuffleControl({
+  code,
+  status,
+  unratedCount,
+  wineCount,
+}: {
+  code: string
+  status: TastingStatus
+  unratedCount: number
+  wineCount: number
+}) {
+  const [state, action, pending] = useActionState(shuffleWinesAction.bind(null, code), undefined)
+  const hintId = useId()
+  const tooFew = unratedCount < 2
+  if (!canShuffleWines(status)) return null
+
+  return (
+    <div className="grid grid-cols-1 gap-1">
+      {(status === 'active' || unratedCount < wineCount) && <p className={cn(marginNote, 'mb-2')}>{SHUFFLE_RUNNING_HINT}</p>}
+      <form action={action}>
+        <button
+          type="submit"
+          disabled={tooFew || pending}
+          aria-describedby={tooFew ? hintId : undefined}
+          className={cn(textLink, textLinkFocus, 'gap-2 disabled:pointer-events-none disabled:opacity-50')}
+        >
+          <Shuffle className="size-4" aria-hidden />
+          Reihenfolge mischen
+        </button>
+      </form>
+      {tooFew && (
+        <p id={hintId} className="text-sm text-muted-foreground">
+          {SHUFFLE_TOO_FEW_HINT}
+        </p>
+      )}
+      <p role="status" aria-live="polite" className="min-h-5 text-sm">
+        {state?.message && (
+          <span
+            key={state.values?.nonce}
+            className={state.ok ? 'text-muted-foreground' : 'text-destructive'}
+          >
+            {state.message}
+          </span>
+        )}
+      </p>
+    </div>
+  )
+}
+
+export function WineManager({
+  code,
+  wines,
+  locked,
+  status,
+  unratedCount,
+}: {
+  code: string
+  wines: WineRowData[]
+  locked: boolean
+  status: TastingStatus
+  /** Wines nobody has rated yet – only these take part in the shuffle */
+  unratedCount: number
+}) {
   return (
     <div className="grid grid-cols-1 gap-8">
       {locked && <p className={marginNote}>{WINE_LOCK_HINT}</p>}
@@ -228,6 +305,7 @@ export function WineManager({ code, wines, locked }: { code: string; wines: Wine
           ))}
         </ol>
       )}
+      {wines.length > 0 && <ShuffleControl code={code} status={status} unratedCount={unratedCount} wineCount={wines.length} />}
       <section aria-labelledby="add-wine-heading">
         <h2 id="add-wine-heading" className="mb-4 font-display text-xl font-medium">
           Wein #{wines.length + 1} hinzufügen

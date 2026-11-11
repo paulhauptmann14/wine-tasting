@@ -1,8 +1,11 @@
-import { beforeEach, expect, it, vi } from 'vitest'
+import { revalidatePath } from 'next/cache'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAdminTasting } from '@/lib/data'
+import { SHUFFLE_TOO_FEW_HINT } from '@/lib/tasting/rules'
 import { StructureLockedError } from '@/server/structure'
 import { setBlindTasting } from '@/server/tastings'
-import { updateBlindTastingAction } from './actions'
+import { shuffleWines } from '@/server/wines'
+import { shuffleWinesAction, updateBlindTastingAction } from './actions'
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/db/client', () => ({ db: {} }))
@@ -10,6 +13,7 @@ vi.mock('@/lib/data', () => ({ getAdminTasting: vi.fn() }))
 vi.mock('@/lib/auth/admin-session', () => ({ clearAdminCookie: vi.fn() }))
 vi.mock('@/lib/auth/participant-session', () => ({ clearParticipantCookie: vi.fn() }))
 vi.mock('@/server/tastings', () => ({ setBlindTasting: vi.fn() }))
+vi.mock('@/server/wines', () => ({ shuffleWines: vi.fn() }))
 
 const tasting = { id: 't1', code: '8GXBW5', status: 'setup', blindTasting: true }
 
@@ -36,4 +40,31 @@ it('passes other errors on', async () => {
 it('rejects anything but a boolean', async () => {
   expect((await updateBlindTastingAction('8GXBW5', 'false'))?.message).toMatch(/Ungültige Anfrage/)
   expect(setBlindTasting).not.toHaveBeenCalled()
+})
+
+describe('shuffleWinesAction', () => {
+  it('checks admin access first and does not touch wines when it fails', async () => {
+    vi.mocked(getAdminTasting).mockRejectedValue(new Error('redirect'))
+    await expect(shuffleWinesAction('8GXBW5')).rejects.toThrow('redirect')
+    expect(shuffleWines).not.toHaveBeenCalled()
+  })
+
+  it('reports how many wines were shuffled and refreshes the pages', async () => {
+    vi.mocked(shuffleWines).mockResolvedValue({ ok: true, shuffled: 3 })
+    expect(await shuffleWinesAction('8GXBW5')).toMatchObject({ ok: true, message: 'Reihenfolge von 3 Weinen neu gemischt.' })
+    expect(shuffleWines).toHaveBeenCalledWith({}, 't1')
+    expect(revalidatePath).toHaveBeenCalledWith('/tasting/8GXBW5', 'layout')
+  })
+
+  it('says why nothing happened when fewer than two wines are unrated', async () => {
+    vi.mocked(shuffleWines).mockResolvedValue({ ok: true, shuffled: 0 })
+    expect(await shuffleWinesAction('8GXBW5')).toMatchObject({ message: SHUFFLE_TOO_FEW_HINT })
+    expect(revalidatePath).toHaveBeenCalledWith('/tasting/8GXBW5', 'layout')
+  })
+
+  it('passes on the reason when the service refuses', async () => {
+    vi.mocked(shuffleWines).mockResolvedValue({ ok: false, reason: 'Das Tasting ist beendet.' })
+    expect(await shuffleWinesAction('8GXBW5')).toMatchObject({ message: 'Das Tasting ist beendet.' })
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
 })

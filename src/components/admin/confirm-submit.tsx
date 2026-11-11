@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -37,8 +37,9 @@ export function ConfirmSubmit({
   hiddenFields = {},
   disabled,
 }: ConfirmSubmitProps) {
+  const [open, setOpen] = useState(false)
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger disabled={disabled} aria-label={triggerLabel} className={triggerClassName}>
         {trigger}
       </AlertDialogTrigger>
@@ -49,7 +50,12 @@ export function ConfirmSubmit({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-          <form action={action}>
+          <form
+            action={(fd) => {
+              setOpen(false)
+              return action(fd)
+            }}
+          >
             {Object.entries(hiddenFields).map(([name, value]) => (
               <input key={name} type="hidden" name={name} value={value} />
             ))}

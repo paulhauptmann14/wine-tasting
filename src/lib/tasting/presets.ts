@@ -62,3 +62,35 @@ export const PRESETS: Record<PresetKey, Preset> = {
     ],
   },
 }
+
+export const SCALE_LABELS: Record<Scale, string> = {
+  five: '5-Punkte-Skala',
+  twenty: '20-Punkte-Skala',
+  hundred: '100-Punkte-Skala',
+}
+
+type CriterionShape = { name: string; weight: number }
+
+/** Same scale and the same criteria (names and weights, in any order) as the preset? */
+export function matchesPreset(key: PresetKey, scale: Scale, criteria: readonly CriterionShape[]): boolean {
+  const preset = PRESETS[key]
+  return (
+    preset.scale === scale &&
+    preset.criteria.length === criteria.length &&
+    preset.criteria.every((c) => criteria.some((x) => x.name === c.name && x.weight === c.weight))
+  )
+}
+
+/**
+ * Which preset a tasting currently uses, or null for customized criteria. The scale alone is
+ * ambiguous ("five" = Einfach or 5-Punkte-Schema), so the criteria decide. Pass them in order.
+ */
+export function detectPreset(scale: Scale, criteria: readonly CriterionShape[]): PresetKey | null {
+  return PRESET_KEYS.find((key) => matchesPreset(key, scale, criteria)) ?? null
+}
+
+/** "100-Punkte-Schema" or, for customized criteria, "Eigene Kriterien (5-Punkte-Skala)". */
+export function ratingSystemLabel(scale: Scale, criteria: readonly CriterionShape[]): string {
+  const key = detectPreset(scale, criteria)
+  return key ? PRESETS[key].label : `Eigene Kriterien (${SCALE_LABELS[scale]})`
+}

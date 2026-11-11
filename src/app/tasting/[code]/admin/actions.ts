@@ -9,6 +9,7 @@ import { clearParticipantCookie } from '@/lib/auth/participant-session'
 import type { ActionState } from '@/lib/action-state'
 import { getAdminTasting } from '@/lib/data'
 import { normalizeCode } from '@/lib/tasting/code'
+import { SHUFFLE_TOO_FEW_HINT } from '@/lib/tasting/rules'
 import {
   criterionNameSchema,
   directionSchema,
@@ -20,11 +21,12 @@ import {
   type Direction,
   wineSchema,
 } from '@/lib/validation'
-import { addCriterion, deleteCriterion, moveCriterion, renameCriterion } from '@/server/criteria'
+import { PRESET_KEYS } from '@/lib/tasting/presets'
+import { addCriterion, applyPreset, deleteCriterion, moveCriterion, renameCriterion } from '@/server/criteria'
 import { StructureLockedError } from '@/server/structure'
 import { removeParticipant } from '@/server/participants'
 import { deleteTasting, renameTasting, setBlindTasting, setTastingStatus } from '@/server/tastings'
-import { addWine, deleteWine, moveWine, updateWine } from '@/server/wines'
+import { addWine, deleteWine, moveWine, shuffleWines, updateWine } from '@/server/wines'
 
 const refresh = (code: string) => revalidatePath(`/tasting/${code}`, 'layout')
 const INVALID: ActionState = { message: 'Ungültige Anfrage. Bitte lade die Seite neu.' }
@@ -69,7 +71,7 @@ export async function setStatusAction(code: string, _prev: ActionState, fd: Form
   const parsed = statusSchema.safeParse(fd.get('to'))
   if (!parsed.success) return { message: 'Unbekannter Status.' }
   const result = await setTastingStatus(db, tasting.id, parsed.data)
-  if (!result.ok) return { message: result.reason }
+  if (!result.ok) return { message: result.reason, values: { nonce: String(Date.now()) } }
   refresh(tasting.code)
   return { ok: true }
 }
@@ -122,6 +124,20 @@ export async function moveWineAction(code: string, wineId: string, direction: Di
   refresh(tasting.code)
 }
 
+/** Shuffles the wines nobody rated yet; the message is shown next to the button. */
+export async function shuffleWinesAction(code: string): Promise<ActionState> {
+  const tasting = await getAdminTasting(code)
+  const result = await shuffleWines(db, tasting.id)
+  if (!result.ok) return { message: result.reason }
+  refresh(tasting.code)
+  if (result.shuffled === 0) return { message: SHUFFLE_TOO_FEW_HINT, values: { nonce: String(Date.now()) } }
+  return {
+    ok: true,
+    message: `Reihenfolge von ${result.shuffled} Weinen neu gemischt.`,
+    values: { nonce: String(Date.now()) },
+  }
+}
+
 export async function addCriterionAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const tasting = await getAdminTasting(code)
   const raw = { name: formValue(fd, 'name') }
@@ -166,6 +182,24 @@ export async function moveCriterionAction(code: string, criterionId: string, dir
   if (!idSchema.safeParse(criterionId).success || !directionSchema.safeParse(direction).success) return
   await unlessLocked(() => moveCriterion(db, tasting.id, criterionId, direction))
   refresh(tasting.code)
+}
+
+/** Switches the rating system (scale + all criteria). Setup only and only without ratings – the service enforces both. */
+export async function applyPresetAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
+  const tasting = await getAdminTasting(code)
+  const parsed = z.enum(PRESET_KEYS).safeParse(fd.get('preset'))
+  if (!parsed.success) return { message: 'Wähle ein Bewertungssystem aus.' }
+  try {
+    const result = await applyPreset(db, tasting.id, parsed.data)
+    if (!result.ok) return { message: result.reason }
+  } catch (error) {
+    if (error instanceof StructureLockedError) {
+      return { message: 'Das Bewertungssystem lässt sich nur in der Vorbereitung ändern.' }
+    }
+    throw error
+  }
+  refresh(tasting.code)
+  return { ok: true }
 }
 
 export async function removeParticipantAction(code: string, participantId: string): Promise<void> {

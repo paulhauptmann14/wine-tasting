@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canEditStructure, canJoin, canRate, canSeeNotes, canSeeResults, canSeeWineNames, canTransition } from './rules'
+import { canEditStructure, canJoin, canShuffleWines, canRate, canSeeNotes, canSeeResults, canSeeWineNames, canTransition } from './rules'
 
 describe('participant permissions', () => {
   it('lets guests join until the tasting is finished', () => {
@@ -66,5 +66,13 @@ describe('canEditStructure', () => {
     expect(canEditStructure('setup')).toBe(true)
     expect(canEditStructure('active')).toBe(false)
     expect(canEditStructure('finished')).toBe(false)
+  })
+})
+
+describe('canShuffleWines', () => {
+  it('allows shuffling until the tasting is finished', () => {
+    expect(canShuffleWines('setup')).toBe(true)
+    expect(canShuffleWines('active')).toBe(true)
+    expect(canShuffleWines('finished')).toBe(false)
   })
 })

@@ -23,6 +23,15 @@ export const STRUCTURE_LOCK_HINT =
 export const WINE_LOCK_HINT =
   'Das Tasting läuft. Umsortieren geht weiter, die Bewertungen wandern mit. Löschen nur in der Vorbereitung.'
 
+/**
+ * Shuffling the pouring order is allowed until the tasting is finished. Only wines nobody rated yet
+ * move (see shuffleUnrated), so guests lose nothing.
+ */
+export const canShuffleWines = (status: TastingStatus) => status !== 'finished'
+export const SHUFFLE_FINISHED_HINT = 'Das Tasting ist beendet. Die Reihenfolge lässt sich nicht mehr mischen.'
+export const SHUFFLE_RUNNING_HINT = 'Mischt nur Weine, die noch niemand bewertet hat. Gäste mit offener Weinseite sollten neu laden.'
+export const SHUFFLE_TOO_FEW_HINT = 'Zum Mischen braucht es mindestens zwei Weine ohne Bewertung.'
+
 export const canJoin = (status: TastingStatus) => status !== 'finished'
 export const canRate = (status: TastingStatus) => status === 'active'
 export const canSeeResults = (status: TastingStatus, isAdmin: boolean) => isAdmin || status !== 'setup'
