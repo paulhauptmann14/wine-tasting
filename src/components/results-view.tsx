@@ -1,4 +1,5 @@
 import { GlassRing } from '@/components/glass-ring'
+import { ScoringExplainer } from '@/components/scoring-explainer'
 import { wineDetails } from '@/lib/tasting/display'
 import type { TastingStatus } from '@/lib/tasting/rules'
 import { SCALES, type Scale } from '@/lib/tasting/presets'
@@ -223,6 +224,16 @@ export function ResultsView({
           </tbody>
         </table>
       </div>
+
+      <details className="group max-w-xl">
+        <summary className="inline-flex h-12 cursor-pointer list-none items-center gap-2 text-sm font-medium outline-none focus-visible:underline [&::-webkit-details-marker]:hidden">
+          So wird gerechnet
+          <span aria-hidden className="text-muted-foreground transition-transform duration-200 group-open:rotate-90">
+            ›
+          </span>
+        </summary>
+        <ScoringExplainer scale={scale} criteria={results.criteria} className="mt-1" />
+      </details>
     </div>
   )
 }

@@ -287,3 +287,13 @@ test('Sicherheits-Header, robots.txt und App-Icons', async ({ request }) => {
   for (const icon of manifest.icons) expect((await request.get(icon.src)).ok()).toBe(true)
   expect((await request.get('/apple-icon')).headers()['content-type']).toBe('image/png')
 })
+
+test('Beim Erstellen wird die Rechnung des Bewertungssystems erklärt', async ({ page }) => {
+  await page.goto('/new')
+  await page.getByText('100-Punkte-Schema', { exact: true }).click()
+  await expect(page.getByText('Sockel für jeden Wein')).toBeVisible()
+  await expect(page.getByText('20 Punkte', { exact: true })).toBeVisible()
+  await expect(page.getByText(/Überall 4 Sterne ergeben 90\./)).toBeVisible()
+  await page.getByText('5-Punkte-Schema', { exact: true }).click()
+  await expect(page.getByText(/Jedes Kriterium zählt gleich viel/)).toBeVisible()
+})

@@ -33,7 +33,7 @@ export type WineResult = {
 }
 
 export type Results = {
-  criteria: { id: string; name: string }[]
+  criteria: { id: string; name: string; weight: number }[]
   /** Ranked wines descending, then unrated ones by position. */
   wines: WineResult[]
 }
@@ -82,7 +82,7 @@ export function computeResults(input: ResultsInput): Results {
   })
   const unrated = perWine.filter((w) => w.score === null).sort((a, b) => a.position - b.position)
 
-  return { criteria: criteria.map(({ id, name }) => ({ id, name })), wines: [...rated, ...unrated] }
+  return { criteria: criteria.map(({ id, name, weight }) => ({ id, name, weight })), wines: [...rated, ...unrated] }
 }
 
 /** Maps the 1–5 star average onto the rating system's scale (5, 20 or 100 points). */

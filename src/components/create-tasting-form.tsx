@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { createTastingAction } from '@/app/new/actions'
 import { BottomBar } from '@/components/bottom-bar'
 import { FieldError } from '@/components/field-error'
@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { PRESET_KEYS, PRESETS } from '@/lib/tasting/presets'
+import { ScoringExplainer } from '@/components/scoring-explainer'
+import { PRESET_KEYS, PRESETS, type PresetKey } from '@/lib/tasting/presets'
 
 export function CreateTastingForm() {
   const [state, action, pending] = useActionState(createTastingAction, undefined)
   const errors = state?.fieldErrors ?? {}
   const preset = state?.values?.preset ?? 'five'
+  const [selected, setSelected] = useState<PresetKey>(preset as PresetKey)
 
   return (
     <form action={action} noValidate className="grid gap-8">
@@ -54,7 +56,14 @@ export function CreateTastingForm() {
               key={key}
               className="flex min-h-14 cursor-pointer flex-col justify-center rounded-xl border border-border bg-background/40 px-4 py-3 lg:bg-card transition-[border-color,transform] duration-100 ease-out active:scale-[0.99] has-[:checked]:border-wine has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
             >
-              <input type="radio" name="preset" value={key} defaultChecked={preset === key} className="sr-only" />
+              <input
+                type="radio"
+                name="preset"
+                value={key}
+                defaultChecked={preset === key}
+                onChange={() => setSelected(key)}
+                className="sr-only"
+              />
               <span className="font-medium">{PRESETS[key].label}</span>
               <span className="text-sm text-muted-foreground">{PRESETS[key].hint}</span>
               <span className="mt-1 text-sm">{PRESETS[key].criteria.map((c) => c.name).join(' · ')}</span>
@@ -62,6 +71,12 @@ export function CreateTastingForm() {
           ))}
         </div>
         <FieldError errors={errors.preset} />
+        {PRESETS[selected] && (
+          <div className="mt-6">
+            <p className="text-sm font-medium">So wird gerechnet</p>
+            <ScoringExplainer scale={PRESETS[selected].scale} criteria={PRESETS[selected].criteria} className="mt-2" />
+          </div>
+        )}
       </fieldset>
 
       <div>
