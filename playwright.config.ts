@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { E2E_CRON_SECRET } from './e2e/constants'
 
 const PORT = 3100
 
@@ -27,6 +28,7 @@ export default defineConfig({
     command: `npm run db:migrate && npm run build && npm run start -- --port ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
+    env: { CRON_SECRET: E2E_CRON_SECRET },
     timeout: 240_000,
   },
 })

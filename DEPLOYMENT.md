@@ -19,7 +19,10 @@ Wer die App öffentlich betreibt, trägt in `src/lib/legal.ts` die eigenen Betre
    - `SESSION_SECRET` = Ausgabe von `openssl rand -base64 48`
    - `APP_URL` = `https://<deine-domain>` (für die QR-Codes)
    - `MIGRATION_DATABASE_URL` = Session-Pooler-URL – **nur für Production**, nicht für Preview
+   - `CRON_SECRET` = Ausgabe von `openssl rand -hex 32` – **nur für Production**
 5. Deployen. Danach wendet jeder Production-Deploy neue Migrationen vor dem Build selbst an (`buildCommand` in `vercel.json`); schlägt das fehl, bricht der Deploy ab und die alte Version bleibt online. Preview-Deploys ohne die Variable überspringen den Schritt.
+
+**Aufräumen:** Ein Vercel Cron Job ruft jeden Tag gegen 3 Uhr UTC `/api/cron/purge` auf und löscht Tastings, die älter als 90 Tage sind, sowie abgelaufene Sessions (`crons` in `vercel.json`). Vercel schickt dabei `CRON_SECRET` mit; fehlt die Variable, lehnt die Route ab – im Log unter *Schedules → Cron Jobs* steht dann 401. Ist das Projekt pausiert, läuft auch der Job nicht; er holt das Löschen nach dem Fortsetzen beim nächsten Lauf nach. Unabhängig davon ist ein abgelaufenes Tasting ab Tag 90 nicht mehr aufrufbar.
 
 Weil die Migration vor dem Umschalten läuft, arbeitet die alte Version kurz mit dem neuen Schema. Migrationen deshalb nur additiv halten; Spalten löschen oder umbenennen in zwei Deploys aufteilen.
 

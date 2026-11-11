@@ -4,7 +4,7 @@ import { ratingCriteria, sessions, tastings, wines } from '@/db/schema'
 import { generateCode, normalizeCode } from '@/lib/tasting/code'
 import { PRESETS, type PresetKey } from '@/lib/tasting/presets'
 import { hashPin, verifyPin } from '@/lib/auth/pin'
-import { RETENTION_DAYS, isExpired } from '@/lib/tasting/retention'
+import { isExpired, retentionCutoff } from '@/lib/tasting/retention'
 import { canTransition, type TastingStatus } from '@/lib/tasting/rules'
 
 export type Tasting = typeof tastings.$inferSelect
@@ -62,12 +62,19 @@ export async function getTastingByCode(db: Db, code: string): Promise<Tasting | 
 
 /**
  * Deletes tastings past the retention period (wines, guests, sessions, ratings follow via cascade)
- * and expired guest sessions. Runs when a tasting is created – no scheduler needed on Vercel or Docker.
+ * and expired guest sessions. Runs daily via the cron route (/api/cron/purge) and, as a fallback
+ * without a scheduler (e.g. Docker), whenever a tasting is created.
  */
-export async function purgeExpired(db: Db, now: Date = new Date()): Promise<void> {
-  const cutoff = new Date(now.getTime() - RETENTION_DAYS * 86_400_000)
-  await db.delete(tastings).where(lte(tastings.createdAt, cutoff))
-  await db.delete(sessions).where(lt(sessions.expiresAt, now))
+export async function purgeExpired(db: Db, now: Date = new Date()): Promise<{ tastings: number; sessions: number }> {
+  const deletedTastings = await db
+    .delete(tastings)
+    .where(lte(tastings.createdAt, retentionCutoff(now)))
+    .returning({ id: tastings.id })
+  const deletedSessions = await db
+    .delete(sessions)
+    .where(lt(sessions.expiresAt, now))
+    .returning({ id: sessions.id })
+  return { tastings: deletedTastings.length, sessions: deletedSessions.length }
 }
 
 export type AdminLoginResult =

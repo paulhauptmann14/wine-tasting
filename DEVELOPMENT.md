@@ -34,6 +34,7 @@ npm run dev -- -H 0.0.0.0
 | `SESSION_SECRET` | ja | Schlüssel zum Signieren des Admin-Cookies, mind. 32 Zeichen |
 | `APP_URL` | nein | Feste Basis-URL für QR-Codes; sonst aus dem Request-Host |
 | `MIGRATION_DATABASE_URL` | nein | Abweichende Verbindung nur für `db:migrate` (z. B. Session-Pooler bei Supabase) |
+| `CRON_SECRET` | nein | Schützt den täglichen Aufräum-Job `/api/cron/purge`, mind. 16 Zeichen. Ohne die Variable antwortet die Route immer mit 401 |
 
 ## Tests
 

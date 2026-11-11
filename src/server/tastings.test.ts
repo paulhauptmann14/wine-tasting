@@ -147,7 +147,7 @@ describe('retention', () => {
     await backdate(old.id, 91)
     await backdate(fresh.id, 89)
 
-    await purgeExpired(db)
+    expect(await purgeExpired(db)).toEqual({ tastings: 1, sessions: 0 })
 
     expect((await db.select().from(tastings)).map((t) => t.id)).toEqual([fresh.id])
     expect(await db.select().from(wines)).toEqual([])
@@ -158,7 +158,7 @@ describe('retention', () => {
     const t = await createTasting(db, input)
     await joinTasting(db, t.id, 'Anna', new Date(Date.now() - 31 * DAY))
     await joinTasting(db, t.id, 'Ben')
-    await purgeExpired(db)
+    expect(await purgeExpired(db)).toEqual({ tastings: 0, sessions: 1 })
     expect(await db.select().from(sessions)).toHaveLength(1)
   })
 
