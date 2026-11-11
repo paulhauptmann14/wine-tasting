@@ -14,15 +14,9 @@ export default defineConfig({
     channel: 'chrome',
   },
   projects: [
-    { name: 'mobile', use: { ...devices['Pixel 7'], channel: 'chrome', viewport: { width: 390, height: 844 } } },
-    {
-      name: 'tablet',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome', viewport: { width: 834, height: 1194 }, hasTouch: true },
-    },
-    {
-      name: 'laptop',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome', viewport: { width: 1366, height: 768 } },
-    },
+    { name: 'mobile', use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 } } },
+    { name: 'tablet', use: { ...devices['Desktop Chrome'], viewport: { width: 834, height: 1194 }, hasTouch: true } },
+    { name: 'laptop', use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 768 } } },
   ],
   webServer: {
     command: `npm run db:migrate && npm run build && npm run start -- --port ${PORT}`,
