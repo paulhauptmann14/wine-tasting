@@ -162,7 +162,7 @@ export function WineSwipe({
   return (
     <div
       ref={root}
-      className={cn('wine-swipe touch-pan-y', className)}
+      className={cn('wine-swipe relative touch-pan-y', className)}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
@@ -175,9 +175,14 @@ export function WineSwipe({
         dirty.current = true
       }}
     >
+      {/* Floats above the wine instead of pushing the content down while it shows */}
       <p
         aria-live="polite"
-        className={cn('border-l-2 border-wine pl-3 text-sm', hint ? 'mt-4 block' : 'sr-only')}
+        className={cn(
+          hint
+            ? 'material-sheet pointer-events-none absolute inset-x-0 top-2 z-10 rounded-xl border-l-2 border-wine px-4 py-3 text-sm animate-in fade-in-0 duration-200'
+            : 'sr-only',
+        )}
       >
         {hint ? 'Speichere erst – sonst gehen deine Sterne verloren.' : ''}
       </p>

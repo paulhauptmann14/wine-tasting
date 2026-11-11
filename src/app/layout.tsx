@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { Newsreader } from 'next/font/google'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { VercelAnalytics } from '@/components/vercel-analytics'
-import { THEME_COOKIE, parseTheme } from '@/lib/theme'
+import { THEME_COLORS, THEME_COOKIE, parseTheme } from '@/lib/theme'
 import './globals.css'
 
 // Serif with optical sizes for titles and wine names – only used where ui-serif (New York) is missing
@@ -15,12 +15,18 @@ export const metadata: Metadata = {
   description: 'Weine gemeinsam verkosten, bewerten und auflösen.',
 }
 
-export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F2F2F7' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
-  ],
-  colorScheme: 'light dark',
+// Safari tints its bars with theme-color: follow the in-app choice, not only the system setting
+export async function generateViewport(): Promise<Viewport> {
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value)
+  return {
+    themeColor: theme
+      ? THEME_COLORS[theme]
+      : [
+          { media: '(prefers-color-scheme: light)', color: THEME_COLORS.light },
+          { media: '(prefers-color-scheme: dark)', color: THEME_COLORS.dark },
+        ],
+    colorScheme: theme ?? 'light dark',
+  }
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

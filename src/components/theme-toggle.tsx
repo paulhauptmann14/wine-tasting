@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
 import { Moon, Sun } from 'lucide-react'
-import { THEME_COOKIE, type Theme } from '@/lib/theme'
+import { THEME_COLORS, THEME_COOKIE, type Theme } from '@/lib/theme'
 
 const DARK_QUERY = '(prefers-color-scheme: dark)'
 
@@ -25,6 +25,12 @@ export function ThemeToggle({ initial }: { initial?: Theme }) {
 
   function apply() {
     document.documentElement.dataset.theme = next
+    // Browser bars (Safari's toolbar, Android's status bar) follow along
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+      meta.removeAttribute('media')
+      meta.setAttribute('content', THEME_COLORS[next])
+    })
+    document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', next)
     document.cookie = `${THEME_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
     // Synchronous, so the icon is part of the cross-fade's "after" snapshot
     flushSync(() => setSaved(next))

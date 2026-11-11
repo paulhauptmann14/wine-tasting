@@ -40,3 +40,19 @@ it('follows a dark system setting when nothing is saved', () => {
   render(<ThemeToggle />)
   expect(screen.getByRole('button', { name: 'Helles Design' })).toBeInTheDocument()
 })
+
+it('retints the browser bars to match the chosen theme', async () => {
+  mockSystemDark(false)
+  document.head.innerHTML =
+    '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f2f7">' +
+    '<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">' +
+    '<meta name="color-scheme" content="light dark">'
+  render(<ThemeToggle />)
+  await userEvent.click(screen.getByRole('button', { name: 'Dunkles Design' }))
+  const metas = [...document.querySelectorAll('meta[name="theme-color"]')]
+  expect(metas.map((m) => [m.getAttribute('media'), m.getAttribute('content')])).toEqual([
+    [null, '#000000'],
+    [null, '#000000'],
+  ])
+  expect(document.querySelector('meta[name="color-scheme"]')?.getAttribute('content')).toBe('dark')
+})
