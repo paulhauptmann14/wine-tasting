@@ -14,6 +14,7 @@ const timestamptz = (name: string) => timestamp(name, { withTimezone: true })
 
 export const tastingStatus = pgEnum('tasting_status', ['setup', 'active', 'finished'])
 export const wineSweetness = pgEnum('wine_sweetness', ['dry', 'off_dry', 'medium', 'sweet'])
+export const ratingScale = pgEnum('rating_scale', ['five', 'twenty', 'hundred'])
 export const wineType = pgEnum('wine_type', ['red', 'white', 'rose', 'sparkling'])
 
 export const tastings = pgTable('tasting', {
@@ -23,6 +24,7 @@ export const tastings = pgTable('tasting', {
   blindTasting: boolean('blind_tasting').notNull().default(false),
   guessingEnabled: boolean('guessing_enabled').notNull().default(false),
   status: tastingStatus('status').notNull().default('setup'),
+  scale: ratingScale('scale').notNull().default('five'),
   adminPinHash: text('admin_pin_hash').notNull(),
   pinFailedAttempts: integer('pin_failed_attempts').notNull().default(0),
   pinLockedUntil: timestamptz('pin_locked_until'),
@@ -74,6 +76,7 @@ export const ratingCriteria = pgTable('rating_criteria', {
   type: text('type').notNull().default('stars'),
   scaleMin: integer('scale_min').notNull().default(1),
   scaleMax: integer('scale_max').notNull().default(5),
+  weight: smallint('weight').notNull().default(1),
   position: integer('position').notNull(),
 }).enableRLS()
 

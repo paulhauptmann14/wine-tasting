@@ -17,7 +17,7 @@ let db: Db
 beforeEach(async () => {
   db = await createTestDb()
 })
-const input = { name: 'Weinabend', blindTasting: true, preset: 'classic' as const, pin: '1234' }
+const input = { name: 'Weinabend', blindTasting: true, preset: 'hundred' as const, pin: '1234' }
 
 describe('createTasting', () => {
   it('stores the tasting with a hashed pin and the preset criteria', async () => {
@@ -31,8 +31,9 @@ describe('createTasting', () => {
       .from(ratingCriteria)
       .where(eq(ratingCriteria.tastingId, t.id))
       .orderBy(asc(ratingCriteria.position))
-    expect(criteria.map((c) => [c.name, c.position, c.scaleMin, c.scaleMax])).toEqual([
-      ['Aussehen', 1, 1, 5], ['Aroma', 2, 1, 5], ['Geschmack', 3, 1, 5], ['Gesamt', 4, 1, 5],
+    expect(t.scale).toBe('hundred')
+    expect(criteria.map((c) => [c.name, c.position, c.weight, c.scaleMin, c.scaleMax])).toEqual([
+      ['Aussehen', 1, 5, 1, 5], ['Geruch', 2, 15, 1, 5], ['Geschmack', 3, 20, 1, 5], ['Gesamteindruck', 4, 10, 1, 5],
     ])
   })
 })

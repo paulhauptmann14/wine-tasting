@@ -16,7 +16,7 @@ const fd = (entries: Record<string, string>) => {
 }
 
 describe('createTastingSchema', () => {
-  const valid = { name: '  Weinabend 2026 ', blindTasting: true, preset: 'classic', pin: '1234' }
+  const valid = { name: '  Weinabend 2026 ', blindTasting: true, preset: 'five', pin: '1234' }
   it('accepts and trims valid input', () => {
     expect(createTastingSchema.parse(valid)).toEqual({ ...valid, name: 'Weinabend 2026' })
   })

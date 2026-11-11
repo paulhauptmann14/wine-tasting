@@ -21,12 +21,23 @@ export async function createTasting(
     for (let attempt = 0; attempt < CODE_ATTEMPTS; attempt++) {
       const [tasting] = await tx
         .insert(tastings)
-        .values({ code: generateCode(), name: input.name, blindTasting: input.blindTasting, adminPinHash })
+        .values({
+          code: generateCode(),
+          name: input.name,
+          blindTasting: input.blindTasting,
+          scale: PRESETS[input.preset].scale,
+          adminPinHash,
+        })
         .onConflictDoNothing({ target: tastings.code })
         .returning()
       if (!tasting) continue
       await tx.insert(ratingCriteria).values(
-        PRESETS[input.preset].criteria.map((name, i) => ({ tastingId: tasting.id, name, position: i + 1 })),
+        PRESETS[input.preset].criteria.map(({ name, weight }, i) => ({
+          tastingId: tasting.id,
+          name,
+          weight,
+          position: i + 1,
+        })),
       )
       return tasting
     }

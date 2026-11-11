@@ -12,7 +12,7 @@ export async function seedTasting(
   const tasting = await createTasting(db, {
     name: 'Testabend',
     blindTasting: opts.blindTasting ?? true,
-    preset: opts.preset ?? 'classic',
+    preset: opts.preset ?? 'five',
     pin: '1234',
   })
   if (!opts.status || opts.status === tasting.status) return tasting

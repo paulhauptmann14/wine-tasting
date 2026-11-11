@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { computeResults, formatScore, type ResultsInput } from './results'
+import { computeResults, formatScore, toScale, type ResultsInput } from './results'
 
 const wine = (id: string, position: number, name = `Wein ${id}`) => ({
   id, position, name, vintage: 2020 + position, grapeVariety: 'Riesling', sweetness: 'medium' as const, wineType: 'white' as const,
 })
 const criteria = [
-  { id: 'c1', name: 'Aroma', position: 1 },
-  { id: 'c2', name: 'Gesamt', position: 2 },
+  { id: 'c1', name: 'Aroma', position: 1, weight: 1 },
+  { id: 'c2', name: 'Gesamt', position: 2, weight: 1 },
 ]
 
 function input(partial: Partial<ResultsInput>): ResultsInput {
@@ -59,9 +59,36 @@ describe('computeResults', () => {
     expect(shown.wines[0]).toMatchObject({ name: 'Riesling', vintage: 2021, grapeVariety: 'Riesling', sweetness: 'medium', wineType: 'white' })
   })
 
+  it('weights criteria per person before averaging across people', () => {
+    const r = computeResults(input({
+      wines: [wine('a', 1)],
+      criteria: [
+        { id: 'c1', name: 'Aussehen', position: 1, weight: 5 },
+        { id: 'c2', name: 'Geschmack', position: 2, weight: 20 },
+      ],
+      ratings: [
+        { participantId: 'p1', wineId: 'a', values: { c1: 1, c2: 5 } },
+        { participantId: 'p2', wineId: 'a', values: { c1: 5, c2: 5 } },
+      ],
+    }))
+    // p1: (1·5 + 5·20) / 25 = 4.2, p2: 5 → 4.6
+    expect(r.wines[0].score).toBeCloseTo(4.6)
+    expect(r.wines[0].criterionAverages).toEqual({ c1: 3, c2: 5 })
+  })
+
   it('returns criteria sorted by position', () => {
     const r = computeResults(input({ criteria: [criteria[1], criteria[0]] }))
     expect(r.criteria.map((c) => c.name)).toEqual(['Aroma', 'Gesamt'])
+  })
+})
+
+describe('toScale', () => {
+  it('maps the 1–5 star average onto each system', () => {
+    expect(toScale(4.3, 'five')).toBeCloseTo(4.3)
+    expect(toScale(4.3, 'twenty')).toBeCloseTo(17.2)
+    expect(toScale(4.3, 'hundred')).toBeCloseTo(93)
+    expect(toScale(5, 'hundred')).toBe(100)
+    expect(toScale(null, 'hundred')).toBeNull()
   })
 })
 
@@ -70,5 +97,10 @@ describe('formatScore', () => {
     expect(formatScore(4.55)).toBe('4,6')
     expect(formatScore(4)).toBe('4,0')
     expect(formatScore(null)).toBe('–')
+  })
+
+  it('shows whole points on the 100-point scale', () => {
+    expect(formatScore(87.6, 'hundred')).toBe('88')
+    expect(formatScore(16.25, 'twenty')).toBe('16,3')
   })
 })

@@ -1,7 +1,8 @@
 import { GlassRing } from '@/components/glass-ring'
 import { wineDetails } from '@/lib/tasting/display'
 import type { TastingStatus } from '@/lib/tasting/rules'
-import { formatScore, type Results, type WineResult } from '@/lib/tasting/results'
+import { SCALES, type Scale } from '@/lib/tasting/presets'
+import { formatScore, toScale, type Results, type WineResult } from '@/lib/tasting/results'
 import { cn } from '@/lib/utils'
 
 function WineIdentity({ wine, revealed, delayMs, size = 'md' }: { wine: WineResult; revealed: boolean; delayMs: number; size?: 'lg' | 'md' }) {
@@ -33,19 +34,33 @@ function WineIdentity({ wine, revealed, delayMs, size = 'md' }: { wine: WineResu
 }
 
 /** Score inside the glass ring; the ring itself is decorative, hence separate text for screen readers. */
-function ScoreRing({ wine, size, revealed, delayMs }: { wine: WineResult; size: number; revealed: boolean; delayMs: number }) {
+function ScoreRing({
+  wine,
+  size,
+  revealed,
+  delayMs,
+  scale,
+}: {
+  wine: WineResult
+  size: number
+  revealed: boolean
+  delayMs: number
+  scale: Scale
+}) {
+  const score = formatScore(toScale(wine.score, scale), scale)
+  const max = SCALES[scale].max
   return (
     <div className="relative shrink-0">
       <GlassRing seed={wine.position} size={size} animation={revealed ? 'soak' : undefined} delayMs={delayMs}>
         <span className="flex flex-col items-center">
           <span className={cn('font-display font-medium', size > 120 ? 'text-5xl' : 'text-3xl')}>
-            {formatScore(wine.score)}
+            {score}
           </span>
-          <span className="text-[11px] text-muted-foreground">von 5</span>
+          <span className="text-[11px] text-muted-foreground">von {max}</span>
         </span>
       </GlassRing>
       <span className="sr-only">
-        Note {formatScore(wine.score)} von 5
+        Note {score} von {max}
       </span>
     </div>
   )
@@ -86,10 +101,12 @@ function WineNotes({ wines, notes }: { wines: WineResult[]; notes: Record<string
 export function ResultsView({
   results,
   status,
+  scale = 'five',
   notes,
 }: {
   results: Results
   status: TastingStatus
+  scale?: Scale
   notes?: Record<string, string[]>
 }) {
   const revealed = status === 'finished'
@@ -112,7 +129,7 @@ export function ResultsView({
       <ol aria-label="Podest" className="grid grid-cols-1 gap-10">
         {/* First place large, with the name beside it – the others deliberately smaller */}
         <li className="flex items-center gap-5">
-          <ScoreRing wine={winner} size={152} revealed={revealed} delayMs={500} />
+          <ScoreRing wine={winner} size={152} revealed={revealed} delayMs={500} scale={scale} />
           <div className="min-w-0">
             <p className="text-sm font-medium text-wine">Platz {winner.rank}</p>
             <WineIdentity wine={winner} revealed={revealed} delayMs={900} size="lg" />
@@ -124,7 +141,7 @@ export function ResultsView({
               <div key={wine.wineId}>
                 <p className="text-sm font-medium text-wine">Platz {wine.rank}</p>
                 <div className="-ml-1 mt-1">
-                  <ScoreRing wine={wine} size={92} revealed={revealed} delayMs={250 - i * 250} />
+                  <ScoreRing wine={wine} size={92} revealed={revealed} delayMs={250 - i * 250} scale={scale} />
                 </div>
                 <div className="mt-2">
                   <WineIdentity wine={wine} revealed={revealed} delayMs={650 - i * 250} />
@@ -146,7 +163,7 @@ export function ResultsView({
               <div className="min-w-0 flex-1">
                 <WineIdentity wine={wine} revealed={revealed} delayMs={1100 + i * 80} />
               </div>
-              <span className="font-display text-xl font-medium">{formatScore(wine.score)}</span>
+              <span className="font-display text-xl font-medium">{formatScore(toScale(wine.score, scale), scale)}</span>
             </li>
           ))}
         </ol>
@@ -157,7 +174,7 @@ export function ResultsView({
       <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
         <table className="w-full min-w-max border-separate border-spacing-0 text-sm">
           <caption className="mb-3 text-left text-sm font-medium text-muted-foreground">
-            Durchschnitt je Kriterium
+            Durchschnitt je Kriterium in Sternen, Note von {SCALES[scale].max}
           </caption>
           <thead>
             <tr>
@@ -199,7 +216,7 @@ export function ResultsView({
                   key={w.wineId}
                   className="border-t border-border px-3 py-2 text-right font-semibold text-wine"
                 >
-                  {formatScore(w.score)}
+                  {formatScore(toScale(w.score, scale), scale)}
                 </td>
               ))}
             </tr>

@@ -24,18 +24,18 @@ it('appends, renames and reorders criteria', async () => {
 })
 
 it('deletes a criterion with its rating values and renumbers', async () => {
-  const t = await seedTasting(db, { preset: 'classic' })
-  const [aussehen, aroma] = await listCriteria(db, t.id)
+  const t = await seedTasting(db, { preset: 'hundred' })
+  const [aussehen, geruch] = await listCriteria(db, t.id)
   const [wine] = await db.insert(wines).values({ tastingId: t.id, position: 1, name: 'R' }).returning()
   const [p] = await db.insert(participants).values({ tastingId: t.id, name: 'P' }).returning()
   const [r] = await db.insert(ratings).values({ participantId: p.id, wineId: wine.id }).returning()
   await db.insert(ratingValues).values([
     { ratingId: r.id, criterionId: aussehen.id, value: 4 },
-    { ratingId: r.id, criterionId: aroma.id, value: 5 },
+    { ratingId: r.id, criterionId: geruch.id, value: 5 },
   ])
   expect(await deleteCriterion(db, t.id, aussehen.id)).toEqual({ ok: true })
-  expect(await names(t.id)).toEqual(['1:Aroma', '2:Geschmack', '3:Gesamt'])
-  expect((await db.select().from(ratingValues)).map((v) => v.criterionId)).toEqual([aroma.id])
+  expect(await names(t.id)).toEqual(['1:Geruch', '2:Geschmack', '3:Gesamteindruck'])
+  expect((await db.select().from(ratingValues)).map((v) => v.criterionId)).toEqual([geruch.id])
 })
 
 it('refuses to delete the last criterion', async () => {
@@ -56,7 +56,7 @@ it('only touches criteria of the given tasting', async () => {
 })
 
 it('refuses to add, delete or move criteria once the tasting has started', async () => {
-  const t = await seedTasting(db, { preset: 'classic' })
+  const t = await seedTasting(db, { preset: 'hundred' })
   const [first] = await listCriteria(db, t.id)
   await db.update(tastings).set({ status: 'active' }).where(eq(tastings.id, t.id))
   await expect(addCriterion(db, t.id, 'Abgang')).rejects.toThrow(StructureLockedError)
@@ -64,5 +64,5 @@ it('refuses to add, delete or move criteria once the tasting has started', async
   await expect(moveCriterion(db, t.id, first.id, 'down')).rejects.toThrow(StructureLockedError)
   // Renaming stays allowed
   await renameCriterion(db, t.id, first.id, 'Optik')
-  expect((await listCriteria(db, t.id)).map((c) => c.name)).toEqual(['Optik', 'Aroma', 'Geschmack', 'Gesamt'])
+  expect((await listCriteria(db, t.id)).map((c) => c.name)).toEqual(['Optik', 'Geruch', 'Geschmack', 'Gesamteindruck'])
 })

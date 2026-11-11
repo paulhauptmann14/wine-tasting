@@ -13,7 +13,7 @@ import { PRESET_KEYS, PRESETS } from '@/lib/tasting/presets'
 export function CreateTastingForm() {
   const [state, action, pending] = useActionState(createTastingAction, undefined)
   const errors = state?.fieldErrors ?? {}
-  const preset = state?.values?.preset ?? 'classic'
+  const preset = state?.values?.preset ?? 'five'
 
   return (
     <form action={action} noValidate className="grid gap-8">
@@ -56,7 +56,8 @@ export function CreateTastingForm() {
             >
               <input type="radio" name="preset" value={key} defaultChecked={preset === key} className="sr-only" />
               <span className="font-medium">{PRESETS[key].label}</span>
-              <span className="text-sm text-muted-foreground">{PRESETS[key].criteria.join(' · ')}</span>
+              <span className="text-sm text-muted-foreground">{PRESETS[key].hint}</span>
+              <span className="mt-1 text-sm">{PRESETS[key].criteria.map((c) => c.name).join(' · ')}</span>
             </label>
           ))}
         </div>

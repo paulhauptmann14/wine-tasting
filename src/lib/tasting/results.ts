@@ -1,3 +1,4 @@
+import { SCALES, type Scale } from './presets'
 import type { Sweetness } from './sweetness'
 import type { WineType } from './wine-type'
 
@@ -11,7 +12,7 @@ export type ResultsInput = {
     sweetness: Sweetness | null
     wineType: WineType | null
   }[]
-  criteria: { id: string; name: string; position: number }[]
+  criteria: { id: string; name: string; position: number; weight: number }[]
   ratings: { participantId: string; wineId: string; values: Record<string, number> }[]
   revealNames: boolean
 }
@@ -43,13 +44,17 @@ const EPSILON = 1e-9
 export function computeResults(input: ResultsInput): Results {
   const criteria = [...input.criteria].sort((a, b) => a.position - b.position)
   const criterionIds = criteria.map((c) => c.id)
+  const totalWeight = criteria.reduce((sum, c) => sum + c.weight, 0)
+  // Weighted per person, so heavier criteria (e.g. taste) count more – equal weights give the plain mean
+  const personScore = (values: Record<string, number>) =>
+    criteria.reduce((sum, c) => sum + values[c.id] * c.weight, 0) / totalWeight
   const complete = input.ratings.filter(
     (r) => criterionIds.length > 0 && criterionIds.every((id) => Number.isFinite(r.values[id])),
   )
 
   const perWine: WineResult[] = input.wines.map((w) => {
     const rs = complete.filter((r) => r.wineId === w.id)
-    const personScores = rs.map((r) => mean(criterionIds.map((id) => r.values[id])))
+    const personScores = rs.map((r) => personScore(r.values))
     return {
       wineId: w.id,
       position: w.position,
@@ -80,7 +85,15 @@ export function computeResults(input: ResultsInput): Results {
   return { criteria: criteria.map(({ id, name }) => ({ id, name })), wines: [...rated, ...unrated] }
 }
 
-export function formatScore(value: number | null): string {
+/** Maps the 1–5 star average onto the rating system's scale (5, 20 or 100 points). */
+export function toScale(score: number | null, scale: Scale): number | null {
+  if (score === null) return null
+  const { base, max } = SCALES[scale]
+  return base + ((max - base) * score) / 5
+}
+
+export function formatScore(value: number | null, scale: Scale = 'five'): string {
   if (value === null) return '–'
-  return value.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+  const digits = SCALES[scale].decimals
+  return value.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 }

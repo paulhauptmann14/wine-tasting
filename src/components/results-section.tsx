@@ -19,5 +19,5 @@ export async function ResultsSection({ tasting, isAdmin }: { tasting: Tasting; i
     ...input,
     revealNames: canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin }),
   })
-  return <ResultsView results={results} status={tasting.status} notes={notes} />
+  return <ResultsView results={results} status={tasting.status} scale={tasting.scale} notes={notes} />
 }

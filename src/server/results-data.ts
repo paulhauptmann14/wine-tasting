@@ -32,7 +32,7 @@ export async function loadResultsInput(db: Db, tastingId: string): Promise<Omit<
 
   return {
     wines: wineRows,
-    criteria: criteriaRows.map(({ id, name, position }) => ({ id, name, position })),
+    criteria: criteriaRows.map(({ id, name, position, weight }) => ({ id, name, position, weight })),
     ratings: [...grouped.values()],
   }
 }
