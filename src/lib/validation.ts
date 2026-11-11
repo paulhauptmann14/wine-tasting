@@ -91,21 +91,34 @@ export const positionSchema = z.number().int().min(1)
 export type Direction = z.infer<typeof directionSchema>
 export const statusSchema = z.enum(STATUS_KEYS)
 
-type RatingCriterionScale = { id: string; scaleMin: number; scaleMax: number }
+type RatingCriterionScale = { id: string; name?: string; scaleMin: number; scaleMax: number }
 type ParsedRating =
   | { ok: true; values: Record<string, number>; notes: string | null }
-  | { ok: false; fieldErrors: Record<string, string[]> }
+  | { ok: false; fieldErrors: Record<string, string[]>; message: string }
+
+/** "Geschmack" / "Geruch und Geschmack" / "Geruch, Farbe und Geschmack" */
+function joinNames(names: string[]): string {
+  return names.length < 2 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} und ${names[names.length - 1]}`
+}
+
+function missingStarsMessage(names: string[]): string {
+  // Without names (or with a blank one) the sentence would read oddly – fall back to the generic one
+  if (names.length === 0 || names.some((n) => !n.trim())) return 'Bitte vergib für jedes Kriterium Sterne.'
+  return `Bei ${joinNames(names)} fehlen noch Sterne.`
+}
 
 /** Form fields: `c_<criterionId>` per criterion, `notes` optional. */
 export function parseRatingForm(fd: FormData, criteria: RatingCriterionScale[]): ParsedRating {
   const values: Record<string, number> = {}
   const fieldErrors: Record<string, string[]> = {}
+  const missing: string[] = []
 
   for (const c of criteria) {
     const raw = formValue(fd, `c_${c.id}`)
     const value = Number(raw)
     if (raw === '' || !Number.isInteger(value) || value < c.scaleMin || value > c.scaleMax) {
       fieldErrors[`c_${c.id}`] = ['Bitte vergib Sterne.']
+      missing.push(c.name ?? '')
     } else {
       values[c.id] = value
     }
@@ -114,6 +127,11 @@ export function parseRatingForm(fd: FormData, criteria: RatingCriterionScale[]):
   const notes = formValue(fd, 'notes').trim()
   if (notes.length > 1000) fieldErrors.notes = ['Maximal 1000 Zeichen.']
 
-  if (Object.keys(fieldErrors).length > 0) return { ok: false, fieldErrors }
+  if (Object.keys(fieldErrors).length > 0) {
+    const messages = []
+    if (missing.length > 0) messages.push(missingStarsMessage(missing))
+    if (fieldErrors.notes) messages.push('Die Notiz ist zu lang. Maximal 1000 Zeichen.')
+    return { ok: false, fieldErrors, message: messages.join(' ') }
+  }
   return { ok: true, values, notes: notes === '' ? null : notes }
 }

@@ -22,7 +22,7 @@ test('Reihenfolge mischen in der Vorbereitung ändert die Reihenfolge und behäl
   expect(before.map(([, name]) => name)).toEqual(WINES)
 
   await shuffleButton(page).click()
-  await expect(page.getByRole('status').filter({ hasText: 'Reihenfolge von 4 Weinen neu gemischt.' })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: /^Neu: 1 .*, 4 / })).toBeVisible()
 
   await expect.poll(async () => (await readOrder(page)).map(([, name]) => name)).not.toEqual(WINES)
   const after = await readOrder(page)
@@ -34,7 +34,7 @@ test('Mischen während des Tastings lässt bewertete Weine auf ihrer Nummer', as
   const code = await createTasting(page, 'E2E Mischen läuft')
   await addWines(page, WINES)
   await startTasting(page)
-  await expect(page.getByRole('button', { name: 'Tasting beenden & auflösen' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Tasting beenden', exact: true })).toBeVisible()
 
   // A guest rates wine #1 (open tasting: the guest page shows the name)
   const guest = await newGuest(browser, testInfo)
@@ -53,7 +53,7 @@ test('Mischen während des Tastings lässt bewertete Weine auf ihrer Nummer', as
   const [, ratedName] = before[0]
 
   await shuffleButton(page).click()
-  await expect(page.getByRole('status').filter({ hasText: 'Reihenfolge von 3 Weinen neu gemischt.' })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: /^Neu: 1 .*, 4 / })).toBeVisible()
 
   await expect
     .poll(async () => (await readOrder(page)).slice(1).map(([, name]) => name))

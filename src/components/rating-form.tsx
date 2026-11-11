@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useRef, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { BottomBar } from '@/components/bottom-bar'
 import { StarRating } from '@/components/star-rating'
 import { textLink, textLinkFocus } from '@/components/styles'
@@ -25,6 +25,14 @@ export function RatingForm({ action, criteria, initialValues, initialNotes, isLa
   const [state, formAction, pending] = useActionState(action, undefined)
   const formRef = useRef<HTMLFormElement>(null)
   useRevealErrors(formRef, state)
+  // After a failed save, put the focus on the first row that still needs stars. The scrolling is
+  // done by useRevealErrors (to the same [aria-invalid] element), so no second scroll here.
+  useEffect(() => {
+    if (!state?.fieldErrors) return
+    formRef.current
+      ?.querySelector<HTMLElement>('[role="radiogroup"][aria-invalid="true"] [role="radio"][tabindex="0"]')
+      ?.focus({ preventScroll: true })
+  }, [state])
   const [values, setValues] = useState<Record<string, number>>(initialValues)
   const [notes, setNotes] = useState(initialNotes)
 
@@ -47,7 +55,7 @@ export function RatingForm({ action, criteria, initialValues, initialNotes, isLa
 
       <div>
         <Label htmlFor="notes" className="text-sm font-normal text-muted-foreground">
-          Was schmeckst du?
+          Was schmeckst du? (freiwillig)
         </Label>
         <Textarea
           id="notes"
@@ -56,9 +64,13 @@ export function RatingForm({ action, criteria, initialValues, initialNotes, isLa
           onChange={(e) => setNotes(e.target.value)}
           maxLength={1000}
           rows={3}
+          aria-describedby="notes-hint"
           placeholder="Fruchtig, etwas Säure, grüner Apfel …"
           className="mt-2 bg-card text-base"
         />
+        <p id="notes-hint" className="mt-2 text-sm text-muted-foreground">
+          Wird am Ende ohne deinen Namen allen gezeigt.
+        </p>
       </div>
 
       {state?.message && (

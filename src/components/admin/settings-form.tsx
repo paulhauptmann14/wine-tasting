@@ -70,9 +70,11 @@ export function SettingsForm({
         <div>
           <Label htmlFor="settings-blind">Blindverkostung</Label>
           <p className="mt-1 text-sm text-muted-foreground">
-            {blindLocked
-              ? 'Lässt sich nur in der Vorbereitung ändern – sonst wären die Namen sofort aufgelöst.'
-              : 'Namen bleiben für Gäste bis zum Ende verborgen. Wird sofort gespeichert.'}
+            {!blindLocked
+              ? 'Namen bleiben für Gäste bis zum Ende verborgen. Wird sofort gespeichert.'
+              : blind
+                ? 'Lässt sich nur in der Vorbereitung ändern – sonst wären die Namen sofort aufgelöst.'
+                : 'Lässt sich nur in der Vorbereitung ändern.'}
           </p>
           <p
             aria-live="polite"

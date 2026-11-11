@@ -41,8 +41,11 @@ export async function saveRatingAction(
   const tasting = await requireTasting(code)
   const participant = await getCurrentParticipant(tasting)
   if (!participant) redirect(`/tasting/${tasting.code}`)
-  if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
-  if (!canRate(tasting.status)) return { message: 'Das Tasting hat noch nicht begonnen.' }
+  if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results?ended=1`)
+  // Only 'setup' is left: the host went back to preparation while the guest was rating
+  if (!canRate(tasting.status)) {
+    return { message: 'Der Gastgeber hat kurz angehalten. Deine Sterne stehen noch hier – speicher gleich nochmal.' }
+  }
 
   const wine = idSchema.safeParse(wineId).success ? await getWineById(db, tasting.id, wineId) : null
   if (!wine) return { message: 'Diesen Wein gibt es nicht mehr.' }
@@ -57,7 +60,7 @@ export async function saveRatingAction(
     }
   }
   const parsed = parseRatingForm(formData, await listCriteria(db, tasting.id))
-  if (!parsed.ok) return { fieldErrors: parsed.fieldErrors, message: 'Bitte vergib für jedes Kriterium Sterne.' }
+  if (!parsed.ok) return { fieldErrors: parsed.fieldErrors, message: parsed.message }
 
   await saveRating(db, { participantId: participant.id, wineId: wine.id, values: parsed.values, notes: parsed.notes })
   revalidatePath(`/tasting/${tasting.code}`, 'layout')

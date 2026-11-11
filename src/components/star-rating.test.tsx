@@ -42,3 +42,17 @@ it('names the chosen step below the criterion', async () => {
   await userEvent.click(screen.getByRole('radio', { name: '1 von 5 Sternen' }))
   expect(screen.getByText('schwach')).toBeVisible()
 })
+
+it('says "fehlt" in the stage line of a row that still needs stars, and drops it once a star is set', async () => {
+  function Missing() {
+    const [value, setValue] = useState<number | null>(null)
+    return <StarRating name="c_1" label="Geschmack" value={value} onChange={setValue} invalid={value === null} />
+  }
+  render(<Missing />)
+  expect(screen.getByText('fehlt')).toBeVisible()
+  expect(screen.getByRole('radiogroup', { name: 'Geschmack' })).toHaveAttribute('aria-invalid', 'true')
+  expect(screen.getByRole('radiogroup', { name: 'Geschmack' })).toHaveAccessibleDescription('fehlt')
+  await userEvent.click(screen.getByRole('radio', { name: '3 von 5 Sternen' }))
+  expect(screen.queryByText('fehlt')).not.toBeInTheDocument()
+  expect(screen.getByRole('radiogroup', { name: 'Geschmack' })).not.toHaveAttribute('aria-invalid')
+})

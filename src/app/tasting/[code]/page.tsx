@@ -10,7 +10,7 @@ import { BottomBar } from '@/components/bottom-bar'
 import { CornerStain } from '@/components/corner-stain'
 import { JoinForm } from '@/components/join-form'
 import { PageShell } from '@/components/page-shell'
-import { textLink } from '@/components/styles'
+import { marginNote, textLink } from '@/components/styles'
 import { TastingSplit } from '@/components/tasting-split'
 import { buttonVariants } from '@/components/ui/button'
 import { WineList } from '@/components/wine-list'
@@ -100,9 +100,10 @@ export default async function TastingPage({ params, searchParams }: Props) {
   }
 
   const items = await getWineListItems(db, tasting, participant.id)
-  const savedPosition = saved ? Number(saved) : undefined
+  const savedPosition = saved && Number.isInteger(Number(saved)) && Number(saved) >= 1 ? Number(saved) : undefined
   const doneCount = items.filter((i) => i.state === 'done').length
   const next = items.find((i) => i.state !== 'done')
+  const allRated = items.length > 0 && doneCount === items.length
 
   return (
     <TastingSplit aside={<WineList items={items} savedPosition={savedPosition} />}>
@@ -120,6 +121,19 @@ export default async function TastingPage({ params, searchParams }: Props) {
         <p className="mt-2 text-sm text-muted-foreground tabular-nums">
           {doneCount} von {items.length} bewertet
         </p>
+        {(savedPosition || allRated) && (
+          // Present on load, so screen readers announce what the save did
+          <div role="status" className="mt-4 grid gap-2">
+            {savedPosition && <p className={marginNote}>Wein #{savedPosition} gespeichert.</p>}
+            {allRated && (
+              <p className={marginNote}>
+                {tasting.blindTasting
+                  ? 'Alles bewertet. Die Namen kommen, wenn der Gastgeber beendet.'
+                  : 'Alles bewertet. Das Ergebnis steht fest, wenn der Gastgeber beendet.'}
+              </p>
+            )}
+          </div>
+        )}
       </header>
 
       {items.length === 0 ? (

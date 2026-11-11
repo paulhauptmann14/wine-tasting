@@ -1,8 +1,10 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { CornerStain } from '@/components/corner-stain'
 import { GlassRing } from '@/components/glass-ring'
 import { JoinByCodeForm } from '@/components/join-by-code-form'
 import { textLink, textLinkFocus } from '@/components/styles'
+import { TastingDeletedNote } from '@/components/tasting-deleted-note'
 import { SITE_FRAME_CLASSES } from '@/lib/site-frame'
 import { cn } from '@/lib/utils'
 
@@ -50,6 +52,10 @@ export default function HomePage() {
         {/* The logo (glass mark) lives in the site header – same spot on every page */}
         <div className="lg:mt-34 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
           <section aria-labelledby="join-heading" className="relative mt-30 lg:mt-0">
+            {/* After deleting a tasting – client-only, so the page itself stays static */}
+            <Suspense fallback={null}>
+              <TastingDeletedNote className="mb-8" />
+            </Suspense>
             <p className="text-sm text-muted-foreground">Eingeladen?</p>
             <h1
               id="join-heading"

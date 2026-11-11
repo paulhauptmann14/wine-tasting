@@ -3,7 +3,9 @@ import { RatingSystem } from '@/components/admin/rating-system'
 import { ScoringExplainer } from '@/components/scoring-explainer'
 import { db } from '@/db/client'
 import { getAdminTasting } from '@/lib/data'
+import { marginNote } from '@/components/styles'
 import { canEditStructure } from '@/lib/tasting/rules'
+import { scoring } from '@/lib/tasting/scoring'
 import { countTastingRatings, listCriteria } from '@/server/criteria'
 
 export default async function CriteriaPage({ params }: { params: Promise<{ code: string }> }) {
@@ -30,6 +32,12 @@ export default async function CriteriaPage({ params }: { params: Promise<{ code:
           <h2 id="scoring-heading" className="text-sm font-medium">
             So wird gerechnet
           </h2>
+          {tasting.scale !== 'five' && (
+            <p className={`${marginNote} mt-2`}>
+              Fügst du ein Kriterium hinzu oder entfernst eins, werden die Punkte neu verteilt, damit es weiter{' '}
+              {scoring(tasting.scale, criteria).max} ergibt.
+            </p>
+          )}
           <ScoringExplainer scale={tasting.scale} criteria={criteria} className="mt-2" />
         </section>
       </RatingSystem>

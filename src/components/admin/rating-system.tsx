@@ -5,6 +5,7 @@ import { applyPresetAction } from '@/app/tasting/[code]/admin/actions'
 import { ConfirmSubmit } from '@/components/admin/confirm-submit'
 import { PresetPicker } from '@/components/preset-picker'
 import { marginNote, textLink, textLinkFocus } from '@/components/styles'
+import { RATING_SYSTEM_LOCKED_HINT } from '@/lib/tasting/rules'
 import { buttonVariants } from '@/components/ui/button'
 import { detectPreset, PRESETS, ratingSystemLabel, type PresetKey, type Scale } from '@/lib/tasting/presets'
 import { cn } from '@/lib/utils'
@@ -130,11 +131,7 @@ export function RatingSystem({
             {changed && !editing ? 'Bewertungssystem geändert.' : ''}
           </span>
         </div>
-        {!locked && hasRatings && (
-          <p className={marginNote}>
-            Es gibt schon Bewertungen, deshalb lässt sich das System nicht mehr wechseln.
-          </p>
-        )}
+        {!locked && hasRatings && <p className={marginNote}>{RATING_SYSTEM_LOCKED_HINT}</p>}
         {canChange && editing && (
           <ChangeForm
             code={code}

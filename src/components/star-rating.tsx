@@ -4,6 +4,9 @@ import { useId, useRef, useState, type KeyboardEvent } from 'react'
 import { starLabel } from '@/lib/tasting/star-labels'
 import { cn } from '@/lib/utils'
 
+/** Shown in the stage line of a row that still needs stars after a failed save */
+const MISSING = 'fehlt'
+
 type StarRatingProps = {
   name: string
   label: string
@@ -21,6 +24,8 @@ export function StarRating({ name, label, value, onChange, min = 1, max = 5, inv
   // Restarts the pop on every tap, even on the same star
   const [pop, setPop] = useState<{ n: number; tick: number } | null>(null)
   const stage = starLabel(value, min, max)
+  // A missing value is named right in the reserved line – red alone doesn't say what is wrong
+  const hint = invalid && !stage ? MISSING : stage
   const steps = Array.from({ length: max - min + 1 }, (_, i) => min + i)
 
   function select(next: number) {
@@ -46,17 +51,20 @@ export function StarRating({ name, label, value, onChange, min = 1, max = 5, inv
       <span className="grid">
         <span id={labelId} className={cn('text-[15px]', invalid && 'text-destructive')}>
           {label}
-          {invalid && <span className="sr-only"> – bitte Sterne vergeben</span>}
         </span>
-        {/* Always rendered, so the row doesn't grow when the first star is set */}
-        <span id={stageId} aria-live="polite" className="min-h-[1.125rem] text-[13px] leading-[1.125rem] text-muted-foreground">
-          {stage}
+        {/* Always rendered, so the row doesn't grow when the first star is set or a star is missing */}
+        <span
+          id={stageId}
+          aria-live="polite"
+          className={cn('min-h-[1.125rem] text-[13px] leading-[1.125rem]', hint === MISSING ? 'text-destructive' : 'text-muted-foreground')}
+        >
+          {hint}
         </span>
       </span>
       <div
         role="radiogroup"
         aria-labelledby={labelId}
-        aria-describedby={stage ? stageId : undefined}
+        aria-describedby={hint ? stageId : undefined}
         aria-invalid={invalid || undefined}
         onKeyDown={onKeyDown}
         className="-mr-2 flex"

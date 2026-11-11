@@ -31,8 +31,9 @@ test('Endergebnis lässt sich erst nach dem Ende als Bild teilen', async ({ page
 
   // Host finishes
   await page.goto(`/tasting/${code}/admin`)
-  await page.getByRole('button', { name: 'Tasting beenden & auflösen' }).click()
-  await page.getByRole('button', { name: 'Beenden & auflösen' }).click()
+  // Not blind: nothing to reveal, so the button just says "beenden"
+  await page.getByRole('button', { name: 'Tasting beenden', exact: true }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Beenden', exact: true }).click()
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()
 
   // Guest's results page: sharing is now the main action, reachable without scrolling

@@ -15,3 +15,9 @@ it('does not mention a floor on scales that start at zero', () => {
   expect(screen.queryByText(/Robert Parker/)).not.toBeInTheDocument()
   expect(screen.queryByText('Sockel für jeden Wein')).not.toBeInTheDocument()
 })
+
+it('uses the singular for one point', () => {
+  render(<ScoringExplainer scale="twenty" criteria={[{ name: 'Preis-Leistung', weight: 1 }, { name: 'Farbe', weight: 19 }]} />)
+  expect(screen.getByText('1 Punkt')).toBeInTheDocument()
+  expect(screen.queryByText(/1 Punkte/)).toBeNull()
+})

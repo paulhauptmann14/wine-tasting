@@ -6,6 +6,11 @@ import { SCALES, type Scale } from '@/lib/tasting/presets'
 import { formatScaled, formatScore, type Results, type WineResult } from '@/lib/tasting/results'
 import { cn } from '@/lib/utils'
 
+/** "Platz 2", and "Platz 2 · gleichauf" when another wine shares the rank */
+function placeLabel(rank: number | null, tied: Set<number>): string {
+  return `Platz ${rank}${rank !== null && tied.has(rank) ? ' · gleichauf' : ''}`
+}
+
 function WineIdentity({ wine, revealed, delayMs, size = 'md' }: { wine: WineResult; revealed: boolean; delayMs: number; size?: 'lg' | 'md' }) {
   const subtitle = wineDetails(wine)
   const nameClass = cn('font-display font-medium leading-tight tracking-tight', size === 'lg' ? 'text-2xl' : 'text-lg')
@@ -76,6 +81,7 @@ function WineNotes({ wines, notes }: { wines: WineResult[]; notes: Record<string
       <h2 id="notes-heading" className="font-display text-2xl font-medium">
         Notizen
       </h2>
+      <p className="mt-1 text-sm text-muted-foreground">Ohne Namen, wie geschrieben.</p>
       <ul className="mt-3 grid grid-cols-1 border-t border-border">
         {withNotes.map((wine) => (
           <li key={wine.wineId} className="flex gap-4 border-b border-border py-4">
@@ -123,6 +129,13 @@ export function ResultsView({
 
   const [winner, ...runnersUp] = ranked.slice(0, 3)
   const rest = results.wines.slice(1 + runnersUp.length)
+  // Ranks that more than one wine holds ("Platz 2 · gleichauf")
+  const tied = new Set<number>()
+  const seen = new Set<number>()
+  for (const w of ranked) {
+    if (seen.has(w.rank!)) tied.add(w.rank!)
+    seen.add(w.rank!)
+  }
   const byPosition = [...results.wines].sort((a, b) => a.position - b.position)
 
   return (
@@ -132,7 +145,7 @@ export function ResultsView({
         <li className="flex items-center gap-5">
           <ScoreRing wine={winner} size={152} revealed={revealed} delayMs={500} scale={scale} />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-wine">Platz {winner.rank}</p>
+            <p className="text-sm font-medium text-wine">{placeLabel(winner.rank, tied)}</p>
             <WineIdentity wine={winner} revealed={revealed} delayMs={900} size="lg" />
           </div>
         </li>
@@ -140,7 +153,7 @@ export function ResultsView({
           <li className="grid grid-cols-2 gap-6 sm:max-w-md md:max-w-none">
             {runnersUp.map((wine, i) => (
               <div key={wine.wineId}>
-                <p className="text-sm font-medium text-wine">Platz {wine.rank}</p>
+                <p className="text-sm font-medium text-wine">{placeLabel(wine.rank, tied)}</p>
                 <div className="-ml-1 mt-1">
                   <ScoreRing wine={wine} size={92} revealed={revealed} delayMs={250 - i * 250} scale={scale} />
                 </div>
@@ -157,7 +170,18 @@ export function ResultsView({
         <ol aria-label="Weitere Plätze" className="grid grid-cols-1 border-t border-border">
           {rest.map((wine, i) => (
             <li key={wine.wineId} className="flex items-center gap-4 border-b border-border py-2">
-              <span className="w-6 text-sm text-muted-foreground">{wine.rank ?? '–'}</span>
+              {/* The place as "3." in the accent colour – not to be mistaken for the wine number in the ring */}
+              <span className="w-12 shrink-0 text-sm font-medium tabular-nums text-wine">
+                {wine.rank === null ? (
+                  <span className="text-muted-foreground">–</span>
+                ) : (
+                  <>
+                    <span className="sr-only">Platz </span>
+                    {wine.rank}.
+                    {tied.has(wine.rank) && <span className="block text-[11px] leading-tight font-normal text-muted-foreground">gleichauf</span>}
+                  </>
+                )}
+              </span>
               <GlassRing seed={wine.position} state={wine.score === null ? 'open' : 'done'} size={44}>
                 <span className="font-display text-sm font-medium">{wine.position}</span>
               </GlassRing>
@@ -175,7 +199,7 @@ export function ResultsView({
       <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
         <table className="w-full min-w-max border-separate border-spacing-0 text-sm">
           <caption className="mb-3 text-left text-sm font-medium text-muted-foreground">
-            Durchschnitt je Kriterium in Sternen, Note von {SCALES[scale].max}
+            Sterne je Kriterium (Ø), Spalten = Weinnummer
           </caption>
           <thead>
             <tr>
@@ -210,7 +234,7 @@ export function ResultsView({
                 scope="row"
                 className="sticky left-0 border-t border-border bg-background py-2 pr-6 text-left font-semibold"
               >
-                Note
+                Note (von {SCALES[scale].max})
               </th>
               {byPosition.map((w) => (
                 <td

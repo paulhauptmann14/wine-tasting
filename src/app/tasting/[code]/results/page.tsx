@@ -7,14 +7,17 @@ import { PageShell } from '@/components/page-shell'
 import { ResultsSection } from '@/components/results-section'
 import { ShareResultsImage } from '@/components/share-results-image'
 import { StatusPill } from '@/components/status-pill'
-import { backLink } from '@/components/styles'
+import { backLink, marginNote } from '@/components/styles'
 import { isAdmin } from '@/lib/auth/admin-session'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { requireTasting } from '@/lib/data'
 import { cn } from '@/lib/utils'
 
-export default async function ResultsPage({ params }: { params: Promise<{ code: string }> }) {
+type Props = { params: Promise<{ code: string }>; searchParams: Promise<{ ended?: string }> }
+
+export default async function ResultsPage({ params, searchParams }: Props) {
   const { code } = await params
+  const { ended } = await searchParams
   const tasting = await requireTasting(code, '/results')
 
   const [admin, participant] = await Promise.all([isAdmin(tasting), getCurrentParticipant(tasting)])
@@ -38,6 +41,12 @@ export default async function ResultsPage({ params }: { params: Promise<{ code: 
         </div>
       </div>
       <h1 className="mt-4 font-display text-4xl md:text-5xl leading-tight lg:text-5xl">{tasting.name}</h1>
+      {/* A guest who was in the middle of rating lands here via ?ended=1 */}
+      {ended === '1' && tasting.status === 'finished' && (
+        <p role="status" className={cn(marginNote, 'mt-4')}>
+          Das Tasting ist beendet – hier ist das Ergebnis.
+        </p>
+      )}
       {/* Sharing the final ranking is the main action once finished: fixed bar on phones, below the title from lg */}
       {tasting.status === 'finished' && (
         <BottomBar>

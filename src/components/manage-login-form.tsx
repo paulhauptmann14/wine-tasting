@@ -41,9 +41,14 @@ export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
           maxLength={12}
           autoFocus={!!defaultCode}
           aria-invalid={!!errors.pin}
+          aria-describedby="pin-hint"
           className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.4em]"
         />
         <FieldError errors={errors.pin} />
+        <p id="pin-hint" className="mt-1.5 text-sm text-muted-foreground">
+          PIN vergessen? Sie lässt sich nicht zurücksetzen. Auf dem Gerät, auf dem du das Tasting erstellt hast,
+          bleibst du 7 Tage ohne PIN angemeldet.
+        </p>
       </div>
       {state?.message && (
         <p role="alert" className="text-sm text-destructive">

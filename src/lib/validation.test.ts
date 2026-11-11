@@ -85,6 +85,31 @@ describe('parseRatingForm', () => {
     expect(r.ok).toBe(false)
     if (!r.ok) expect(Object.keys(r.fieldErrors).sort()).toEqual(['c_a', 'c_b'])
   })
+  it('names the criteria that still need stars', () => {
+    const named = [
+      { id: 'a', name: 'Geruch', scaleMin: 1, scaleMax: 5 },
+      { id: 'b', name: 'Geschmack', scaleMin: 1, scaleMax: 5 },
+      { id: 'c', name: 'Abgang', scaleMin: 1, scaleMax: 5 },
+    ]
+    const message = (entries: Record<string, string>) => {
+      const r = parseRatingForm(fd(entries), named)
+      return r.ok ? null : r.message
+    }
+    expect(message({ c_a: '3', c_b: '', c_c: '4' })).toBe('Bei Geschmack fehlen noch Sterne.')
+    expect(message({ c_a: '', c_b: '2', c_c: '4' })).toBe('Bei Geruch fehlen noch Sterne.')
+    expect(message({ c_a: '', c_b: '', c_c: '4' })).toBe('Bei Geruch und Geschmack fehlen noch Sterne.')
+    expect(message({})).toBe('Bei Geruch, Geschmack und Abgang fehlen noch Sterne.')
+  })
+  it('falls back to a generic message without criterion names', () => {
+    const r = parseRatingForm(fd({ c_a: '1' }), criteria)
+    if (!r.ok) expect(r.message).toBe('Bitte vergib für jedes Kriterium Sterne.')
+    else throw new Error('expected failure')
+  })
+  it('reports too long notes on their own', () => {
+    const r = parseRatingForm(fd({ c_a: '1', c_b: '2', notes: 'x'.repeat(1001) }), criteria)
+    if (!r.ok) expect(r.message).toBe('Die Notiz ist zu lang. Maximal 1000 Zeichen.')
+    else throw new Error('expected failure')
+  })
 })
 
 describe('bound action arguments', () => {

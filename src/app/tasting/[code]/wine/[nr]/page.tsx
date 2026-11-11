@@ -1,11 +1,11 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { saveRatingAction } from '../../actions'
 import { AdminLink } from '@/components/admin-link'
 import { GlassRing } from '@/components/glass-ring'
 import { RatingForm } from '@/components/rating-form'
-import { backLink } from '@/components/styles'
+import { backLink, marginNote } from '@/components/styles'
 import { TastingSplit } from '@/components/tasting-split'
+import { GuardedLink, UnsavedGuardProvider } from '@/components/unsaved-guard'
 import { WineList, WineRingStrip } from '@/components/wine-list'
 import { WineSwipe } from '@/components/wine-swipe'
 import { db } from '@/db/client'
@@ -30,7 +30,8 @@ export default async function WinePage({ params, searchParams }: Props) {
 
   const participant = await getCurrentParticipant(tasting)
   if (!participant) redirect(`/tasting/${tasting.code}`)
-  if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
+  // ?ended=1 lets the results page explain why the guest landed there
+  if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results?ended=1`)
   if (!canRate(tasting.status)) redirect(`/tasting/${tasting.code}`)
 
   const wine = await getWineByPosition(db, tasting.id, position)
@@ -43,7 +44,7 @@ export default async function WinePage({ params, searchParams }: Props) {
   ])
   const showName = canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin: false })
   const { title, subtitle } = wineTitle(wine, showName)
-  const savedPosition = saved ? Number(saved) : undefined
+  const savedPosition = saved && Number.isInteger(Number(saved)) && Number(saved) >= 1 ? Number(saved) : undefined
   // Where we came from (saved or swiped) decides the direction the wine arrives from
   const cameFrom = Number(saved ?? from)
   const arrival = cameFrom === position - 1 ? 'arrive-next' : cameFrom === position + 1 ? 'arrive-prev' : undefined
@@ -51,47 +52,59 @@ export default async function WinePage({ params, searchParams }: Props) {
   const doneCount = items.filter((i) => i.state === 'done').length
 
   return (
-    <TastingSplit aside={<WineList items={items} currentPosition={position} savedPosition={savedPosition} />}>
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <Link href={`/tasting/${tasting.code}`} className={cn(backLink, 'lg:hidden')}>
-          ‹ Alle Weine
-        </Link>
-        <div className="ml-auto flex items-center gap-4">
-          <AdminLink code={tasting.code} />
-          <span className="font-mono">
-            {doneCount} / {items.length}
-          </span>
-        </div>
-      </div>
-      <WineRingStrip items={items} currentPosition={position} savedPosition={savedPosition} />
-
-      {/* Remounted per wine so the arrival plays again after every save or swipe */}
-      <WineSwipe
-        key={position}
-        className={arrival}
-        prevHref={position > 1 ? wineHref(position - 1) : undefined}
-        nextHref={position < items.length ? wineHref(position + 1) : undefined}
-      >
-        <header className="mt-6 flex items-center gap-4">
-          <GlassRing seed={position} size={96} className="-ml-2">
-            <span className="font-display text-4xl font-medium">{position}</span>
-          </GlassRing>
-          <div className="min-w-0">
-            {!showName && <p className="text-sm text-muted-foreground">Blind verkostet</p>}
-            <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight md:text-4xl">{title}</h1>
-            {subtitle && <p className="mt-1 text-muted-foreground">{subtitle}</p>}
+    // One unsaved-stars state for the swipe, the ring strip, the list and "Alle Weine"; fresh per wine
+    <UnsavedGuardProvider key={position}>
+      <TastingSplit aside={<WineList items={items} currentPosition={position} savedPosition={savedPosition} />}>
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <GuardedLink href={`/tasting/${tasting.code}`} className={cn(backLink, 'lg:hidden')}>
+            ‹ Alle Weine
+          </GuardedLink>
+          <div className="ml-auto flex items-center gap-4">
+            <AdminLink code={tasting.code} />
+            <span>
+              <span className="font-mono">
+                {doneCount} / {items.length}
+              </span>{' '}
+              bewertet
+            </span>
           </div>
-        </header>
+        </div>
+        <WineRingStrip items={items} currentPosition={position} savedPosition={savedPosition} />
 
-        <RatingForm
-          key={wine.id}
-          action={saveRatingAction.bind(null, tasting.code, wine.id, wine.position)}
-          criteria={criteria.map(({ id, name, scaleMin, scaleMax }) => ({ id, name, scaleMin, scaleMax }))}
-          initialValues={existing?.values ?? {}}
-          initialNotes={existing?.notes ?? ''}
-          isLast={position === items.length}
-        />
-      </WineSwipe>
-    </TastingSplit>
+        {savedPosition && (
+          <p role="status" className={cn(marginNote, 'mt-4')}>
+            Wein #{savedPosition} gespeichert.
+          </p>
+        )}
+
+        {/* Remounted per wine so the arrival plays again after every save or swipe */}
+        <WineSwipe
+          key={position}
+          className={arrival}
+          prevHref={position > 1 ? wineHref(position - 1) : undefined}
+          nextHref={position < items.length ? wineHref(position + 1) : undefined}
+        >
+          <header className="mt-6 flex items-center gap-4">
+            <GlassRing seed={position} size={96} className="-ml-2">
+              <span className="font-display text-4xl font-medium">{position}</span>
+            </GlassRing>
+            <div className="min-w-0">
+              {!showName && <p className="text-sm text-muted-foreground">Blind verkostet</p>}
+              <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight md:text-4xl">{title}</h1>
+              {subtitle && <p className="mt-1 text-muted-foreground">{subtitle}</p>}
+            </div>
+          </header>
+
+          <RatingForm
+            key={wine.id}
+            action={saveRatingAction.bind(null, tasting.code, wine.id, wine.position)}
+            criteria={criteria.map(({ id, name, scaleMin, scaleMax }) => ({ id, name, scaleMin, scaleMax }))}
+            initialValues={existing?.values ?? {}}
+            initialNotes={existing?.notes ?? ''}
+            isLast={position === items.length}
+          />
+        </WineSwipe>
+      </TastingSplit>
+    </UnsavedGuardProvider>
   )
 }

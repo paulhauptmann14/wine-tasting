@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { canEditStructure, canJoin, canShuffleWines, canRate, canSeeNotes, canSeeResults, canSeeWineNames, canTransition } from './rules'
+import {
+  canEditStructure,
+  canJoin,
+  canRate,
+  canSeeNotes,
+  canSeeResults,
+  canSeeWineNames,
+  canShuffleWines,
+  canTransition,
+  statusHint,
+} from './rules'
+
+it('only talks about hidden names and the reveal when the tasting is blind', () => {
+  expect(statusHint('active', true)).toMatch(/nur du siehst die Namen/)
+  expect(statusHint('active', false)).not.toMatch(/Blind|Namen/)
+  expect(statusHint('finished', true)).toMatch(/aufgelöst/)
+  expect(statusHint('finished', false)).not.toMatch(/aufgelöst/)
+  expect(statusHint('setup', false)).toBe(statusHint('setup', true))
+})
 
 describe('participant permissions', () => {
   it('lets guests join until the tasting is finished', () => {

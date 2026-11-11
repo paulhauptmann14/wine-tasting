@@ -15,10 +15,11 @@ const TABS = [
 export function AdminNav({ code }: { code: string }) {
   const pathname = usePathname()
   const base = `/tasting/${code}/admin`
+  // Phone: the tabs wrap into two rows instead of scrolling sideways – no tab is cut off
   return (
     <nav
       aria-label="Verwaltung"
-      className="-mx-4 mb-8 flex gap-6 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 lg:mx-0 lg:mb-0 lg:flex-col lg:gap-0 lg:border-b-0 lg:px-0"
+      className="mb-8 flex flex-wrap gap-x-5 border-b border-border lg:mb-0 lg:flex-col lg:flex-nowrap lg:gap-0 lg:border-b-0"
     >
       {TABS.map((tab) => {
         const href = base + tab.path

@@ -16,7 +16,7 @@ export function AdminLink({ code, className }: { code: string; className?: strin
       )}
     >
       <Settings2 className="size-4" aria-hidden />
-      Verwaltung
+      Für Gastgeber
     </Link>
   )
 }

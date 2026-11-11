@@ -130,12 +130,13 @@ export async function ratedWineIds(db: Db, tastingId: string): Promise<Set<strin
   return new Set(rows.map((r) => r.wineId))
 }
 
-export type ShuffleResult = { ok: true; shuffled: number } | { ok: false; reason: string }
+export type ShuffleResult = { ok: true; shuffled: number; order: string[] } | { ok: false; reason: string }
 
 /**
  * Shuffles the pouring order of the wines nobody has rated yet; they trade places among themselves,
  * rated wines keep their number. Ratings hang on the wine id, so no guest loses anything.
- * `shuffled` is the number of wines that were part of the shuffle (0 = nothing to do).
+ * `shuffled` is the number of wines that were part of the shuffle (0 = nothing to do),
+ * `order` the wine names in the new pouring order (position 1 first; empty if nothing moved).
  */
 export async function shuffleWines(
   db: Db,
@@ -153,8 +154,9 @@ export async function shuffleWines(
     const rated = await ratedWineIds(tx, tastingId)
     const current = ids.map((id) => ({ id, rated: rated.has(id) }))
     const shuffled = shuffleUnrated(current, random)
-    if (!shuffled) return { ok: true, shuffled: 0 } as const
+    if (!shuffled) return { ok: true, shuffled: 0, order: [] } as const
     await renumber(tx, shuffled)
-    return { ok: true, shuffled: current.filter((wine) => !wine.rated).length } as const
+    const order = (await listWines(tx, tastingId)).map((wine) => wine.name)
+    return { ok: true, shuffled: current.filter((wine) => !wine.rated).length, order } as const
   })
 }

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { UNSAVED_HINT, useUnsavedGuard } from '@/components/unsaved-guard'
 import { decideSwipe, rubberband, springStep } from '@/lib/gesture'
 import { cn } from '@/lib/utils'
 
@@ -15,7 +16,8 @@ type Sample = { t: number; x: number }
  * Swipe between wines on touch screens. The content follows the finger 1:1, the release velocity
  * decides (projected endpoint) and hands over to a spring – so it can be grabbed again mid-flight.
  * Only the content moves (CSS var --swipe-x, see globals.css); the fixed bottom bar stays put.
- * Unsaved stars block the swipe, so nothing gets lost.
+ * Unsaved stars block the swipe, so nothing gets lost – the state lives in <UnsavedGuardProvider>,
+ * shared with the ring strip and the links.
  */
 export function WineSwipe({
   prevHref,
@@ -32,9 +34,8 @@ export function WineSwipe({
   const root = useRef<HTMLDivElement>(null)
   const x = useRef(0)
   const frame = useRef(0)
-  const dirty = useRef(false)
+  const guard = useUnsavedGuard()
   const gesture = useRef<{ id: number; startX: number; startY: number; from: number; active: boolean; samples: Sample[] } | null>(null)
-  const [hint, setHint] = useState(false)
 
   useEffect(() => {
     if (prevHref) router.prefetch(prevHref)
@@ -42,12 +43,6 @@ export function WineSwipe({
   }, [router, prevHref, nextHref])
 
   useEffect(() => () => cancelAnimationFrame(frame.current), [])
-
-  useEffect(() => {
-    if (!hint) return
-    const timer = setTimeout(() => setHint(false), 3500)
-    return () => clearTimeout(timer)
-  }, [hint])
 
   const width = () => root.current?.offsetWidth ?? window.innerWidth
 
@@ -122,7 +117,7 @@ export function WineSwipe({
     g.samples = g.samples.filter((s) => e.timeStamp - s.t <= VELOCITY_WINDOW)
 
     const raw = g.from + dx - Math.sign(dx) * SLOP
-    const blocked = dirty.current || (raw > 0 && !prevHref) || (raw < 0 && !nextHref)
+    const blocked = guard.isDirty() || (raw > 0 && !prevHref) || (raw < 0 && !nextHref)
     apply(blocked ? rubberband(raw, width()) : raw)
   }
 
@@ -145,8 +140,8 @@ export function WineSwipe({
     const span = lastSample.t - first.t
     const velocity = span > 0 ? ((lastSample.x - first.x) / span) * 1000 : 0
 
-    if (dirty.current) {
-      if (Math.abs(x.current) > SLOP) setHint(true)
+    if (guard.isDirty()) {
+      if (Math.abs(x.current) > SLOP) guard.warn()
       animateTo(0, velocity)
       return
     }
@@ -171,22 +166,20 @@ export function WineSwipe({
       onPointerCancel={onPointerEnd}
       // Any star or note marks the form as unsaved
       onClickCapture={(e) => {
-        if ((e.target as Element).closest('[role="radio"]')) dirty.current = true
+        if ((e.target as Element).closest('[role="radio"]')) guard.markDirty()
       }}
-      onInput={() => {
-        dirty.current = true
-      }}
+      onInput={guard.markDirty}
     >
       {/* Floats above the wine instead of pushing the content down while it shows */}
       <p
         aria-live="polite"
         className={
-          hint
+          guard.hint
             ? 'material-sheet pointer-events-none absolute inset-x-0 top-2 z-10 rounded-xl border-l-2 border-wine px-4 py-3 text-sm animate-in fade-in-0 duration-200'
             : 'sr-only'
         }
       >
-        {hint ? 'Speichere erst – sonst gehen deine Sterne verloren.' : ''}
+        {guard.hint ? UNSAVED_HINT : ''}
       </p>
       {children}
     </div>

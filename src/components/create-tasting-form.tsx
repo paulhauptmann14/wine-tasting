@@ -51,24 +51,33 @@ export function CreateTastingForm() {
       </div>
 
       <PresetPicker
-        hint="Du kannst die Kriterien danach noch anpassen."
+        hint="Gäste geben immer 1–5 Sterne, egal welches System. Die Kriterien kannst du danach noch anpassen."
         defaultValue={preset}
+        recommended="five"
+        collapseExplainer
         errors={errors.preset}
       />
 
       <div>
-        <Label htmlFor="pin">Admin-PIN</Label>
+        <Label htmlFor="pin">Deine Gastgeber-PIN</Label>
+        {/* Visible on purpose: it can't be reset, so the host should see what they typed */}
         <Input
           id="pin"
           name="pin"
-          type="password"
+          type="text"
           inputMode="numeric"
-          autoComplete="new-password"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
           maxLength={12}
           aria-invalid={!!errors.pin}
+          aria-describedby="pin-hint"
           className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.4em]"
         />
-        <p className="mt-1.5 text-sm text-muted-foreground">4–12 Ziffern. Damit verwaltest du das Tasting später.</p>
+        <p id="pin-hint" className="mt-1.5 text-sm text-muted-foreground">
+          4–12 Ziffern. Damit verwaltest du das Tasting später. Schreib sie dir auf – sie lässt sich nicht
+          zurücksetzen.
+        </p>
         <p className="mt-1 text-sm text-muted-foreground">
           Nach {RETENTION_DAYS} Tagen wird das Tasting mit allen Bewertungen automatisch gelöscht.
         </p>

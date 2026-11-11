@@ -18,7 +18,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/db/client', () => ({ db: {} }))
 vi.mock('@/lib/data', () => ({ requireTasting: vi.fn() }))
 vi.mock('@/lib/auth/participant-session', () => ({ getCurrentParticipant: vi.fn(), setParticipantCookie: vi.fn() }))
-vi.mock('@/server/criteria', () => ({ listCriteria: vi.fn(async () => [{ id: 'c1', scaleMin: 1, scaleMax: 5 }]) }))
+vi.mock('@/server/criteria', () => ({ listCriteria: vi.fn(async () => [{ id: 'c1', name: 'Geschmack', scaleMin: 1, scaleMax: 5 }]) }))
 vi.mock('@/server/ratings', () => ({ saveRating: vi.fn() }))
 vi.mock('@/server/wines', () => ({ getWineById: vi.fn(), countWines: vi.fn(async () => 2) }))
 
@@ -51,11 +51,23 @@ it('sends visitors without a seat back to joining', async () => {
   expect(saveRating).not.toHaveBeenCalled()
 })
 
-it('refuses ratings before the start and after the end', async () => {
+it('keeps the guest calm when the host paused the tasting, and sends them to the results once it ended', async () => {
   vi.mocked(requireTasting).mockResolvedValue(tasting('setup') as never)
-  expect(await save()).toEqual({ message: 'Das Tasting hat noch nicht begonnen.' })
+  expect(await save()).toEqual({
+    message: 'Der Gastgeber hat kurz angehalten. Deine Sterne stehen noch hier – speicher gleich nochmal.',
+  })
   vi.mocked(requireTasting).mockResolvedValue(tasting('finished') as never)
-  await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5/results')
+  // ?ended=1 lets the results page explain the jump
+  await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5/results?ended=1')
+  expect(saveRating).not.toHaveBeenCalled()
+})
+
+it('names the criteria without stars', async () => {
+  const fd = new FormData()
+  fd.set('c_c1', '')
+  const result = await saveRatingAction('8GXBW5', WINE_ID, 1, undefined, fd)
+  expect(result?.message).toBe('Bei Geschmack fehlen noch Sterne.')
+  expect(result?.fieldErrors).toHaveProperty('c_c1')
   expect(saveRating).not.toHaveBeenCalled()
 })
 

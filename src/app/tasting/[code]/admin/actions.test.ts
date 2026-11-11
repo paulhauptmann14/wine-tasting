@@ -49,15 +49,18 @@ describe('shuffleWinesAction', () => {
     expect(shuffleWines).not.toHaveBeenCalled()
   })
 
-  it('reports how many wines were shuffled and refreshes the pages', async () => {
-    vi.mocked(shuffleWines).mockResolvedValue({ ok: true, shuffled: 3 })
-    expect(await shuffleWinesAction('8GXBW5')).toMatchObject({ ok: true, message: 'Reihenfolge von 3 Weinen neu gemischt.' })
+  it('names the new order and refreshes the pages', async () => {
+    vi.mocked(shuffleWines).mockResolvedValue({ ok: true, shuffled: 3, order: ['Primitivo', 'Riesling', 'Merlot'] })
+    expect(await shuffleWinesAction('8GXBW5')).toMatchObject({
+      ok: true,
+      message: 'Neu: 1 Primitivo, 2 Riesling, 3 Merlot',
+    })
     expect(shuffleWines).toHaveBeenCalledWith({}, 't1')
     expect(revalidatePath).toHaveBeenCalledWith('/tasting/8GXBW5', 'layout')
   })
 
   it('says why nothing happened when fewer than two wines are unrated', async () => {
-    vi.mocked(shuffleWines).mockResolvedValue({ ok: true, shuffled: 0 })
+    vi.mocked(shuffleWines).mockResolvedValue({ ok: true, shuffled: 0, order: [] })
     expect(await shuffleWinesAction('8GXBW5')).toMatchObject({ message: SHUFFLE_TOO_FEW_HINT })
     expect(revalidatePath).toHaveBeenCalledWith('/tasting/8GXBW5', 'layout')
   })

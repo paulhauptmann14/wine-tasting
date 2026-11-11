@@ -3,6 +3,8 @@ import { formatScaled } from '@/lib/tasting/results'
 import { formatPoints, scoring } from '@/lib/tasting/scoring'
 import { cn } from '@/lib/utils'
 
+const pointsLabel = (value: number) => `${formatPoints(value)} ${value === 1 ? 'Punkt' : 'Punkte'}`
+
 /**
  * "So wird gerechnet": one row per criterion with what it's worth and a bar for its weight,
  * plus the rule in plain words and a worked example. Used when creating, in the admin area and with the results.
@@ -27,11 +29,11 @@ export function ScoringExplainer({
           <Row
             key={c.name}
             label={c.name}
-            value={usesPoints ? `${formatPoints(c.points)} Punkte` : s.equalWeights ? 'zählt gleich' : `${Math.round(c.share * 100)} %`}
+            value={usesPoints ? pointsLabel(c.points) : s.equalWeights ? 'zählt gleich' : `${Math.round(c.share * 100)} %`}
             width={usesPoints ? c.points / s.max : c.share}
           />
         ))}
-        {s.base > 0 && <Row label="Sockel für jeden Wein" value={`${s.base} Punkte`} width={s.base / s.max} muted />}
+        {s.base > 0 && <Row label="Sockel für jeden Wein" value={pointsLabel(s.base)} width={s.base / s.max} muted />}
       </ul>
 
       <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
@@ -54,7 +56,7 @@ export function ScoringExplainer({
             {heaviest && (
               <p>
                 Beispiel: 4 Sterne bei {heaviest.name} bringen {formatPoints((heaviest.points * 4) / 5)} von{' '}
-                {formatPoints(heaviest.points)} Punkten. Überall 4 Sterne ergeben {formatScaled(4, scale)}.
+                {formatPoints(heaviest.points)} {heaviest.points === 1 ? 'Punkt' : 'Punkten'}. Überall 4 Sterne ergeben {formatScaled(4, scale)}.
               </p>
             )}
           </>

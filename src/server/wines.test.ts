@@ -120,13 +120,13 @@ describe('shuffleWines', () => {
 
   it('shuffles everything during setup and keeps the numbering gapless', async () => {
     const { t } = await seedWines('setup', ['A', 'B', 'C', 'D'])
-    expect(await shuffleWines(db, t.id, lowest)).toEqual({ ok: true, shuffled: 4 })
+    expect(await shuffleWines(db, t.id, lowest)).toEqual({ ok: true, shuffled: 4, order: ['B', 'C', 'D', 'A'] })
     expect(await names(t.id)).toEqual(['1:B', '2:C', '3:D', '4:A'])
   })
 
   it('always changes the order, even if the random source would keep it', async () => {
     const { t } = await seedWines('setup', ['A', 'B', 'C'])
-    expect(await shuffleWines(db, t.id, (max) => max - 1)).toEqual({ ok: true, shuffled: 3 })
+    expect(await shuffleWines(db, t.id, (max) => max - 1)).toMatchObject({ ok: true, shuffled: 3 })
     const after = await names(t.id)
     expect(after).not.toEqual(['1:A', '2:B', '3:C'])
     expect(after.map((n) => n.split(':')[0])).toEqual(['1', '2', '3'])
@@ -135,7 +135,7 @@ describe('shuffleWines', () => {
 
   it('works with the real random source', async () => {
     const { t } = await seedWines('setup', ['A', 'B', 'C', 'D', 'E'])
-    expect(await shuffleWines(db, t.id)).toEqual({ ok: true, shuffled: 5 })
+    expect(await shuffleWines(db, t.id)).toMatchObject({ ok: true, shuffled: 5 })
     const after = await listWines(db, t.id)
     expect(after.map((w) => w.position)).toEqual([1, 2, 3, 4, 5])
     expect(after.map((w) => w.name).join('')).not.toBe('ABCDE')
@@ -145,7 +145,7 @@ describe('shuffleWines', () => {
     const { t, created } = await seedWines('active', ['A', 'B', 'C', 'D', 'E'])
     await rate(t.id, created[1].id)
     await rate(t.id, created[3].id)
-    expect(await shuffleWines(db, t.id, lowest)).toEqual({ ok: true, shuffled: 3 })
+    expect(await shuffleWines(db, t.id, lowest)).toEqual({ ok: true, shuffled: 3, order: ['C', 'B', 'E', 'D', 'A'] })
     expect(await names(t.id)).toEqual(['1:C', '2:B', '3:E', '4:D', '5:A'])
   })
 
@@ -153,7 +153,7 @@ describe('shuffleWines', () => {
     const { t, created } = await seedWines('active', ['A', 'B', 'C'])
     await rate(t.id, created[0].id, 'Anna')
     await rate(t.id, created[0].id, 'Ben')
-    expect(await shuffleWines(db, t.id, lowest)).toEqual({ ok: true, shuffled: 2 })
+    expect(await shuffleWines(db, t.id, lowest)).toMatchObject({ ok: true, shuffled: 2 })
     expect(await names(t.id)).toEqual(['1:A', '2:C', '3:B'])
   })
 
@@ -173,7 +173,7 @@ describe('shuffleWines', () => {
     const { t, created } = await seedWines('active', ['A', 'B', 'C'])
     await rate(t.id, created[0].id)
     await forceStatus(db, t.id, 'setup')
-    expect(await shuffleWines(db, t.id, lowest)).toEqual({ ok: true, shuffled: 2 })
+    expect(await shuffleWines(db, t.id, lowest)).toMatchObject({ ok: true, shuffled: 2 })
     expect(await names(t.id)).toEqual(['1:A', '2:C', '3:B'])
   })
 
@@ -187,13 +187,13 @@ describe('shuffleWines', () => {
     const { t, created } = await seedWines('active', ['A', 'B', 'C'])
     await rate(t.id, created[0].id)
     await rate(t.id, created[1].id)
-    expect(await shuffleWines(db, t.id, lowest)).toEqual({ ok: true, shuffled: 0 })
+    expect(await shuffleWines(db, t.id, lowest)).toMatchObject({ ok: true, shuffled: 0 })
     expect(await names(t.id)).toEqual(['1:A', '2:B', '3:C'])
 
     const single = await seedWines('setup', ['X'])
-    expect(await shuffleWines(db, single.t.id, lowest)).toEqual({ ok: true, shuffled: 0 })
+    expect(await shuffleWines(db, single.t.id, lowest)).toEqual({ ok: true, shuffled: 0, order: [] })
     const empty = await seedTasting(db)
-    expect(await shuffleWines(db, empty.id, lowest)).toEqual({ ok: true, shuffled: 0 })
+    expect(await shuffleWines(db, empty.id, lowest)).toMatchObject({ ok: true, shuffled: 0 })
   })
 
   it('refuses once the tasting is finished', async () => {
@@ -217,7 +217,7 @@ describe('shuffleWines', () => {
     const { t } = await seedWines('active', ['A', 'B'])
     const other = await seedWines('active', ['X', 'Y'])
     await rate(other.t.id, other.created[0].id)
-    expect(await shuffleWines(db, t.id, lowest)).toEqual({ ok: true, shuffled: 2 })
+    expect(await shuffleWines(db, t.id, lowest)).toMatchObject({ ok: true, shuffled: 2 })
     expect(await names(t.id)).toEqual(['1:B', '2:A'])
   })
 })

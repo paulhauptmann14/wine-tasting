@@ -2,13 +2,21 @@ import { Trash2 } from 'lucide-react'
 import { ConfirmSubmit } from '@/components/admin/confirm-submit'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { GlassRing } from '@/components/glass-ring'
+import { marginNote } from '@/components/styles'
 import { iconButtonClass } from '@/components/ui/button'
 import { db } from '@/db/client'
 import { getAdminTasting } from '@/lib/data'
-import { RING_STATE_TEXT } from '@/lib/tasting/progress'
+import { duplicateNameHint, findDuplicateNames, isDuplicateName } from '@/lib/tasting/host-hints'
+import { RING_STATE_TEXT, type RingState } from '@/lib/tasting/progress'
 import { cn } from '@/lib/utils'
 import { listParticipantProgress } from '@/server/participants'
 import { removeParticipantAction } from '../actions'
+
+const LEGEND: { state: RingState; text: string }[] = [
+  { state: 'done', text: 'bewertet' },
+  { state: 'open', text: 'offen' },
+  { state: 'incomplete', text: 'Kriterium fehlt' },
+]
 
 export default async function ParticipantsPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
@@ -23,14 +31,32 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
       </>
     )
   }
+  // Same name twice: usually a guest on a new device (the session cookie is per browser)
+  const duplicates = findDuplicateNames(people.map((p) => p.name))
+  const firstDuplicate = duplicates.values().next().value
   return (
     <>
       {tasting.status !== 'finished' && <AutoRefresh />}
+      {firstDuplicate && <p className={cn(marginNote, 'mb-6')}>{duplicateNameHint(firstDuplicate)}</p>}
+      <p className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <span>Ein Kreis je Wein:</span>
+        {LEGEND.map(({ state, text }, i) => (
+          <span key={state} className="inline-flex items-center gap-1.5">
+            <GlassRing seed={i + 1} state={state} size={18} />
+            {text}
+          </span>
+        ))}
+      </p>
       <ul className="grid grid-cols-1 border-t border-border">
         {people.map((p) => (
           <li key={p.id} className="border-b border-border py-2">
             <div className="flex items-center gap-3">
-              <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
+              <span className="flex min-w-0 flex-1 items-baseline gap-2">
+                <span className="truncate font-medium">{p.name}</span>
+                {isDuplicateName(duplicates, p.name) && (
+                  <span className="shrink-0 text-sm text-muted-foreground">doppelt</span>
+                )}
+              </span>
               <span className="shrink-0 font-mono text-sm text-muted-foreground">
                 {p.doneCount} / {p.wines.length}
               </span>

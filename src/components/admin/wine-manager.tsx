@@ -12,6 +12,7 @@ import {
 import { RowActions } from '@/components/admin/row-actions'
 import { FieldError } from '@/components/field-error'
 import { GlassRing } from '@/components/glass-ring'
+import { InfoPopover } from '@/components/info-popover'
 import { marginNote, textLink, textLinkFocus } from '@/components/styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,9 +20,11 @@ import { Label } from '@/components/ui/label'
 import type { FormAction } from '@/lib/action-state'
 import { wineDetails, type WineLike } from '@/lib/tasting/display'
 import {
+  SHUFFLE_EXPLAIN_HINT,
   SHUFFLE_RUNNING_HINT,
   SHUFFLE_TOO_FEW_HINT,
   WINE_LOCK_HINT,
+  WINE_REORDER_INFO,
   canShuffleWines,
   type TastingStatus,
 } from '@/lib/tasting/rules'
@@ -241,6 +244,7 @@ function ShuffleControl({
 
   return (
     <div className="grid grid-cols-1 gap-1">
+      <p className="mb-1 text-sm text-muted-foreground">{SHUFFLE_EXPLAIN_HINT}</p>
       {(status === 'active' || unratedCount < wineCount) && <p className={cn(marginNote, 'mb-2')}>{SHUFFLE_RUNNING_HINT}</p>}
       <form action={action}>
         <button
@@ -288,7 +292,12 @@ export function WineManager({
 }) {
   return (
     <div className="grid grid-cols-1 gap-8">
-      {locked && <p className={marginNote}>{WINE_LOCK_HINT}</p>}
+      {locked && (
+        <div className="flex items-start gap-1">
+          <p className={cn(marginNote, 'flex-1 self-center')}>{WINE_LOCK_HINT}</p>
+          <InfoPopover label="Umsortieren oder falsch eingeschenkt?">{WINE_REORDER_INFO}</InfoPopover>
+        </div>
+      )}
       {wines.length === 0 ? (
         <p className="text-muted-foreground">Noch keine Weine. Füg den ersten hinzu.</p>
       ) : (

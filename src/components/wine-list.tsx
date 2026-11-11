@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { GlassRing } from '@/components/glass-ring'
+import { GuardedLink } from '@/components/unsaved-guard'
 import { cn } from '@/lib/utils'
 import { RING_STATE_TEXT } from '@/lib/tasting/progress'
 import type { WineListItem } from '@/server/participant-view'
@@ -11,7 +11,7 @@ export function WineList({ items, currentPosition, savedPosition }: ListProps) {
     <ol className="grid grid-cols-1 border-t border-border">
       {items.map((item) => (
         <li key={item.position} className="border-b border-border">
-          <Link
+          <GuardedLink
             href={item.href}
             aria-current={item.position === currentPosition ? 'page' : undefined}
             className="group -mx-2 flex min-h-[4.5rem] items-center gap-4 rounded-lg px-2 py-2 outline-none transition-colors duration-100 hover:bg-card active:bg-secondary focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card"
@@ -36,7 +36,7 @@ export function WineList({ items, currentPosition, savedPosition }: ListProps) {
             >
               {RING_STATE_TEXT[item.state]}
             </span>
-          </Link>
+          </GuardedLink>
         </li>
       ))}
     </ol>
@@ -48,7 +48,7 @@ export function WineRingStrip({ items, currentPosition, savedPosition }: ListPro
   return (
     <nav aria-label="Weine" className="-mx-4 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 py-1 lg:hidden">
       {items.map((item) => (
-        <Link
+        <GuardedLink
           key={item.position}
           href={item.href}
           aria-current={item.position === currentPosition ? 'page' : undefined}
@@ -63,7 +63,7 @@ export function WineRingStrip({ items, currentPosition, savedPosition }: ListPro
           >
             <span className="font-display text-sm font-medium">{item.position}</span>
           </GlassRing>
-        </Link>
+        </GuardedLink>
       ))}
     </nav>
   )

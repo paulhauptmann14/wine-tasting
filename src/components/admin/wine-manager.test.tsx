@@ -53,3 +53,21 @@ it('announces the result and marks refusals as errors', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Reihenfolge mischen' }))
   expect(await screen.findByText('Zu wenige.')).toHaveClass('text-destructive')
 })
+
+it('explains what shuffling is for', () => {
+  setup('setup', 3)
+  expect(screen.getByText(/Für Blindverkostungen: würfelt die Nummern/)).toBeInTheDocument()
+})
+
+it('shows the lock hint with an info popover about wrongly poured wines while the tasting runs', async () => {
+  setup('active', 3)
+  expect(screen.getByText(/Umsortieren geht weiter, Löschen nur in der Vorbereitung/)).toBeInTheDocument()
+  expect(screen.queryByText(/Glas 2 war in Wahrheit Wein 3/)).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: 'Umsortieren oder falsch eingeschenkt?' }))
+  expect(screen.getByText(/Glas 2 war in Wahrheit Wein 3/)).toBeInTheDocument()
+})
+
+it('has no lock hint or info button in setup', () => {
+  setup('setup', 3)
+  expect(screen.queryByRole('button', { name: 'Umsortieren oder falsch eingeschenkt?' })).toBeNull()
+})

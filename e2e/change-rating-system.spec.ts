@@ -6,7 +6,7 @@ test('Bewertungssystem lässt sich in der Vorbereitung wechseln, danach nicht me
   await page.goto('/new')
   await page.getByLabel('Name der Verkostung').fill('System-Wechsel')
   await page.getByText('Einfach', { exact: true }).click()
-  await page.getByLabel('Admin-PIN').fill('1234')
+  await page.getByLabel('Deine Gastgeber-PIN').fill('1234')
   await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
   await page.waitForURL(/\/admin$/)
   expect(tastingCode(page)).toMatch(/^[2-9A-HJ-NP-Z]{6}$/)

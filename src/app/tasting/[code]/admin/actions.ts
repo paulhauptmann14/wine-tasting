@@ -133,7 +133,7 @@ export async function shuffleWinesAction(code: string): Promise<ActionState> {
   if (result.shuffled === 0) return { message: SHUFFLE_TOO_FEW_HINT, values: { nonce: String(Date.now()) } }
   return {
     ok: true,
-    message: `Reihenfolge von ${result.shuffled} Weinen neu gemischt.`,
+    message: `Neu: ${result.order.map((name, i) => `${i + 1} ${name}`).join(', ')}`,
     values: { nonce: String(Date.now()) },
   }
 }
@@ -219,5 +219,6 @@ export async function deleteTastingAction(code: string, _prev: ActionState, fd: 
   await deleteTasting(db, tasting.id)
   await clearAdminCookie(tasting.code)
   await clearParticipantCookie(tasting.code)
-  redirect('/')
+  // The home page confirms it once ("Tasting gelöscht.")
+  redirect('/?deleted=1')
 }

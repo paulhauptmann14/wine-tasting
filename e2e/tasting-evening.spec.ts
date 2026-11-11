@@ -10,7 +10,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(createBlind).not.toBeChecked()
   await createBlind.click()
   await page.getByText('Einfach', { exact: true }).click()
-  await page.getByLabel('Admin-PIN').fill('1234')
+  await page.getByLabel('Deine Gastgeber-PIN').fill('1234')
   await page.getByRole('button', { name: 'Verkostung erstellen' }).click()
   await page.waitForURL(/\/tasting\/[2-9A-HJ-NP-Z]{6}\/admin$/)
   const code = tastingCode(page)
@@ -42,7 +42,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(page.getByText('Du bist Gastgeber. Starte das Tasting, sobald alle da sind.')).toBeVisible()
   await page.getByRole('button', { name: 'Tasting starten' }).click()
   await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Verwaltung' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Für Gastgeber' })).toBeVisible()
 
   // Two guests rate blind – the admin area asks them for the PIN
   const anna = await newGuest(browser, testInfo)
@@ -50,7 +50,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('Riesling')).toHaveCount(0)
   await expect(anna.getByText('trocken')).toHaveCount(0)
   await expect(anna.getByText('Weißwein')).toHaveCount(0)
-  await anna.getByRole('link', { name: 'Verwaltung' }).click()
+  await anna.getByRole('link', { name: 'Für Gastgeber' }).click()
   await expect(anna.getByLabel('PIN')).toBeVisible()
   await expect(anna.getByRole('link', { name: 'Weine', exact: true })).toHaveCount(0)
   await anna.goto(`/tasting/${code}`)
@@ -73,11 +73,11 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('Pfirsich, sehr frisch')).toHaveCount(0)
 
   // Host goes from the guest view back to the admin area and finishes → names appear for Anna
-  await page.getByRole('link', { name: 'Verwaltung' }).click()
+  await page.getByRole('link', { name: 'Für Gastgeber' }).click()
   // While the tasting is running, deleting is locked – reordering still works (poured in another order)
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Wein #1 löschen' })).toBeDisabled()
-  await expect(page.getByText(/Umsortieren geht weiter, die Bewertungen wandern mit/)).toBeVisible()
+  await expect(page.getByText(/Umsortieren geht weiter, Löschen nur in der Vorbereitung/)).toBeVisible()
   await page.getByRole('button', { name: 'Wein #1 nach unten' }).click()
   await expect(page.getByRole('listitem').filter({ hasText: 'Spätburgunder' }).getByText('1', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Wein #1 nach unten' }).click()
@@ -85,7 +85,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   // … and can get back to their wines at any time during the tasting
   await page.getByRole('link', { name: 'Zum Tasting' }).click()
   await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()
-  await page.getByRole('link', { name: 'Verwaltung' }).click()
+  await page.getByRole('link', { name: 'Für Gastgeber' }).click()
   await page.getByRole('button', { name: 'Tasting beenden & auflösen' }).click()
   await page.getByRole('button', { name: 'Beenden & auflösen' }).click()
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()
@@ -130,7 +130,7 @@ test('Gastgeber kommt vom Gäste-Gerät mit der PIN in die Verwaltung', async ({
   // The guest phone is in the middle of the tasting and knows the PIN
   const phone = await newGuest(browser, testInfo)
   await joinAs(phone, code, 'Paul')
-  await phone.getByRole('link', { name: 'Verwaltung' }).click()
+  await phone.getByRole('link', { name: 'Für Gastgeber' }).click()
   await phone.waitForURL(/\/manage\?code=/)
   await expect(phone.getByLabel('Code', { exact: true })).toHaveValue(code)
   await phone.getByLabel('PIN').fill('9999')
@@ -213,6 +213,7 @@ test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, bro
   await page.getByLabel(/Zur Bestätigung den Code/).fill(code.toLowerCase())
   await deleteButton.click()
   await page.waitForURL((url) => url.pathname === '/')
+  await expect(page.getByText('Tasting gelöscht.')).toBeVisible()
   await page.goto(`/tasting/${code}`)
   await expect(page.getByRole('heading', { name: 'Tasting nicht gefunden' })).toBeVisible()
 })
@@ -260,6 +261,9 @@ test('Sicherheits-Header, robots.txt und App-Icons', async ({ request }, testInf
 test('Beim Erstellen wird die Rechnung des Bewertungssystems erklärt', async ({ page }) => {
   await page.goto('/new')
   await page.getByText('100-Punkte-Schema', { exact: true }).click()
+  // Folded away on /new – most hosts don't need the maths
+  await expect(page.getByText('Sockel für jeden Wein')).toBeHidden()
+  await page.getByText('So wird gerechnet').click()
   await expect(page.getByText('Sockel für jeden Wein')).toBeVisible()
   await expect(page.getByText('20 Punkte', { exact: true })).toBeVisible()
   await expect(page.getByText(/Überall 4 Sterne ergeben 90\./)).toBeVisible()

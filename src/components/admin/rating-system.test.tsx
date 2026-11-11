@@ -39,6 +39,7 @@ it('explains why it is read-only when ratings exist', () => {
   setup({ hasRatings: true })
   expect(screen.queryByRole('button', { name: 'Ändern' })).not.toBeInTheDocument()
   expect(screen.getByText(/Es gibt schon Bewertungen/)).toBeInTheDocument()
+  expect(screen.getByText(/entfern zuerst die Gäste unter Teilnehmer/)).toBeInTheDocument()
 })
 
 it('previews the chosen system and only enables "System übernehmen" for a different one', async () => {

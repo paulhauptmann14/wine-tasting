@@ -20,27 +20,30 @@ export function DeleteTasting({ code }: { code: string }) {
       <p className="mt-1 max-w-[46ch] text-sm text-muted-foreground">
         Weine, Gäste und alle Bewertungen werden endgültig gelöscht. Das lässt sich nicht rückgängig machen.
       </p>
-      <form action={action} noValidate className="mt-4 grid gap-3 sm:flex sm:items-start">
-        <div className="sm:w-48">
-          <Label htmlFor="delete-confirm" className="text-sm font-normal text-muted-foreground">
-            Zur Bestätigung den Code <span className="font-mono text-foreground">{code}</span> eingeben
-          </Label>
-          <Input
-            id="delete-confirm"
-            name="confirm"
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-            autoComplete="off"
-            autoCapitalize="characters"
-            maxLength={6}
-            aria-invalid={!!state?.fieldErrors?.confirm}
-            className="mt-2 h-12 font-mono tracking-[0.3em] uppercase"
-          />
-          <FieldError errors={state?.fieldErrors?.confirm} />
+      {/* Label above; field and button side by side from sm up, stacked on the phone */}
+      <form action={action} noValidate className="mt-4 grid grid-cols-1 gap-2">
+        <Label htmlFor="delete-confirm" className="text-sm font-normal text-muted-foreground">
+          Zur Bestätigung den Code <span className="font-mono text-foreground">{code}</span> eingeben
+        </Label>
+        <div className="grid grid-cols-1 gap-3 sm:flex sm:items-start">
+          <div className="sm:w-48">
+            <Input
+              id="delete-confirm"
+              name="confirm"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="characters"
+              maxLength={6}
+              aria-invalid={!!state?.fieldErrors?.confirm}
+              className="h-12 font-mono tracking-[0.3em] uppercase"
+            />
+            <FieldError errors={state?.fieldErrors?.confirm} />
+          </div>
+          <Button type="submit" variant="destructive" size="lg" className="h-12" disabled={!matches || pending}>
+            Endgültig löschen
+          </Button>
         </div>
-        <Button type="submit" variant="destructive" size="lg" className="h-12 sm:mt-7" disabled={!matches || pending}>
-          Endgültig löschen
-        </Button>
       </form>
     </section>
   )

@@ -13,7 +13,7 @@ import { marginNote } from '@/components/styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { FormAction } from '@/lib/action-state'
+import type { ActionState, FormAction } from '@/lib/action-state'
 import { STRUCTURE_LOCK_HINT } from '@/lib/tasting/rules'
 
 type CriterionData = { id: string; name: string; position: number }
@@ -24,18 +24,32 @@ function NameForm({
   label,
   submitLabel,
   onDone,
+  autoFocus,
+  successMessage,
 }: {
   action: FormAction
   initial?: string
   label: string
   submitLabel: string
   onDone?: () => void
+  /** Focus the field on mount – the browser scrolls it into view */
+  autoFocus?: boolean
+  /** Confirmation shown at this form after it succeeded, e.g. "„Abgang“ hinzugefügt." */
+  successMessage?: (name: string) => string
 }) {
-  const [state, formAction, pending] = useActionState(action, undefined)
+  // The confirmation belongs to this form's own state – it never lingers on the page after other changes
+  const [state, formAction, pending] = useActionState(async (prev: ActionState, fd: FormData) => {
+    const result = await action(prev, fd)
+    if (!result?.ok || !successMessage) return result
+    return { ...result, message: successMessage(String(fd.get('name') ?? '').trim()) }
+  }, undefined)
+  // Typing the next name hides the confirmation of the previous one
+  const [dismissed, setDismissed] = useState<ActionState>(undefined)
   const id = useId()
   useEffect(() => {
     if (state?.ok) onDone?.()
   }, [state, onDone])
+  const confirmation = state?.ok && state !== dismissed ? state.message : undefined
   return (
     <form action={formAction} noValidate className="flex flex-wrap items-start gap-2">
       <div className="min-w-48 flex-1">
@@ -45,6 +59,8 @@ function NameForm({
           name="name"
           defaultValue={state?.values?.name ?? initial}
           maxLength={40}
+          autoFocus={autoFocus}
+          onChange={() => setDismissed(state)}
           aria-invalid={!!state?.fieldErrors?.name}
           className="mt-2 h-12"
         />
@@ -53,6 +69,11 @@ function NameForm({
       <Button type="submit" size="lg" className="mt-7 h-12" disabled={pending}>
         {submitLabel}
       </Button>
+      {successMessage && (
+        <p role="status" className="basis-full text-sm text-muted-foreground">
+          {confirmation}
+        </p>
+      )}
     </form>
   )
 }
@@ -104,6 +125,7 @@ function CriterionRow({
             initial={criterion.name}
             label="Neuer Name"
             submitLabel="Speichern"
+            autoFocus
             onDone={() => setEditing(false)}
           />
         </div>
@@ -139,7 +161,12 @@ export function CriteriaManager({
       </ol>
       {!locked && (
         <section>
-          <NameForm action={addCriterionAction.bind(null, code)} label="Kriterium hinzufügen" submitLabel="Hinzufügen" />
+          <NameForm
+            action={addCriterionAction.bind(null, code)}
+            label="Kriterium hinzufügen"
+            submitLabel="Hinzufügen"
+            successMessage={(name) => `„${name}“ hinzugefügt.`}
+          />
           <p className="mt-3 text-sm text-muted-foreground">
             Neue Kriterien gelten auch für bereits abgegebene Bewertungen – deine Gäste werden gebeten, sie zu ergänzen.
           </p>
