@@ -39,6 +39,11 @@ export async function getParticipantBySessionToken(
   return row ?? null
 }
 
+/** Number of guests only – for public views that must not show names (table view). */
+export async function countParticipants(db: Db, tastingId: string): Promise<number> {
+  return db.$count(participants, eq(participants.tastingId, tastingId))
+}
+
 /** Counts only complete ratings – like the guests' progress display. */
 export async function listParticipants(db: Db, tastingId: string) {
   const criteriaCount = await db.$count(ratingCriteria, eq(ratingCriteria.tastingId, tastingId))

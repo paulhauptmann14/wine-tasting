@@ -5,6 +5,7 @@ import type { Db } from '@/db/types'
 import { ratingCriteria, ratingValues, ratings, sessions, wines } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import {
+  countParticipants,
   getParticipantBySessionToken,
   joinTasting,
   listParticipantProgress,
@@ -100,4 +101,14 @@ it('reports per-wine progress for every participant', async () => {
     ['Anna', ['done', 'incomplete'], 1],
     ['Ben', ['open', 'open'], 0],
   ])
+})
+
+it('counts the guests of one tasting only', async () => {
+  const t = await seedTasting(db, { preset: 'simple' })
+  const other = await seedTasting(db, { preset: 'simple' })
+  expect(await countParticipants(db, t.id)).toBe(0)
+  await joinTasting(db, t.id, 'Anna')
+  await joinTasting(db, t.id, 'Ben')
+  await joinTasting(db, other.id, 'Clara')
+  expect(await countParticipants(db, t.id)).toBe(2)
 })

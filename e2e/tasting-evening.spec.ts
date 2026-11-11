@@ -51,6 +51,12 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await page.waitForURL(/\/tasting\/[2-9A-HJ-NP-Z]{6}\/admin$/)
   const code = page.url().match(/\/tasting\/([2-9A-HJ-NP-Z]{6})\//)![1]
 
+  // Table view on its own device: only the code, no joining
+  const table = await newGuest(browser, testInfo)
+  await table.goto(`/tasting/${code}/table`)
+  await expect(table.getByText('Scanne den Code und mach mit.')).toBeVisible()
+  await expect(table.getByRole('img', { name: /QR-Code/ })).toBeVisible()
+
   // Add wines
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
   for (const [name, wineType, vintage, sweetness] of [
@@ -95,6 +101,11 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('4,5').first()).toBeVisible()
   await expect(anna.getByText('Riesling')).toHaveCount(0)
   // Notes only at the end
+  await table.reload()
+  await expect(table.getByText('So weit sind wir')).toBeVisible()
+  await expect(table.getByText('3 Gäste dabei')).toBeVisible()
+  await expect(table.getByText('Riesling')).toHaveCount(0)
+  await expect(table.getByText('Anna')).toHaveCount(0)
   await expect(anna.getByText('Pfirsich, sehr frisch')).toHaveCount(0)
 
   // Host goes from the guest view back to the admin area and finishes → names appear for Anna
@@ -112,6 +123,9 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()
   await expect(anna.getByText('Riesling').first()).toBeVisible({ timeout: 12_000 })
   await expect(anna.getByText('Weißwein · 2022 · trocken').first()).toBeVisible()
+  // The table view reveals the podium on its own
+  await expect(table.getByText('Endergebnis')).toBeVisible({ timeout: 12_000 })
+  await expect(table.getByText('Riesling').first()).toBeVisible()
   // … and the notes, without names
   const notes = anna.getByRole('region', { name: 'Notizen' })
   await expect(notes.getByText('„Pfirsich, sehr frisch“')).toBeVisible()
