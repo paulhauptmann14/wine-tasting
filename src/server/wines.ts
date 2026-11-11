@@ -87,8 +87,9 @@ export async function moveWine(
   wineId: string,
   direction: 'up' | 'down',
 ): Promise<void> {
+  // Allowed in every phase: wines are often poured in a different order than planned.
+  // Ratings belong to the wine id, so they move along with it.
   await db.transaction(async (tx) => {
-    await assertStructureEditable(tx, tastingId)
     const ids = await orderedIds(tx, tastingId)
     const from = ids.indexOf(wineId)
     const to = direction === 'up' ? from - 1 : from + 1

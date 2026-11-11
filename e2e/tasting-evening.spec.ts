@@ -110,10 +110,14 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
 
   // Host goes from the guest view back to the admin area and finishes → names appear for Anna
   await page.getByRole('link', { name: 'Verwaltung' }).click()
-  // While the tasting is running, reordering and deleting are locked
+  // While the tasting is running, deleting is locked – reordering still works (poured in another order)
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Wein #1 löschen' })).toBeDisabled()
-  await expect(page.getByText('Das Tasting läuft. Zum Umsortieren oder Löschen zurück in die Vorbereitung.')).toBeVisible()
+  await expect(page.getByText(/Umsortieren geht weiter, die Bewertungen wandern mit/)).toBeVisible()
+  await page.getByRole('button', { name: 'Wein #1 nach unten' }).click()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Spätburgunder' }).getByText('1', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Wein #1 nach unten' }).click()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Riesling' }).getByText('1', { exact: true })).toBeVisible()
   // … and can get back to their wines at any time during the tasting
   await page.getByRole('link', { name: 'Zum Tasting' }).click()
   await expect(page.getByRole('link', { name: /Wein #1/ }).first()).toBeVisible()

@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ActionState } from '@/lib/action-state'
 import { wineDetails } from '@/lib/tasting/display'
-import { STRUCTURE_LOCK_HINT } from '@/lib/tasting/rules'
+import { WINE_LOCK_HINT } from '@/lib/tasting/rules'
 import { SWEETNESS_KEYS, SWEETNESS_LABELS, type Sweetness } from '@/lib/tasting/sweetness'
 import { WINE_TYPE_KEYS, WINE_TYPE_LABELS, type WineType } from '@/lib/tasting/wine-type'
 import { cn } from '@/lib/utils'
@@ -187,12 +187,12 @@ function WineRow({
         </div>
         <div className="-mr-2 ml-auto flex shrink-0">
           <form action={moveWineAction.bind(null, code, wine.id, 'up')}>
-            <button type="submit" disabled={locked || isFirst} aria-label={`Wein #${wine.position} nach oben`} className={iconButton}>
+            <button type="submit" disabled={isFirst} aria-label={`Wein #${wine.position} nach oben`} className={iconButton}>
               <ArrowUp className="size-5" />
             </button>
           </form>
           <form action={moveWineAction.bind(null, code, wine.id, 'down')}>
-            <button type="submit" disabled={locked || isLast} aria-label={`Wein #${wine.position} nach unten`} className={iconButton}>
+            <button type="submit" disabled={isLast} aria-label={`Wein #${wine.position} nach unten`} className={iconButton}>
               <ArrowDown className="size-5" />
             </button>
           </form>
@@ -234,7 +234,7 @@ function WineRow({
 export function WineManager({ code, wines, locked }: { code: string; wines: WineRowData[]; locked: boolean }) {
   return (
     <div className="grid grid-cols-1 gap-8">
-      {locked && <p className="border-l-2 border-wine pl-3 text-sm text-muted-foreground">{STRUCTURE_LOCK_HINT}</p>}
+      {locked && <p className="border-l-2 border-wine pl-3 text-sm text-muted-foreground">{WINE_LOCK_HINT}</p>}
       {wines.length === 0 ? (
         <p className="text-muted-foreground">Noch keine Weine. Füg den ersten hinzu.</p>
       ) : (

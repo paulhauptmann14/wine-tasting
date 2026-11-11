@@ -13,12 +13,14 @@ export const STATUS_HINTS: Record<TastingStatus, string> = {
 }
 
 /**
- * Reordering/deleting wines and adding/removing/moving criteria only during setup:
- * otherwise "Wein #3" suddenly refers to a different bottle or all ratings become incomplete.
+ * Deleting wines and adding/removing/moving criteria only during setup: otherwise ratings get lost
+ * or become incomplete. Reordering wines is always allowed – ratings follow the wine, not its number.
  */
 export const canEditStructure = (status: TastingStatus) => status === 'setup'
 export const STRUCTURE_LOCK_HINT =
   'Das Tasting läuft. Zum Umsortieren oder Löschen zurück in die Vorbereitung.'
+export const WINE_LOCK_HINT =
+  'Das Tasting läuft. Umsortieren geht weiter, die Bewertungen wandern mit. Löschen nur in der Vorbereitung.'
 
 export const canJoin = (status: TastingStatus) => status !== 'finished'
 export const canRate = (status: TastingStatus) => status === 'active'

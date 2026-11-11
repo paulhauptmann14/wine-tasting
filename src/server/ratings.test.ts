@@ -9,7 +9,7 @@ import { addCriterion, listCriteria } from './criteria'
 import { joinTasting } from './participants'
 import { getParticipantProgress, getRating, saveRating } from './ratings'
 import { loadResultsInput } from './results-data'
-import { addWine } from './wines'
+import { addWine, getWineByPosition, moveWine } from './wines'
 
 let db: Db
 beforeEach(async () => {
@@ -74,4 +74,17 @@ describe('loadResultsInput', () => {
       { participantId: participant.id, wineId: wine.id, values: { [gesamt.id]: 5 } },
     ])
   })
+})
+
+it('keeps a rating with its wine when the host reorders during the tasting', async () => {
+  const { t, gesamt, wine, participant } = await setup()
+  const other = await addWine(db, t.id, { name: 'Silvaner', vintage: null, grapeVariety: null, sweetness: null, wineType: null })
+  await saveRating(db, { participantId: participant.id, wineId: wine.id, values: { [gesamt.id]: 5 }, notes: 'frisch' })
+
+  await moveWine(db, t.id, wine.id, 'down')
+
+  expect((await getWineByPosition(db, t.id, 1))?.id).toBe(other.id)
+  expect((await getWineByPosition(db, t.id, 2))?.id).toBe(wine.id)
+  expect(await getRating(db, participant.id, wine.id)).toMatchObject({ values: { [gesamt.id]: 5 }, notes: 'frisch' })
+  expect(await getRating(db, participant.id, other.id)).toBeNull()
 })

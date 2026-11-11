@@ -115,7 +115,7 @@ export async function deleteWineAction(code: string, wineId: string): Promise<vo
 export async function moveWineAction(code: string, wineId: string, direction: 'up' | 'down'): Promise<void> {
   const tasting = await getAdminTasting(code)
   if (!idSchema.safeParse(wineId).success || !directionSchema.safeParse(direction).success) return
-  await unlessLocked(() => moveWine(db, tasting.id, wineId, direction))
+  await moveWine(db, tasting.id, wineId, direction)
   refresh(tasting.code)
 }
 

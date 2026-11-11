@@ -65,17 +65,28 @@ it('finds a wine by id only within its tasting', async () => {
   expect(await getWineById(db, other.id, a.id)).toBeNull()
 })
 
-it('refuses to delete or move wines once the tasting has started', async () => {
+it('refuses to delete wines once the tasting has started', async () => {
   const t = await seedTasting(db)
   const a = await addWine(db, t.id, w('A'))
   await addWine(db, t.id, w('B'))
   const active = await seedTastingStatus(t.id, 'active')
   await expect(deleteWine(db, active, a.id)).rejects.toThrow(StructureLockedError)
-  await expect(moveWine(db, active, a.id, 'down')).rejects.toThrow(StructureLockedError)
   // Adding and editing stay allowed
   await addWine(db, active, w('C'))
   await updateWine(db, active, a.id, w('A2'))
   expect(await names(t.id)).toEqual(['1:A2', '2:B', '3:C'])
+})
+
+it('reorders wines while the tasting runs – the order follows what is poured', async () => {
+  const t = await seedTasting(db)
+  const a = await addWine(db, t.id, w('A'))
+  await addWine(db, t.id, w('B'))
+  const active = await seedTastingStatus(t.id, 'active')
+  await moveWine(db, active, a.id, 'down')
+  expect(await names(t.id)).toEqual(['1:B', '2:A'])
+  await seedTastingStatus(t.id, 'finished')
+  await moveWine(db, t.id, a.id, 'up')
+  expect(await names(t.id)).toEqual(['1:A', '2:B'])
 })
 
 async function seedTastingStatus(tastingId: string, status: 'active' | 'finished') {
