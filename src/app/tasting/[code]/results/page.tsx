@@ -3,8 +3,10 @@ import { notFound, redirect } from 'next/navigation'
 import { AdminLink } from '@/components/admin-link'
 import { TastingCode } from '@/components/tasting-code'
 import { AutoRefresh } from '@/components/auto-refresh'
+import { BottomBar } from '@/components/bottom-bar'
 import { PageShell } from '@/components/page-shell'
 import { ResultsSection } from '@/components/results-section'
+import { ShareResultsImage } from '@/components/share-results-image'
 import { StatusPill } from '@/components/status-pill'
 import { isAdmin } from '@/lib/auth/admin-session'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
@@ -40,6 +42,12 @@ export default async function ResultsPage({ params }: { params: Promise<{ code: 
         </div>
       </div>
       <h1 className="mt-4 font-display text-4xl md:text-5xl leading-tight lg:text-5xl">{tasting.name}</h1>
+      {/* Sharing the final ranking is the main action once finished: fixed bar on phones, below the title from lg */}
+      {tasting.status === 'finished' && (
+        <BottomBar>
+          <ShareResultsImage code={tasting.code} title={tasting.name} />
+        </BottomBar>
+      )}
       <ResultsSection tasting={tasting} isAdmin={admin} />
     </PageShell>
   )
