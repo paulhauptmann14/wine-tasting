@@ -48,6 +48,14 @@
   --font-display: ui-serif, var(--font-newsreader), Georgia, serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace;
 
+  /*
+   * Motion: one set of curves for the whole app. "fluid" approximates a critically damped spring –
+   * fast start, soft landing, no overshoot. "pop" overshoots slightly, only for a tapped star.
+   */
+  --ease-fluid: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-pop: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-draw: cubic-bezier(0.65, 0, 0.35, 1);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -172,7 +180,7 @@
   to { stroke-dashoffset: 0; }
 }
 .ring-draw {
-  animation: ring-draw 700ms cubic-bezier(0.65, 0, 0.35, 1) both;
+  animation: ring-draw 700ms var(--ease-draw) both;
 }
 
 /* Reveal: rings soak in */
@@ -184,14 +192,14 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.ring-soak { animation: ring-soak 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ring-soak { animation: ring-soak 900ms var(--ease-fluid) both; }
 .ring-soak .ring-fill { animation: fill-soak 1200ms 200ms ease-out both; }
 
 @keyframes reveal-up {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
-.reveal-up { animation: reveal-up 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.reveal-up { animation: reveal-up 600ms var(--ease-fluid) both; }
 
 /* Star tapped: a short pop confirms the choice (no long overshoot – a tap carries no momentum) */
 @keyframes star-pop {
@@ -199,7 +207,32 @@
   40% { transform: scale(1.22); }
   100% { transform: scale(1); }
 }
-.star-pop { animation: star-pop 260ms cubic-bezier(0.34, 1.4, 0.64, 1); transform-origin: center; }
+.star-pop { animation: star-pop 260ms var(--ease-pop); transform-origin: center; }
+
+/* Next wine after saving: arrives from the right, where the next ring sits in the strip */
+@keyframes arrive-from-right {
+  from { opacity: 0; transform: translateX(1.5rem); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/*
+ * Only the content moves, never the wrapper: a transformed ancestor would turn the fixed
+ * bottom bar (.material-bar) into a child of the moving block for the length of the animation.
+ */
+.arrive-next > header,
+.arrive-next form > :not(.material-bar) {
+  animation: arrive-from-right 350ms var(--ease-fluid) both;
+}
+
+/* Light/dark switch: cross-fade instead of an abrupt brightness jump */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+  animation-timing-function: ease;
+}
 
 @keyframes live-pulse {
   0%, 100% { opacity: 1; }
@@ -211,4 +244,8 @@
   .ring-draw, .ring-soak, .ring-soak .ring-fill, .reveal-up, .live-dot, .star-pop {
     animation: none !important;
   }
+  /* Keep the meaning (something new arrived), drop the movement */
+  .arrive-next > header,
+  .arrive-next form > :not(.material-bar) { animation-name: fade-in; }
+  [data-slot="alert-dialog-content"] { --tw-enter-scale: 1 !important; }
 }

@@ -59,25 +59,28 @@ export default async function WinePage({ params, searchParams }: Props) {
       </div>
       <WineRingStrip items={items} currentPosition={position} savedPosition={savedPosition} />
 
-      <header className="mt-6 flex items-center gap-4">
-        <GlassRing seed={position} size={96} className="-ml-2">
-          <span className="font-display text-4xl font-medium">{position}</span>
-        </GlassRing>
-        <div className="min-w-0">
-          {!showName && <p className="text-sm text-muted-foreground">Blind verkostet</p>}
-          <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight lg:text-4xl">{title}</h1>
-          {subtitle && <p className="mt-1 text-muted-foreground">{subtitle}</p>}
-        </div>
-      </header>
+      {/* Remounted per wine so the arrival plays again after every "Speichern & weiter" */}
+      <div key={position} className={savedPosition === position - 1 ? 'arrive-next' : undefined}>
+        <header className="mt-6 flex items-center gap-4">
+          <GlassRing seed={position} size={96} className="-ml-2">
+            <span className="font-display text-4xl font-medium">{position}</span>
+          </GlassRing>
+          <div className="min-w-0">
+            {!showName && <p className="text-sm text-muted-foreground">Blind verkostet</p>}
+            <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight lg:text-4xl">{title}</h1>
+            {subtitle && <p className="mt-1 text-muted-foreground">{subtitle}</p>}
+          </div>
+        </header>
 
-      <RatingForm
-        key={wine.id}
-        action={saveRatingAction.bind(null, tasting.code, wine.id)}
-        criteria={criteria.map(({ id, name, scaleMin, scaleMax }) => ({ id, name, scaleMin, scaleMax }))}
-        initialValues={existing?.values ?? {}}
-        initialNotes={existing?.notes ?? ''}
-        isLast={position === items.length}
-      />
+        <RatingForm
+          key={wine.id}
+          action={saveRatingAction.bind(null, tasting.code, wine.id)}
+          criteria={criteria.map(({ id, name, scaleMin, scaleMax }) => ({ id, name, scaleMin, scaleMax }))}
+          initialValues={existing?.values ?? {}}
+          initialNotes={existing?.notes ?? ''}
+          isLast={position === items.length}
+        />
+      </div>
     </TastingSplit>
   )
 }

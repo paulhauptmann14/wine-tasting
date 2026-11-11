@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useSyncExternalStore } from 'react'
+import { flushSync } from 'react-dom'
 import { Moon, Sun } from 'lucide-react'
 import { THEME_COOKIE, type Theme } from '@/lib/theme'
 
@@ -22,10 +23,19 @@ export function ThemeToggle({ initial }: { initial?: Theme }) {
   const current: Theme = saved ?? (systemDark ? 'dark' : 'light')
   const next: Theme = current === 'dark' ? 'light' : 'dark'
 
-  function toggle() {
+  function apply() {
     document.documentElement.dataset.theme = next
     document.cookie = `${THEME_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
-    setSaved(next)
+    // Synchronous, so the icon is part of the cross-fade's "after" snapshot
+    flushSync(() => setSaved(next))
+  }
+
+  function toggle() {
+    // Cross-fade between light and dark where supported; instant with reduced motion
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!document.startViewTransition || reduced) apply()
+    // A skipped transition (double tap, hidden tab) still applies the theme – only the fade is dropped
+    else document.startViewTransition(apply).ready.catch(() => {})
   }
 
   return (
