@@ -4,6 +4,21 @@ Webapp für private Weinverkostungen mit Freunden – gemacht fürs Handy am Tis
 
 Der Gastgeber erstellt ein Tasting, trägt die Weine ein und zeigt einen QR-Code. Gäste treten nur mit ihrem Namen bei – ohne Konto, ohne Passwort – und vergeben pro Wein und Kriterium 1–5 Sterne. Das Ranking läuft live mit; bei einer Blindverkostung erscheinen die Weinnamen erst am Ende.
 
+<!-- Phone screenshots follow GitHub's light/dark theme -->
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/bewerten-dunkel.png">
+    <img src=".github/screenshots/bewerten.png" alt="Einen Wein bewerten: Sterne pro Kriterium und eine Notiz" width="300">
+  </picture>
+  &nbsp;
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/ergebnis-dunkel.png">
+    <img src=".github/screenshots/ergebnis.png" alt="Endergebnis mit Podest und Button zum Teilen als Bild" width="300">
+  </picture>
+</p>
+
+<img src=".github/screenshots/ergebnis-laptop-dunkel.png" alt="Endergebnis auf dem Laptop im Dunkelmodus" width="720">
+
 ## Funktionen
 
 - **Tasting erstellen** mit Name, optionaler Blindverkostung, Bewertungssystem und Admin-PIN
@@ -12,6 +27,7 @@ Der Gastgeber erstellt ein Tasting, trägt die Weine ein und zeigt einen QR-Code
 - **Einladen** per QR-Code, Link oder 6-stelligem Code
 - **Bewerten** mit Sternen und optionaler Notiz; auf dem Handy wischt man zwischen den Weinen
 - **Ergebnisse** live mit Podest, Durchschnitt je Kriterium und – nach dem Ende – den Notizen aller Gäste ohne Namen
+- **Ergebnis als Bild** zum Teilen, z. B. in WhatsApp – mit Podest und allen Plätzen
 - **Tisch-Ansicht** für iPad oder Fernseher: QR-Code zum Beitreten, Fortschritt, am Ende das Podest
 - **Verwaltung** mit PIN, auch vom Handy eines Gastes aus
 - **Hell und dunkel**, folgt dem System oder per Schalter
