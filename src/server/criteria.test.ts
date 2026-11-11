@@ -17,7 +17,7 @@ const names = async (tastingId: string) =>
 it('appends, renames and reorders criteria', async () => {
   const t = await seedTasting(db, { preset: 'simple' })
   const finish = await addCriterion(db, t.id, 'Abgang')
-  expect(finish).toMatchObject({ scaleMin: 1, scaleMax: 5, type: 'stars' })
+  expect(finish).toMatchObject({ scaleMin: 1, scaleMax: 5 })
   await renameCriterion(db, t.id, finish.id, 'Nachhall')
   await moveCriterion(db, t.id, finish.id, 'up')
   expect(await names(t.id)).toEqual(['1:Nachhall', '2:Gesamt'])
