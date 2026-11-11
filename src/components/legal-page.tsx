@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
     // Reading column: stays at the sm width on laptops too
-    <main className={cn('mx-auto w-full pt-6 pb-16 lg:pt-4', SITE_FRAME_CLASSES.page, 'lg:max-w-[720px]')}>
+    <main className={cn('mx-auto w-full pt-6 pb-16 lg:pt-4', SITE_FRAME_CLASSES.reading)}>
       <Link href="/" className={backLink}>
         ‹ Zur Startseite
       </Link>

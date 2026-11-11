@@ -11,9 +11,8 @@ export function PageShell({ children, width = 'narrow' }: { children: ReactNode;
     <main
       className={cn(
         'mx-auto w-full pt-6 pb-32 lg:pb-16',
-        SITE_FRAME_CLASSES.page,
-        width === 'narrow' && 'lg:pt-4',
-        width === 'wide' && 'lg:max-w-[960px] lg:pt-12',
+        width === 'narrow' ? SITE_FRAME_CLASSES.page : SITE_FRAME_CLASSES.results,
+        width === 'narrow' ? 'lg:pt-4' : 'lg:pt-12',
       )}
     >
       {width === 'narrow' ? <div className="lg:max-w-xl">{children}</div> : children}
