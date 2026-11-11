@@ -4,13 +4,13 @@ import { ratingCriteria, sessions, tastings, wines } from '@/db/schema'
 import { generateCode, normalizeCode } from '@/lib/tasting/code'
 import { PRESETS, type PresetKey } from '@/lib/tasting/presets'
 import { hashPin, verifyPin } from '@/lib/auth/pin'
+import { lockMinutes } from '@/lib/auth/pin-lockout'
 import { isExpired, retentionCutoff } from '@/lib/tasting/retention'
 import { canTransition, type TastingStatus } from '@/lib/tasting/rules'
 
 export type Tasting = typeof tastings.$inferSelect
 
 export const MAX_PIN_ATTEMPTS = 5
-const PIN_LOCK_MINUTES = 10
 const CODE_ATTEMPTS = 5
 
 export async function createTasting(
@@ -92,8 +92,14 @@ export async function verifyAdminPin(
   if (!tasting) return { ok: false, reason: 'not_found' }
   const byId = eq(tastings.id, tasting.id)
   const lock = async () => {
-    const lockedUntil = new Date(now.getTime() + PIN_LOCK_MINUTES * 60_000)
-    await db.update(tastings).set({ pinFailedAttempts: 0, pinLockedUntil: lockedUntil }).where(byId)
+    // Count the lockout atomically, then lock for as long as that number calls for
+    const [{ lockCount }] = await db
+      .update(tastings)
+      .set({ pinFailedAttempts: 0, pinLockCount: sql`${tastings.pinLockCount} + 1` })
+      .where(byId)
+      .returning({ lockCount: tastings.pinLockCount })
+    const lockedUntil = new Date(now.getTime() + lockMinutes(lockCount) * 60_000)
+    await db.update(tastings).set({ pinLockedUntil: lockedUntil }).where(byId)
     return { ok: false, reason: 'locked', lockedUntil } as const
   }
 
@@ -111,7 +117,7 @@ export async function verifyAdminPin(
   if (counted.attempts > MAX_PIN_ATTEMPTS) return lock()
 
   if (await verifyPin(pin, tasting.adminPinHash)) {
-    await db.update(tastings).set({ pinFailedAttempts: 0, pinLockedUntil: null }).where(byId)
+    await db.update(tastings).set({ pinFailedAttempts: 0, pinLockedUntil: null, pinLockCount: 0 }).where(byId)
     return { ok: true, tasting }
   }
   if (counted.attempts >= MAX_PIN_ATTEMPTS) return lock()

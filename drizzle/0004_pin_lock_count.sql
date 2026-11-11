@@ -1,0 +1,1 @@
+ALTER TABLE "tasting" ADD COLUMN "pin_lock_count" integer DEFAULT 0 NOT NULL;

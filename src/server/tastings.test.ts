@@ -77,6 +77,22 @@ describe('verifyAdminPin', () => {
     expect(row.pinLockedUntil).toBeNull()
   })
 
+  it('makes every further lockout twice as long until a successful login', async () => {
+    const t = await createTasting(db, input)
+    const failUntilLocked = async (at: Date) => {
+      for (let i = 0; i < MAX_PIN_ATTEMPTS; i++) await verifyAdminPin(db, t.code, '0000', at)
+    }
+    await failUntilLocked(now) // 1st lock: 10 minutes
+    await failUntilLocked(minutesLater(11)) // 2nd lock: 20 minutes
+    expect(await verifyAdminPin(db, t.code, '1234', minutesLater(30))).toMatchObject({ ok: false, reason: 'locked' })
+    expect(await verifyAdminPin(db, t.code, '1234', minutesLater(32))).toMatchObject({ ok: true })
+
+    const [row] = await db.select().from(tastings).where(eq(tastings.id, t.id))
+    expect(row.pinLockCount).toBe(0)
+    await failUntilLocked(minutesLater(40)) // after a success it starts at 10 minutes again
+    expect(await verifyAdminPin(db, t.code, '1234', minutesLater(51))).toMatchObject({ ok: true })
+  })
+
   it('counts parallel wrong attempts atomically so the lockout cannot be bypassed', async () => {
     const t = await createTasting(db, input)
     const results = await Promise.all(

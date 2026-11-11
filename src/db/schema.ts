@@ -28,6 +28,8 @@ export const tastings = pgTable('tasting', {
   adminPinHash: text('admin_pin_hash').notNull(),
   pinFailedAttempts: integer('pin_failed_attempts').notNull().default(0),
   pinLockedUntil: timestamptz('pin_locked_until'),
+  /** Lockouts since the last successful login – each one lasts twice as long (lockMinutes) */
+  pinLockCount: integer('pin_lock_count').notNull().default(0),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
 }).enableRLS()
 

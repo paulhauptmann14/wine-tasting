@@ -29,6 +29,13 @@
       "when": 1794380645172,
       "tag": "0003_rating_scale",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794391393090,
+      "tag": "0004_pin_lock_count",
+      "breakpoints": true
     }
   ]
 }
