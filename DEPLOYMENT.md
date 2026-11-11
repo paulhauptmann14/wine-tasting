@@ -49,6 +49,7 @@ Der Stack besteht aus:
 | `db` | Postgres 17, Daten in `DB_DATA_DIR` |
 | `migrate` | wendet beim Start einmal alle Migrationen an und beendet sich |
 | `app` | Next.js-Standalone-Server, nur lokal auf `127.0.0.1:APP_PORT` erreichbar |
+| `cleanup` | ruft beim Start und dann alle 24 Stunden den Aufräum-Job der App auf (Tastings älter als 90 Tage, abgelaufene Sessions); braucht `CRON_SECRET` |
 | `tunnel` | optional: Cloudflare Tunnel für HTTPS von außen, ohne Portfreigabe |
 
 **Von außen erreichbar machen (HTTPS):** In Cloudflare *Zero Trust → Networks → Tunnels* einen Tunnel anlegen, als Public Hostname z. B. `wein.example.de` → `http://app:3000` eintragen, das Token in `.env.production` als `TUNNEL_TOKEN` setzen, `APP_URL=https://wein.example.de` setzen und mit Profil starten:
@@ -59,7 +60,9 @@ docker compose -f docker-compose.prod.yml --env-file .env.production --profile t
 
 HTTPS ist nötig: In Produktion setzt die App ihre Cookies nur über sichere Verbindungen. Über eine reine LAN-Adresse (`http://192.168…`) funktionieren Beitreten und Admin-Login deshalb nicht.
 
-**Update:** `git pull` und denselben `up -d --build`-Befehl erneut ausführen – Migrationen laufen automatisch.
+**Update:** `git pull` und denselben `up -d --build`-Befehl erneut ausführen – Migrationen laufen automatisch. Fehlt eine neue Pflichtvariable (z. B. `CRON_SECRET`), bricht Compose mit einer Meldung ab; Wert in `.env.production` ergänzen, siehe `.env.production.example`.
+
+**Aufräumen prüfen:** `docker compose -f docker-compose.prod.yml --env-file .env.production logs cleanup` zeigt pro Lauf, wie viele Tastings und Sessions gelöscht wurden.
 
 **Backup** der Datenbank:
 

@@ -5,6 +5,7 @@ node_modules
 !.env.example
 docs
 e2e
+playwright.config.ts
 test-results
 playwright-report
 data

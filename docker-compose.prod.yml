@@ -45,12 +45,38 @@ services:
       DATABASE_URL: postgres://wine:${POSTGRES_PASSWORD}@db:5432/wine_tasting
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET setzen (mind. 32 Zeichen)}
       APP_URL: ${APP_URL:-}
+      CRON_SECRET: ${CRON_SECRET:?CRON_SECRET setzen (mind. 16 Zeichen)}
     ports:
       # Only reachable locally on the device; from outside, access goes through the tunnel (HTTPS)
       - "127.0.0.1:${APP_PORT:-3000}:3000"
     depends_on:
       migrate:
         condition: service_completed_successfully
+
+  # Daily cleanup (the Docker counterpart to Vercel Cron): deletes tastings past 90 days and
+  # expired sessions via the app's purge route. Once at start, then every 24 hours; retries after 5 minutes.
+  cleanup:
+    image: alpine:3.24
+    restart: unless-stopped
+    environment:
+      CRON_SECRET: ${CRON_SECRET:?CRON_SECRET setzen (mind. 16 Zeichen)}
+    # $$ = expanded by the container shell, not by Compose
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          if wget -q -O - --header "Authorization: Bearer $$CRON_SECRET" http://app:3000/api/cron/purge; then
+            echo
+            sleep 86400
+          else
+            echo "cleanup: purge failed, retrying in 5 minutes" >&2
+            sleep 300
+          fi
+        done
+    depends_on:
+      app:
+        condition: service_healthy
 
   tunnel:
     image: cloudflare/cloudflared:2026.9.3
