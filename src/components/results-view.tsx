@@ -27,6 +27,7 @@ function WineIdentity({ wine, revealed, delayMs, size = 'md' }: { wine: WineResu
             {wine.name}
           </p>
           {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+          {wine.description && <p className="text-sm text-pretty break-words text-muted-foreground">{wine.description}</p>}
         </>
       ) : (
         // Blind and not yet revealed: the number is the name

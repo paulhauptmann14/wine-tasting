@@ -4,6 +4,7 @@ import { computeResults, type ResultsInput } from './results'
 
 const wine = (id: string, position: number, name = `Wein ${id}`) => ({
   id, position, name, winery: null as string | null, vintage: 2020, grapeVariety: 'Riesling', sweetness: 'dry' as const, wineType: 'white' as const,
+  description: null as string | null,
 })
 const criteria = [{ id: 'c1', name: 'Gesamt', position: 1, weight: 1 }]
 const rate = (wineId: string, value: number, participantId = 'p1') => ({ participantId, wineId, values: { c1: value } })
@@ -140,6 +141,13 @@ describe('rankingCard', () => {
     // Too long to fit on one line: the winery goes, the rest stays
     expect(card.podium[1].details).toBe('Weißwein · 2020 · Riesling · trocken')
     expect(fitDetails('Weingut Dr. Loosen · Weißwein · 2020', 30)).toBe('Weingut Dr. Loosen · Weißwein')
+  })
+
+  it('leaves the taste description off the image', () => {
+    const r = results({ wines: [{ ...wine('a', 1), description: 'Süß & fruchtig' }], ratings: [rate('a', 4)] })
+    const card = rankingCard(r, 'five', meta)
+    expect(card.podium[0].details).toBe('Weißwein · 2020 · Riesling · trocken')
+    expect(JSON.stringify(card)).not.toContain('fruchtig')
   })
 
   it('never puts the winery on the image when names are hidden', () => {

@@ -43,7 +43,7 @@ export default async function WinePage({ params, searchParams }: Props) {
     getRating(db, participant.id, wine.id),
   ])
   const showName = canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin: false })
-  const { title, subtitle } = wineTitle(wine, showName)
+  const { title, subtitle, description } = wineTitle(wine, showName)
   const savedPosition = saved && Number.isInteger(Number(saved)) && Number(saved) >= 1 ? Number(saved) : undefined
   // Where we came from (saved or swiped) decides the direction the wine arrives from
   const cameFrom = Number(saved ?? from)
@@ -92,6 +92,7 @@ export default async function WinePage({ params, searchParams }: Props) {
               {!showName && <p className="text-sm text-muted-foreground">Blind verkostet</p>}
               <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight md:text-4xl">{title}</h1>
               {subtitle && <p className="mt-1 text-muted-foreground">{subtitle}</p>}
+              {description && <p className="mt-1 text-sm text-pretty break-words text-muted-foreground">{description}</p>}
             </div>
           </header>
 

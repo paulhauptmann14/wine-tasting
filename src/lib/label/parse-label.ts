@@ -3,7 +3,8 @@
 // Rule of the house: rather empty than wrong. `sure` is true only when a value is very likely
 // right – a printed keyword read clearly, or a hit in a reference list (appellation, vineyard
 // site, winery). Only sure values are filled in by the form. Everything else is a suggestion:
-// unsure field guesses, and `nameCandidates` / `wineryCandidates` for the host to tap.
+// unsure field guesses, `nameCandidates` / `wineryCandidates` for the host to tap, and taste lines
+// ("Süß & fruchtig") as `descriptionCandidates`, which are never sure.
 
 import type { Sweetness } from '@/lib/tasting/sweetness'
 import type { WineType } from '@/lib/tasting/wine-type'
@@ -39,6 +40,7 @@ import {
   type SiteRef,
 } from './match-reference'
 import { cleanLine, displayCase, fold, foldText, letterCount, type Folded } from './normalize'
+import { tasteDescription } from './taste'
 import type { FieldGuess, LabelSuggestion, OcrLine } from './types'
 
 export type ParseLabelOptions = {
@@ -65,6 +67,7 @@ const PROSE_WORDS = 6
 const MAX_NAME = 80
 const MAX_WINERY = 80
 const MAX_GRAPES = 60
+const MAX_DESCRIPTION = 200
 
 type Box = OcrLine['bbox']
 
@@ -181,6 +184,8 @@ type Line = {
   legal: boolean
   address: boolean
   prose: boolean
+  /** The line as a taste description ("Süß & fruchtig"), or null */
+  taste: string | null
 }
 
 const VOWEL = /[aeiouy]/
@@ -236,6 +241,7 @@ function toLine(raw: OcrLine): Line | null {
     legal: LEGAL_PATTERNS.some((p) => p.test(loose)),
     address: ADDRESS_PATTERNS.some((p) => p.test(f.folded)),
     prose: words > PROSE_WORDS,
+    taste: tasteDescription(text),
   }
 }
 
@@ -625,8 +631,14 @@ function grapeOnlyText(line: Line): boolean {
   return rest !== line.f.folded && !/\p{L}{3,}/u.test(rest.replace(/\u0001/g, ' '))
 }
 
+/**
+ * A taste line of two words or more is never a name or producer. A single taste word may well be
+ * the name ("VIVACE"): it is only offered as description too, and the descriptor rules decide.
+ */
+const isTasteLine = (l: Line) => !!l.taste && l.words >= 2
+
 const usableNeighbour = (l: Line | undefined): l is Line =>
-  !!l && !l.legal && !l.prose && !l.address && l.conf >= NAME_CONFIDENCE && letterCount(l.text) >= 3 && !grapeOnlyText(l)
+  !!l && !isTasteLine(l) && !l.legal && !l.prose && !l.address && l.conf >= NAME_CONFIDENCE && letterCount(l.text) >= 3 && !grapeOnlyText(l)
 
 /** Lines with a winery keyword: "Weingut Dr. Loosen", "Château Margaux", "WEINBIET" + "MANUFAKTUR". */
 function keywordOptions(all: Line[], layout: Line[]): WineryOption[] {
@@ -798,7 +810,7 @@ const AGEING_NOTE = /(?<![\p{L}])(futs?|chene|barriques?|oak|holzfass|barrel|leg
 
 /** "süß & fruchtig", "Rotwein trocken", "Élevé en fûts de chêne": descriptions, not names. */
 function isDescriptorLine(line: Line): boolean {
-  if (AGEING_NOTE.test(line.loose)) return true
+  if (isTasteLine(line) || AGEING_NOTE.test(line.loose)) return true
   const words = line.loose.split(' ').filter((w) => w && !CONNECTORS.has(w) && /\p{L}/u.test(w))
   if (words.length === 0) return true
   return words.filter(isDescriptorWord).length / words.length > 0.5
@@ -1060,6 +1072,29 @@ function placeNames(sites: readonly SiteRef[]): Set<string> {
 
 const MAX_CANDIDATES = 3
 
+/**
+ * Taste lines for the free-text description, most prominent first. Only clearly read lines, one
+ * per spot on the label, each text once. Never sure: the form only offers them.
+ */
+function findDescriptions(all: Line[]): string[] | undefined {
+  const lines = all
+    .filter((l) => l.taste && l.conf >= NAME_CONFIDENCE && !l.legal && !l.address && !l.prose)
+    .sort((a, b) => lineScore(b) - lineScore(a))
+  const out: string[] = []
+  const seen = new Set<string>()
+  const spots: Box[] = []
+  for (const line of lines) {
+    const text = truncate(line.taste!, MAX_DESCRIPTION)
+    const key = squash(text)
+    if (seen.has(key) || spots.some((b) => sameSpot(b, line.box))) continue
+    seen.add(key)
+    spots.push(line.box)
+    out.push(text)
+    if (out.length === MAX_CANDIDATES) break
+  }
+  return out.length > 0 ? out : undefined
+}
+
 /** Up to three distinct values, best first, without the filled-in one. */
 function pickCandidates(values: string[], filled?: string): string[] | undefined {
   const seen = new Set(filled ? [squash(filled)] : [])
@@ -1211,5 +1246,8 @@ export function parseLabel(lines: OcrLine[], options: ParseLabelOptions = {}): L
     const listedWineries = wineryCandidates.filter((c) => listed.has(squash(c)))
     if (listedWineries.length > 0) suggestion.listedWineries = listedWineries
   }
+
+  const descriptionCandidates = findDescriptions(all)
+  if (descriptionCandidates) suggestion.descriptionCandidates = descriptionCandidates
   return suggestion
 }

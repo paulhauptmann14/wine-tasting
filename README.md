@@ -23,7 +23,7 @@ Der Gastgeber erstellt ein Tasting, trägt die Weine ein und zeigt einen QR-Code
 
 - **Tasting erstellen** mit Name, optionaler Blindverkostung, Bewertungssystem und Admin-PIN
 - **Bewertungssysteme:** Einfach (ein Gesamturteil), 5-, 20- oder 100-Punkte-Schema mit gewichteten Kriterien – die App erklärt, wie gerechnet wird
-- **Weine** mit Name und Weinart (Pflicht) sowie Weingut, Jahrgang, Rebsorte und Geschmacksrichtung (freiwillig); die Reihenfolge lässt sich auch während des Abends ändern; „Reihenfolge mischen“ mischt nur Weine, die noch niemand bewertet hat
+- **Weine** mit Name und Weinart (Pflicht) sowie Weingut, Jahrgang, Rebsorte, Geschmacksrichtung und einer freien Beschreibung wie „Süß & fruchtig“ (freiwillig); die Reihenfolge lässt sich auch während des Abends ändern; „Reihenfolge mischen“ mischt nur Weine, die noch niemand bewertet hat
 - **Etikett scannen:** die App liest das Etikett direkt auf dem Gerät (das Foto wird nie hochgeladen), füllt sichere Angaben in leere Felder vor und bietet unsichere als Vorschlag zum Antippen an – vorbefüllte Felder sind markiert und müssen geprüft werden
 - **Einladen** per QR-Code, Link oder 6-stelligem Code
 - **Bewerten** mit Sternen und optionaler Notiz; auf dem Handy wischt man zwischen den Weinen
@@ -44,7 +44,7 @@ Im Formular „Wein hinzufügen“ öffnet „Etikett scannen“ die Auswahl des
 Der Parser (`src/lib/label`) sucht Jahrgang, Rebsorte, Weinart, Geschmacksrichtung, Name und Weingut. Er gleicht außerdem mit Listen in `public/data` ab: Weingüter, EU-Herkunftsbezeichnungen (z. B. „Chianti Classico“) und amtliche Weinlagen (Einzellagen, Rieden, Vigna). Der Grundsatz ist „lieber leer als falsch“:
 
 - **Sichere Werte** (Faustregel: sehr wahrscheinlich richtig) landen in leeren Feldern. Diese Felder sind markiert (weinroter Rand und der Hinweis „vom Etikett – bitte prüfen“); die Markierung verschwindet, sobald du das Feld änderst oder „passt“ tippst. Bereits Getipptes wird nie überschrieben.
-- **Unsichere Werte** werden nicht eingetragen, sondern unter dem Feld als „Vielleicht: …“ zum Antippen angeboten. Das gilt für Name und Weingut (mehrere Kandidaten) und für eine Weinart, die nur aus der Rebsorte abgeleitet ist.
+- **Unsichere Werte** werden nicht eingetragen, sondern unter dem Feld als „Vielleicht: …“ zum Antippen angeboten. Das gilt für Name und Weingut (mehrere Kandidaten), für eine Weinart, die nur aus der Rebsorte abgeleitet ist, und für Geschmackszeilen wie „SÜSS & FRUCHTIG“, die nur als Beschreibung vorgeschlagen werden.
 - **Jahrgang:** Steht noch eine andere Jahreszahl auf dem Etikett, die als Medaille, Prämierung oder Gründungsjahr aussortiert wurde, wird der verbliebene Jahrgang nur vorgeschlagen. Ein Etikett mit nur „2022“ füllt das Feld wie gewohnt.
 - **Vorder- und Rückenetikett ergänzen sich:** Ein zweiter Scan füllt weitere leere Felder. Ein Feld, das der erste Scan gefüllt hat (noch markiert und unverändert), ersetzt er nur durch einen eigenen sicheren Wert; sonst bleibt der alte Wert samt Markierung stehen. Vorschläge gelten immer nur für das letzte Foto.
 - Über dem Formular steht, solange etwas zu prüfen ist: „Vom Etikett gelesen – das kann falsch sein.“

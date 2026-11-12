@@ -3,6 +3,7 @@ import { computeResults, formatScaled, formatScore, toScale, type ResultsInput }
 
 const wine = (id: string, position: number, name = `Wein ${id}`) => ({
   id, position, name, winery: 'Weingut Test', vintage: 2020 + position, grapeVariety: 'Riesling', sweetness: 'medium' as const, wineType: 'white' as const,
+  description: 'Fruchtig, Noten von Kirsche' as string | null,
 })
 const criteria = [
   { id: 'c1', name: 'Aroma', position: 1, weight: 1 },
@@ -54,9 +55,14 @@ describe('computeResults', () => {
 
   it('hides names unless revealed', () => {
     const hidden = computeResults(input({ wines: [wine('a', 1, 'Riesling')] }))
-    expect(hidden.wines[0]).toMatchObject({ label: 'Wein #1', name: null, winery: null, vintage: null, grapeVariety: null, sweetness: null, wineType: null })
+    expect(hidden.wines[0]).toMatchObject({
+      label: 'Wein #1', name: null, winery: null, vintage: null, grapeVariety: null, sweetness: null, wineType: null, description: null,
+    })
     const shown = computeResults(input({ wines: [wine('a', 1, 'Riesling')], revealNames: true }))
-    expect(shown.wines[0]).toMatchObject({ name: 'Riesling', winery: 'Weingut Test', vintage: 2021, grapeVariety: 'Riesling', sweetness: 'medium', wineType: 'white' })
+    expect(shown.wines[0]).toMatchObject({
+      name: 'Riesling', winery: 'Weingut Test', vintage: 2021, grapeVariety: 'Riesling', sweetness: 'medium', wineType: 'white',
+      description: 'Fruchtig, Noten von Kirsche',
+    })
   })
 
   it('never leaks the winery while names are withheld', () => {
@@ -66,6 +72,15 @@ describe('computeResults', () => {
     }))
     expect(hidden.wines[0].winery).toBeNull()
     expect(JSON.stringify(hidden)).not.toContain('Geheimes')
+  })
+
+  it('never leaks the description while names are withheld', () => {
+    const hidden = computeResults(input({
+      wines: [{ ...wine('a', 1), description: 'Verräterisch süß' }],
+      ratings: [{ participantId: 'p1', wineId: 'a', values: { c1: 4, c2: 4 } }],
+    }))
+    expect(hidden.wines[0].description).toBeNull()
+    expect(JSON.stringify(hidden)).not.toContain('Verräterisch')
   })
 
   it('weights criteria per person before averaging across people', () => {

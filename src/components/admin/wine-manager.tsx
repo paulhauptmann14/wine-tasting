@@ -421,6 +421,21 @@ function WineForm({
         errors={errors.sweetness}
         scan={fieldScan('sweetness')}
       />
+      <div>
+        <Label htmlFor={`${id}-description`}>Beschreibung</Label>
+        <Input
+          id={`${id}-description`}
+          name="description"
+          defaultValue={values?.description ?? initial?.description ?? ''}
+          maxLength={200}
+          placeholder="z. B. fruchtig, Noten von Kirsche"
+          aria-invalid={!!errors.description}
+          aria-describedby={describedBy('description')}
+          className={cn('mt-2 h-12', scanMarkClass(!!marked.description))}
+        />
+        <FieldError errors={errors.description} />
+        <ScanExtras id={`${id}-description`} label="Beschreibung" scan={fieldScan('description')} />
+      </div>
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" size="lg" className="h-12" disabled={pending}>
           {submitLabel}
@@ -460,6 +475,7 @@ function WineRow({
         <div className="min-w-40 flex-1">
           <p className="truncate font-medium">{wine.name}</p>
           {subtitle && <p className="truncate text-sm text-muted-foreground">{subtitle}</p>}
+          {wine.description && <p className="truncate text-sm text-muted-foreground">{wine.description}</p>}
         </div>
         <RowActions
           label={`Wein #${wine.position}`}

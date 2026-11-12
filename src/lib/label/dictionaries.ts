@@ -338,6 +338,41 @@ export const DESCRIPTOR_STEMS: string[] = [
   'fragrant', 'blumig', 'duftig', 'lebendig', 'charmant', 'anmut', 'mild',
 ]
 
+/**
+ * Taste words in DE/EN/IT/FR/ES as they are spelled in a description ("Süß & fruchtig"). A label line
+ * made only of these, sweetness terms and joining words is a taste description, never a name.
+ * German inflections (-e, -er, -es, -em, -en) and Romance endings (fresco → fresca) are matched too.
+ */
+/** German taste words: only these take German endings ("würziger"), so "Fraise" is no "frais". */
+export const GERMAN_TASTE_WORDS: string[] = [
+  'fruchtig', 'frisch', 'samtig', 'mild', 'würzig', 'kräftig', 'mineralisch', 'spritzig', 'elegant', 'harmonisch',
+  'vollmundig', 'rund', 'fein', 'saftig', 'aromatisch', 'süffig', 'weich', 'cremig', 'blumig', 'duftig', 'lebendig',
+  'leicht', 'intensiv', 'komplex', 'filigran', 'schmelzig', 'ausgewogen', 'anmutig', 'charmant', 'feinfruchtig',
+  'fruchtbetont', 'knackig', 'herb', 'gehaltvoll', 'dicht', 'nussig', 'rassig', 'feurig', 'kernig', 'seidig',
+  'geschmeidig', 'erfrischend', 'animierend',
+]
+
+export const TASTE_WORDS: string[] = [
+  ...GERMAN_TASTE_WORDS,
+  // en
+  'fruity', 'fresh', 'crisp', 'smooth', 'juicy', 'rich', 'aromatic', 'velvety', 'silky', 'round', 'mellow', 'light',
+  'spicy', 'zesty', 'vibrant', 'lively', 'soft', 'creamy', 'floral', 'refreshing', 'balanced', 'complex', 'delicate',
+  'intense', 'harmonious', 'supple', 'fragrant', 'mineral',
+  // it
+  'fruttato', 'fresco', 'morbido', 'vellutato', 'aromatico', 'armonico', 'rotondo', 'sapido', 'minerale', 'fragrante',
+  'vivace', 'intenso', 'equilibrato', 'corposo', 'delicato', 'floreale', 'speziato', 'avvolgente', 'strutturato', 'elegante',
+  // fr
+  'fruité', 'frais', 'fraîche', 'souple', 'rond', 'soyeux', 'soyeuse', 'élégant', 'minéral', 'gouleyant', 'vif', 'vive',
+  'léger', 'légère', 'aromatique', 'harmonieux', 'velouté', 'épicé', 'charnu', 'généreux', 'tendre', 'onctueux',
+  'croquant', 'fondant',
+  // es
+  'afrutado', 'suave', 'sedoso', 'aterciopelado', 'aromático', 'equilibrado', 'redondo', 'goloso', 'frutal', 'ligero',
+  'sabroso', 'especiado', 'untuoso',
+]
+
+/** Words that strengthen a taste word without being one: "sehr fein", "molto fresco". */
+export const TASTE_FILLERS = new Set(['sehr', 'very', 'molto', 'tres', 'muy', 'ganz', 'so'])
+
 /** Small words that join parts of a name or a list of grapes. */
 export const CONNECTORS = new Set(['&', 'und', 'mit', 'and', 'with', 'et', 'e', 'y', 'avec', 'con', '+', '/', '-'])
 

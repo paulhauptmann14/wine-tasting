@@ -608,3 +608,64 @@ describe('name', () => {
     expect(value?.length).toBeLessThanOrEqual(80)
   })
 })
+
+describe('taste description', () => {
+  it('offers a taste line for the description, in sentence case, and never as name or winery', () => {
+    const result = parse([['Innamorati', 40], ['SÜSS & FRUCHTIG', 14]])
+    expect(result.descriptionCandidates).toEqual(['Süß & fruchtig'])
+    expect(result.nameCandidates).toEqual(['Innamorati'])
+    expect(result.wineryCandidates).toBeUndefined()
+    // The sweetness level is read from the same line, independently
+    expect(result.sweetness).toEqual({ value: 'sweet', sure: true })
+  })
+
+  it('keeps a taste line without a known descriptor stem out of the name candidates', () => {
+    const result = parse([['SÜFFIG & RUND', 40], ['Abtserde', 30]])
+    expect(result.nameCandidates).toEqual(['Abtserde'])
+    expect(result.descriptionCandidates).toEqual(['Süffig & rund'])
+  })
+
+  it('never takes a taste line as the producer, neither next to a keyword nor from the winery list', () => {
+    const result = parse([['Abtserde', 40], ['WEINGUT', 20], ['SÜFFIG & RUND', 20]], (text) => (/suffig|süffig/i.test(text) ? 'Süffig & Rund' : null))
+    expect(result.winery).toBeUndefined()
+    expect(result.wineryCandidates ?? []).not.toContainEqual(expect.stringMatching(/süffig/i))
+    expect(result.descriptionCandidates).toEqual(['Süffig & rund'])
+  })
+
+  it('offers taste lines in other languages too, at most three, the most prominent first', () => {
+    const result = parse([
+      ['Hausmarke', 40],
+      ['Fruttato e morbido', 12],
+      ['FRUITY & FRESH', 16],
+      ['Fruité et souple', 10],
+      ['Afrutado y suave', 9],
+    ])
+    expect(result.descriptionCandidates).toEqual(['Fruity & fresh', 'Fruttato e morbido', 'Fruité et souple'])
+  })
+
+  it('skips shaky readings, running text and lines that only state the sweetness', () => {
+    const result = parse([
+      ['Hausmarke', 40],
+      ['fruchtig & frisch', 14, 40],
+      ['Ein fruchtiger, frischer und sehr eleganter Wein mit Noten von Kirsche', 10],
+      ['trocken', 14],
+    ])
+    expect(result.descriptionCandidates).toBeUndefined()
+  })
+
+  it('still offers a one-word headline as name, since the word may be the name ("VIVACE")', () => {
+    const result = parse([['VIVACE', 40], ['Tenuta Rossi', 20]])
+    expect(result.nameCandidates).toContain('Vivace')
+    expect(result.descriptionCandidates).toEqual(['Vivace'])
+  })
+
+  it('never offers a line with a number as description', () => {
+    const result = parse([['Hausmarke', 40], ['Fruchtig 2019', 14], ['12.5 fruchtig', 10]])
+    expect(result.descriptionCandidates).toBeUndefined()
+  })
+
+  it('offers the same description only once', () => {
+    const result = parse([['Hausmarke', 40], ['SÜSS & FRUCHTIG', 14], ['süß & fruchtig', 10]])
+    expect(result.descriptionCandidates).toEqual(['Süß & fruchtig'])
+  })
+})

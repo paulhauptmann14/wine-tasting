@@ -81,6 +81,8 @@ export const wineSchema = z.object({
     .string()
     .min(1, 'Bitte wähle die Weinart.')
     .pipe(z.enum(WINE_TYPE_KEYS, { error: 'Bitte wähle eine Weinart aus der Liste.' })),
+  // Free text such as "Süß & fruchtig" – the sweetness level stays its own field
+  description: optionalText(200),
 })
 export type WineInput = z.output<typeof wineSchema>
 

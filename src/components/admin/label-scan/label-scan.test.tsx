@@ -623,3 +623,27 @@ it('gives "passt" a 48px tap target and the suggestions the normal link underlin
   expect(suggestion).toHaveClass('decoration-border')
   expect(suggestion).not.toHaveClass('decoration-muted-foreground')
 })
+
+it('offers taste lines only as suggestions for Beschreibung and writes one on tap', async () => {
+  const { user, scan } = setup({ sweetness: { value: 'sweet', sure: true }, descriptionCandidates: ['Süß & fruchtig'] })
+  await scan()
+  const description = screen.getByRole('textbox', { name: 'Beschreibung' })
+  // Never filled in by the scan, never marked
+  expect(description).toHaveValue('')
+  expect(screen.queryByRole('button', { name: 'Beschreibung passt' })).toBeNull()
+  const group = suggestionsFor('Beschreibung')!
+  expect(within(group).getByText('Vielleicht:')).toBeInTheDocument()
+  // Not a line to assign to Name or Weingut
+  expect(linesBlock()).toBeNull()
+  await user.click(within(group).getByRole('button', { name: 'Süß & fruchtig' }))
+  expect(description).toHaveValue('Süß & fruchtig')
+  expect(suggestionsFor('Beschreibung')).toBeNull()
+})
+
+it('never suggests a description over one the host typed', async () => {
+  const { user, scan } = setup({ sweetness: { value: 'sweet', sure: true }, descriptionCandidates: ['Süß & fruchtig'] })
+  await user.type(screen.getByRole('textbox', { name: 'Beschreibung' }), 'fruchtig')
+  await scan()
+  expect(screen.getByRole('textbox', { name: 'Beschreibung' })).toHaveValue('fruchtig')
+  expect(suggestionsFor('Beschreibung')).toBeNull()
+})

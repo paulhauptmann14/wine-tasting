@@ -23,18 +23,21 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
 
   // Add wines
   await page.getByRole('link', { name: 'Weine', exact: true }).click()
-  for (const [name, winery, wineType, vintage, sweetness] of [
-    ['Riesling', 'Weingut Dr. Loosen', 'Weißwein', '2022', 'trocken'],
-    ['Spätburgunder', '', 'Rotwein', '2020', 'keine Angabe'],
+  for (const [name, winery, wineType, vintage, sweetness, description] of [
+    ['Riesling', 'Weingut Dr. Loosen', 'Weißwein', '2022', 'trocken', 'Mineralisch & spritzig'],
+    ['Spätburgunder', '', 'Rotwein', '2020', 'keine Angabe', ''],
   ]) {
     await page.getByLabel('Name', { exact: true }).fill(name)
     await page.getByLabel('Weinart').selectOption({ label: wineType })
     await page.getByLabel('Weingut').fill(winery)
     await page.getByLabel('Jahrgang').fill(vintage)
     await page.getByLabel('Geschmacksrichtung').selectOption({ label: sweetness })
+    await page.getByLabel('Beschreibung', { exact: true }).fill(description)
     await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
     await expect(page.getByText(name, { exact: true })).toBeVisible()
   }
+  // The host always sees the description
+  await expect(page.getByText('Mineralisch & spritzig')).toBeVisible()
 
   // Host rates along and starts right from their waiting page
   await page.getByRole('link', { name: 'Zum Tasting' }).click()
@@ -52,6 +55,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('trocken')).toHaveCount(0)
   await expect(anna.getByText('Weißwein')).toHaveCount(0)
   await expect(anna.getByText('Loosen')).toHaveCount(0)
+  await expect(anna.getByText(/Mineralisch/)).toHaveCount(0)
   await anna.getByRole('link', { name: 'Für Gastgeber' }).click()
   await expect(anna.getByLabel('PIN')).toBeVisible()
   await expect(anna.getByRole('link', { name: 'Weine', exact: true })).toHaveCount(0)
@@ -67,12 +71,14 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('4,5').first()).toBeVisible()
   await expect(anna.getByText('Riesling')).toHaveCount(0)
   await expect(anna.getByText('Loosen')).toHaveCount(0)
+  await expect(anna.getByText(/Mineralisch/)).toHaveCount(0)
   // Notes only at the end
   await table.reload()
   await expect(table.getByText('So weit sind wir')).toBeVisible()
   await expect(table.getByText('3 Gäste dabei')).toBeVisible()
   await expect(table.getByText('Riesling')).toHaveCount(0)
   await expect(table.getByText('Loosen')).toHaveCount(0)
+  await expect(table.getByText(/Mineralisch/)).toHaveCount(0)
   await expect(table.getByText('Anna')).toHaveCount(0)
   await expect(anna.getByText('Pfirsich, sehr frisch')).toHaveCount(0)
 
@@ -95,6 +101,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()
   await expect(anna.getByText('Riesling').first()).toBeVisible({ timeout: 12_000 })
   await expect(anna.getByText('Weingut Dr. Loosen · Weißwein · 2022 · trocken').first()).toBeVisible()
+  await expect(anna.getByText('Mineralisch & spritzig').first()).toBeVisible()
   // The table view reveals the podium on its own
   await expect(table.getByText('Endergebnis')).toBeVisible({ timeout: 12_000 })
   await expect(table.getByText('Riesling').first()).toBeVisible()

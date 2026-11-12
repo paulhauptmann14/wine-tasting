@@ -167,6 +167,7 @@ function Podium({ wines, scale }: { wines: WineResult[]; scale: Scale }) {
             {winner.name ?? winner.label}
           </p>
           {details && <p className="mt-2 text-muted-foreground lg:text-xl">{details}</p>}
+          {winner.description && <p className="mt-1 text-sm text-pretty break-words text-muted-foreground lg:text-lg">{winner.description}</p>}
         </div>
       </div>
 

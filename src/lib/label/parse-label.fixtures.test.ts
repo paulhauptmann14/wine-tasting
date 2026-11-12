@@ -116,6 +116,8 @@ describe('real labels', () => {
     })
     expect(result.name).toBeUndefined()
     expect(result.sweetness?.sure).toBe(true)
+    // "SUSS & FRUCHTIC" as read: offered for the description in its proper spelling
+    expect(result.descriptionCandidates).toEqual(['Süß & fruchtig'])
   })
 
   it("Montepulciano d'Abruzzo DOC 2024 by Della Luna", () => {

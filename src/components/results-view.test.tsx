@@ -18,6 +18,7 @@ const wine = (position: number, score: number | null, rank: number | null): Wine
   vintage: null,
   grapeVariety: null,
   sweetness: null,
+  description: null,
 })
 
 const results = (wines: WineResult[]): Results => ({ criteria: [{ id: 'c1', name: 'Geschmack', weight: 1 }], wines })
@@ -51,4 +52,12 @@ it('says that notes are shown without names', () => {
   view([wine(1, 4, 1)], { w1: ['Pfirsich'] })
   const notes = screen.getByRole('region', { name: 'Notizen' })
   expect(within(notes).getByText('Ohne Namen, wie geschrieben.')).toBeInTheDocument()
+})
+
+it('shows the description under the details of a revealed wine, and nothing for a blind one', () => {
+  view([{ ...wine(1, 4.5, 1), sweetness: 'sweet', description: 'Süß & fruchtig' }, { ...wine(2, 4, 2), name: null, description: null }])
+  const podium = screen.getByRole('list', { name: 'Podest' })
+  expect(within(podium).getByText('süß')).toBeInTheDocument()
+  expect(within(podium).getByText('Süß & fruchtig')).toBeInTheDocument()
+  expect(within(podium).getAllByText(/fruchtig/)).toHaveLength(1)
 })

@@ -10,6 +10,8 @@ export type WineListItem = {
   position: number
   title: string
   subtitle: string | null
+  /** Taste description; null while blind like the name */
+  description: string | null
   state: RingState
   href: string
 }

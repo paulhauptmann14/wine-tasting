@@ -37,6 +37,16 @@ it('numbers wines automatically', async () => {
   expect(await getWineByPosition(db, t.id, 4)).toBeNull()
 })
 
+it('stores the description on add and update and clears it again', async () => {
+  const t = await seedTasting(db)
+  const a = await addWine(db, t.id, wineInput('A', { description: 'Süß & fruchtig', sweetness: 'sweet', wineType: 'white' }))
+  expect(await getWineByPosition(db, t.id, 1)).toMatchObject({ description: 'Süß & fruchtig', sweetness: 'sweet' })
+  await updateWine(db, t.id, a.id, wineInput('A', { description: 'fruchtig, Noten von Kirsche', wineType: 'white' }))
+  expect(await getWineById(db, t.id, a.id)).toMatchObject({ description: 'fruchtig, Noten von Kirsche', sweetness: null })
+  await updateWine(db, t.id, a.id, wineInput('A', { wineType: 'white' }))
+  expect(await getWineById(db, t.id, a.id)).toMatchObject({ description: null })
+})
+
 it('stores the winery on add and update, and keeps wines without a wine type working', async () => {
   const t = await seedTasting(db)
   const a = await addWine(db, t.id, wineInput('A', { winery: 'Dr. Loosen', wineType: 'white' }))

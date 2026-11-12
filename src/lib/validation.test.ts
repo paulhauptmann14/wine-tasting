@@ -45,15 +45,15 @@ describe('adminLoginSchema', () => {
 })
 
 describe('wineSchema', () => {
-  const base = { name: 'Riesling', winery: '', vintage: '', grapeVariety: '', sweetness: '', wineType: 'white' }
+  const base = { name: 'Riesling', winery: '', vintage: '', grapeVariety: '', sweetness: '', wineType: 'white', description: '' }
   const error = (raw: Record<string, string>, field: string) => {
     const result = wineSchema.safeParse(raw)
     return result.success ? undefined : result.error.issues.find((i) => i.path[0] === field)?.message
   }
 
   it('maps empty optional fields to null', () => {
-    expect(wineSchema.parse({ ...base, grapeVariety: ' ', winery: '  ' })).toEqual({
-      name: 'Riesling', winery: null, vintage: null, grapeVariety: null, sweetness: null, wineType: 'white',
+    expect(wineSchema.parse({ ...base, grapeVariety: ' ', winery: '  ', description: ' ' })).toEqual({
+      name: 'Riesling', winery: null, vintage: null, grapeVariety: null, sweetness: null, wineType: 'white', description: null,
     })
   })
   it('requires a name', () => {
@@ -69,6 +69,16 @@ describe('wineSchema', () => {
     expect(wineSchema.parse({ ...base, winery: '' }).winery).toBeNull()
     expect(wineSchema.safeParse({ ...base, winery: 'x'.repeat(80) }).success).toBe(true)
     expect(error({ ...base, winery: 'x'.repeat(81) }, 'winery')).toBe('Maximal 80 Zeichen.')
+  })
+  it('trims the optional description, maps empty to null and caps it at 200 characters', () => {
+    expect(wineSchema.parse({ ...base, description: '  Süß & fruchtig ' }).description).toBe('Süß & fruchtig')
+    expect(wineSchema.parse({ ...base, description: '' }).description).toBeNull()
+    expect(wineSchema.safeParse({ ...base, description: 'x'.repeat(200) }).success).toBe(true)
+    expect(error({ ...base, description: 'x'.repeat(201) }, 'description')).toBe('Maximal 200 Zeichen.')
+  })
+  it('keeps the description apart from the sweetness level', () => {
+    const parsed = wineSchema.parse({ ...base, sweetness: 'sweet', description: 'fruchtig, Noten von Kirsche' })
+    expect(parsed).toMatchObject({ sweetness: 'sweet', description: 'fruchtig, Noten von Kirsche' })
   })
   it('parses vintage and validates its range', () => {
     expect(wineSchema.parse({ ...base, vintage: '2022' }).vintage).toBe(2022)

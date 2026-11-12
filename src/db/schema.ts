@@ -51,6 +51,8 @@ export const wines = pgTable(
     grapeVariety: text('grape_variety'),
     sweetness: wineSweetness('sweetness'),
     wineType: wineType('wine_type'),
+    /** Taste description as printed or noted ("Süß & fruchtig") – free text, not the sweetness level */
+    description: text('description'),
   },
   (t) => [unique('wine_tasting_position_uq').on(t.tastingId, t.position)],
 ).enableRLS()

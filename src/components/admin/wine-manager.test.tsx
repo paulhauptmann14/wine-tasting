@@ -82,7 +82,7 @@ it('marks name and wine type as required in the add form, with one legend', () =
   }
   // The winery field has a suggestion list, so it is a combobox
   expect(screen.getByRole('combobox', { name: 'Weingut' })).not.toBeRequired()
-  for (const name of ['Jahrgang', 'Rebsorte']) {
+  for (const name of ['Jahrgang', 'Rebsorte', 'Beschreibung']) {
     expect(screen.getByRole('textbox', { name })).not.toBeRequired()
   }
   expect(screen.getByRole('combobox', { name: 'Geschmacksrichtung' })).not.toBeRequired()
@@ -95,11 +95,11 @@ it('marks name and wine type as required in the add form, with one legend', () =
   }
 })
 
-it('orders the fields Name, Weinart, Weingut, Jahrgang, Rebsorte, Geschmacksrichtung', () => {
+it('orders the fields Name, Weinart, Weingut, Jahrgang, Rebsorte, Geschmacksrichtung, Beschreibung', () => {
   render(<WineManager code="ABC123" wines={[]} locked={false} status="setup" unratedCount={0} />)
   const form = screen.getByRole('button', { name: 'Wein hinzufügen' }).closest('form')!
   const names = [...form.querySelectorAll('[name]')].map((el) => el.getAttribute('name'))
-  expect(names).toEqual(['name', 'wineType', 'winery', 'vintage', 'grapeVariety', 'sweetness'])
+  expect(names).toEqual(['name', 'wineType', 'winery', 'vintage', 'grapeVariety', 'sweetness', 'description'])
 })
 
 it('asks for a wine type with a placeholder instead of "keine Angabe"', () => {
@@ -114,6 +114,7 @@ it('asks for a wine type with a placeholder instead of "keine Angabe"', () => {
 it('shows the winery in the list and prefills it when editing; old wines without type must pick one', async () => {
   const wine = {
     id: 'id-1', position: 1, name: 'Kabinett', winery: 'Dr. Loosen', vintage: 2022, grapeVariety: null, sweetness: null, wineType: null,
+    description: null,
   }
   render(<WineManager code="ABC123" wines={[wine]} locked={false} status="setup" unratedCount={1} />)
   expect(screen.getByText('Dr. Loosen · 2022')).toBeInTheDocument()
@@ -122,4 +123,24 @@ it('shows the winery in the list and prefills it when editing; old wines without
   expect(within(form).getByRole('combobox', { name: 'Weingut' })).toHaveValue('Dr. Loosen')
   expect(within(form).getByRole('combobox', { name: 'Weinart' })).toHaveValue('')
   expect(within(form).getByText('Pflichtfeld')).toBeInTheDocument()
+})
+
+it('offers an optional description with an example, shows it in the list and prefills it when editing', async () => {
+  const wine = {
+    id: 'id-1', position: 1, name: 'Innamorati', winery: null, vintage: null, grapeVariety: null, sweetness: 'sweet' as const,
+    wineType: 'white' as const, description: 'Süß & fruchtig',
+  }
+  render(<WineManager code="ABC123" wines={[wine]} locked={false} status="setup" unratedCount={1} />)
+  const add = screen.getByRole('button', { name: 'Wein hinzufügen' }).closest('form')!
+  const field = within(add).getByRole('textbox', { name: 'Beschreibung' })
+  expect(field).toHaveAttribute('placeholder', 'z. B. fruchtig, Noten von Kirsche')
+  expect(field).toHaveAttribute('maxLength', '200')
+  expect(field).not.toBeRequired()
+  // List row: details first, the description on its own line
+  expect(screen.getByText('Weißwein · süß')).toBeInTheDocument()
+  expect(screen.getByText('Süß & fruchtig')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Wein #1 bearbeiten' }))
+  const form = screen.getByRole('button', { name: 'Speichern' }).closest('form')!
+  expect(within(form).getByRole('textbox', { name: 'Beschreibung' })).toHaveValue('Süß & fruchtig')
+  expect(within(form).getByRole('combobox', { name: 'Geschmacksrichtung' })).toHaveValue('sweet')
 })

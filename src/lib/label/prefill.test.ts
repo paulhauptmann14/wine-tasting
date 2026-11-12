@@ -48,6 +48,30 @@ describe('planPrefill', () => {
     expect(plan.found).toBe(4)
   })
 
+  it('offers taste descriptions only as suggestions for Beschreibung, never writes or marks them', () => {
+    const plan = planPrefill(
+      { sweetness: { value: 'sweet', sure: true }, descriptionCandidates: ['Süß & fruchtig', 'süß & FRUCHTIG', 'Mild'] },
+      {},
+    )
+    expect(plan.values).toEqual({ sweetness: 'sweet' })
+    expect(plan.marked).toEqual(['sweetness'])
+    // Case-insensitive duplicates count once
+    expect(plan.suggestions.description).toEqual([
+      { value: 'Süß & fruchtig', label: 'Süß & fruchtig' },
+      { value: 'Mild', label: 'Mild' },
+    ])
+    expect(plan.lines).toEqual([])
+    expect(plan.found).toBe(2)
+  })
+
+  it('never suggests a description over text the host typed, and keeps to the field limit', () => {
+    const typed = planPrefill({ descriptionCandidates: ['Süß & fruchtig'] }, { description: 'fruchtig' })
+    expect(typed.suggestions.description).toBeUndefined()
+    expect(typed.found).toBe(1)
+    const long = planPrefill({ descriptionCandidates: ['x'.repeat(250)] }, {})
+    expect(long.suggestions.description?.[0].value).toHaveLength(200)
+  })
+
   it('explains a wine type inferred from the grape', () => {
     const plan = planPrefill(
       { wineType: { value: 'red', sure: false }, grapeVariety: { value: 'Merlot', sure: true } },

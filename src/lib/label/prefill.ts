@@ -4,7 +4,7 @@ import { labelLines, type LabelLine } from './lines'
 import type { FieldGuess, LabelSuggestion } from './types'
 
 /** Wine form fields a label scan can fill, by their form field name. */
-export const PREFILL_FIELDS = ['name', 'wineType', 'winery', 'vintage', 'grapeVariety', 'sweetness'] as const
+export const PREFILL_FIELDS = ['name', 'wineType', 'winery', 'vintage', 'grapeVariety', 'sweetness', 'description'] as const
 export type PrefillField = (typeof PREFILL_FIELDS)[number]
 
 /** A tap-to-apply suggestion: `value` is what goes into the field, `label` what the button says. */
@@ -26,7 +26,7 @@ export type PrefillPlan = {
 export const MAX_OPTIONS = 3
 
 // Same limits as the wine form (src/lib/validation.ts)
-const MAX_LENGTH: Partial<Record<PrefillField, number>> = { name: 80, winery: 80, grapeVariety: 60 }
+const MAX_LENGTH: Partial<Record<PrefillField, number>> = { name: 80, winery: 80, grapeVariety: 60, description: 200 }
 const MIN_VINTAGE = 1900
 const MAX_VINTAGE = 2100
 
@@ -67,9 +67,11 @@ export function planPrefill(
   const candidates: Partial<Record<PrefillField, string[]>> = {
     name: suggestion.nameCandidates,
     winery: suggestion.wineryCandidates,
+    // Taste lines are never sure: candidates only, so they are never written
+    description: suggestion.descriptionCandidates,
   }
   for (const field of PREFILL_FIELDS) {
-    const guess: FieldGuess<string | number> | undefined = suggestion[field]
+    const guess: FieldGuess<string | number> | undefined = field === 'description' ? undefined : suggestion[field]
     const guessText = guess ? toText(field, guess.value) : null
     const candidateTexts = (candidates[field] ?? []).map((c) => toText(field, c)).filter((t): t is string => t !== null)
     if (guessText === null && candidateTexts.length === 0) continue

@@ -50,6 +50,13 @@
       "when": 1794410120623,
       "tag": "0006_wine_winery",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794476610466,
+      "tag": "0007_wine_description",
+      "breakpoints": true
     }
   ]
 }

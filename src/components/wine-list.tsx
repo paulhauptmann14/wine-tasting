@@ -27,6 +27,7 @@ export function WineList({ items, currentPosition, savedPosition }: ListProps) {
             <span className="min-w-0 flex-1">
               <span className="block truncate font-display text-[17px] font-medium">{item.title}</span>
               {item.subtitle && <span className="block truncate text-sm text-muted-foreground">{item.subtitle}</span>}
+              {item.description && <span className="block truncate text-sm text-muted-foreground">{item.description}</span>}
             </span>
             <span
               className={cn(

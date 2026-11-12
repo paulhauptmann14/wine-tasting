@@ -32,3 +32,27 @@ test('Wein braucht Name und Weinart; das Weingut ist freiwillig und steht in der
   await page.getByRole('button', { name: 'Speichern' }).first().click()
   await expect(page.getByText('Bitte wähle die Weinart.').first()).toBeVisible()
 })
+
+test('Beschreibung ist freiwillig, steht unter den Angaben und bleibt beim Bearbeiten erhalten', async ({ page }) => {
+  await createTasting(page, 'E2E Beschreibung')
+  await page.getByRole('link', { name: 'Weine', exact: true }).click()
+  const description = page.getByLabel('Beschreibung', { exact: true })
+  await expect(description).toHaveAttribute('placeholder', 'z. B. fruchtig, Noten von Kirsche')
+
+  await page.getByLabel('Name', { exact: true }).fill('Innamorati')
+  await page.getByLabel('Weinart').selectOption({ label: 'Weißwein' })
+  await page.getByLabel('Geschmacksrichtung').selectOption({ label: 'süß' })
+  await description.fill('Süß & fruchtig')
+  await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
+  const row = page.getByRole('listitem').filter({ hasText: 'Innamorati' })
+  await expect(row.getByText('Weißwein · süß')).toBeVisible()
+  await expect(row.getByText('Süß & fruchtig')).toBeVisible()
+  // The form is empty again for the next wine
+  await expect(description).toHaveValue('')
+
+  await page.getByRole('button', { name: 'Wein #1 bearbeiten' }).click()
+  await expect(page.getByLabel('Beschreibung', { exact: true }).first()).toHaveValue('Süß & fruchtig')
+  await page.getByLabel('Beschreibung', { exact: true }).first().fill('')
+  await page.getByRole('button', { name: 'Speichern' }).click()
+  await expect(row.getByText('Süß & fruchtig')).toHaveCount(0)
+})

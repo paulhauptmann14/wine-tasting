@@ -110,3 +110,27 @@ describe('loadResults winery', () => {
     expect((await loadResults(db, t, false)).wines[0]).toMatchObject({ winery: 'Dr. Loosen' })
   })
 })
+
+describe('loadResults description', () => {
+  async function described(blindTasting: boolean) {
+    const t = await seedTasting(db, { preset: 'simple', status: 'active', blindTasting })
+    const [gesamt] = await listCriteria(db, t.id)
+    const wine = await addWine(db, t.id, wineInput('Innamorati', { description: 'Süß & fruchtig' }))
+    const { participant } = await joinTasting(db, t.id, 'Anna')
+    await saveRating(db, { participantId: participant.id, wineId: wine.id, values: { [gesamt.id]: 4 }, notes: null })
+    return t
+  }
+
+  it('stays out of the data a guest receives until a blind tasting is finished, the admin always gets it', async () => {
+    const t = await described(true)
+    expect(JSON.stringify(await loadResults(db, t, false))).not.toMatch(/fruchtig/)
+    expect((await loadResults(db, t, true)).wines[0]).toMatchObject({ description: 'Süß & fruchtig' })
+    const finished = await forceStatus(db, t.id, 'finished')
+    expect((await loadResults(db, finished, false)).wines[0]).toMatchObject({ description: 'Süß & fruchtig' })
+  })
+
+  it('is shown right away in an open tasting', async () => {
+    const t = await described(false)
+    expect((await loadResults(db, t, false)).wines[0]).toMatchObject({ description: 'Süß & fruchtig' })
+  })
+})

@@ -25,4 +25,9 @@ export type LabelSuggestion = {
   wineryCandidates?: string[]
   /** The wineryCandidates that matched the winery list; shown to the host as "steht in der Weingut-Liste". */
   listedWineries?: string[]
+  /**
+   * Up to 3 taste lines ("Süß & fruchtig") for the free-text description, best first. Never sure:
+   * only offered to tap, never filled in.
+   */
+  descriptionCandidates?: string[]
 }
