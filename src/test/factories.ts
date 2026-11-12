@@ -35,5 +35,6 @@ export const wineInput = (name: string, overrides: Partial<WineFields> = {}): Wi
   sweetness: null,
   wineType: null,
   description: null,
+  alcohol: null,
   ...overrides,
 })

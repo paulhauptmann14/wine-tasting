@@ -84,6 +84,7 @@ const wineRaw = (fd: FormData) => ({
   sweetness: formValue(fd, 'sweetness'),
   wineType: formValue(fd, 'wineType'),
   description: formValue(fd, 'description'),
+  alcohol: formValue(fd, 'alcohol'),
 })
 
 export async function addWineAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {

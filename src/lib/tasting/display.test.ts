@@ -4,6 +4,7 @@ import { wineDetails, wineTitle } from './display'
 const wine = {
   position: 2, name: 'Riesling Kabinett', winery: null, vintage: 2022, grapeVariety: 'Riesling', sweetness: 'dry' as const, wineType: 'white' as const,
   description: null,
+  alcohol: null as number | null,
 }
 
 it('uses the number when names are hidden', () => {
@@ -16,9 +17,14 @@ it('uses name, vintage and grape when shown', () => {
 })
 
 it('joins only the details that are set', () => {
-  const none = { winery: null, vintage: null, grapeVariety: null, sweetness: null, wineType: null, description: null }
+  const none = { winery: null, vintage: null, grapeVariety: null, sweetness: null, wineType: null, description: null, alcohol: null }
   expect(wineDetails({ ...none, sweetness: 'sweet' })).toBe('süß')
   expect(wineDetails({ ...none, vintage: 2019, wineType: 'red' })).toBe('Rotwein · 2019')
+})
+
+it('puts the alcohol last, as on the label', () => {
+  expect(wineDetails({ ...wine, alcohol: 12.5 })).toBe('Weißwein · 2022 · Riesling · trocken · 12,5 % vol')
+  expect(wineTitle({ ...wine, alcohol: 12.5 }, false).subtitle).toBeNull()
 })
 
 it('puts the winery first', () => {

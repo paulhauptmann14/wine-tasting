@@ -23,6 +23,8 @@ export type LabelSuggestion = {
   /** Only set when sure (a strong hit in the winery list). */
   winery?: FieldGuess<string>
   vintage?: FieldGuess<number>
+  /** % vol, one decimal: sure when printed with "vol", "alc" or "Alkohol" and read well */
+  alcohol?: FieldGuess<number>
   grapeVariety?: FieldGuess<string>
   wineType?: FieldGuess<WineType>
   sweetness?: FieldGuess<Sweetness>

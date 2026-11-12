@@ -4,6 +4,17 @@ import { planPrefill, prefillMessage, type PrefillPlan } from './prefill'
 const empty: PrefillPlan = { values: {}, marked: [], suggestions: {}, lines: [], found: 0 }
 
 describe('planPrefill', () => {
+  it('writes a sure alcohol in German notation and offers an unsure one', () => {
+    const sure = planPrefill({ alcohol: { value: 13.5, sure: true } }, {})
+    expect(sure.values).toEqual({ alcohol: '13,5' })
+    expect(sure.marked).toEqual(['alcohol'])
+    const unsure = planPrefill({ alcohol: { value: 12, sure: false } }, {})
+    expect(unsure.values).toEqual({})
+    expect(unsure.suggestions.alcohol).toEqual([{ value: '12', label: '12 % vol' }])
+    expect(planPrefill({ alcohol: { value: 13.5, sure: true } }, { alcohol: '14' }).values).toEqual({})
+    expect(planPrefill({ alcohol: { value: 40, sure: true } }, {}).found).toBe(0)
+  })
+
   it('writes only sure values into empty fields and keeps what the host typed', () => {
     const plan = planPrefill(
       {

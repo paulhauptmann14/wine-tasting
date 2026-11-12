@@ -56,3 +56,27 @@ test('Beschreibung ist freiwillig, steht unter den Angaben und bleibt beim Bearb
   await page.getByRole('button', { name: 'Speichern' }).click()
   await expect(row.getByText('Süß & fruchtig')).toHaveCount(0)
 })
+
+test('Alkohol ist freiwillig, nimmt Komma oder Punkt und steht am Ende der Angaben', async ({ page }) => {
+  await createTasting(page, 'E2E Alkohol')
+  await page.getByRole('link', { name: 'Weine', exact: true }).click()
+  const alcohol = page.getByLabel('Alkohol in % vol')
+  await expect(alcohol).toHaveAttribute('inputmode', 'decimal')
+
+  await page.getByLabel('Name', { exact: true }).fill('Appassimento')
+  await page.getByLabel('Weinart').selectOption({ label: 'Rotwein' })
+  await alcohol.fill('30')
+  await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
+  await expect(page.getByText('Alkohol zwischen 0 und 25 % vol, z. B. 13,5.')).toBeVisible()
+  // A validation error elsewhere keeps the chosen wine type
+  await expect(page.getByLabel('Weinart')).toHaveValue('red')
+
+  await alcohol.fill('14.5')
+  await page.getByRole('button', { name: 'Wein hinzufügen' }).click()
+  const row = page.getByRole('listitem').filter({ hasText: 'Appassimento' })
+  await expect(row.getByText('Rotwein · 14,5 % vol')).toBeVisible()
+  await expect(alcohol).toHaveValue('')
+
+  await page.getByRole('button', { name: 'Wein #1 bearbeiten' }).click()
+  await expect(page.getByLabel('Alkohol in % vol').first()).toHaveValue('14,5')
+})

@@ -19,6 +19,7 @@ const wine = (position: number, score: number | null, rank: number | null): Wine
   grapeVariety: null,
   sweetness: null,
   description: null,
+  alcohol: null,
 })
 
 const results = (wines: WineResult[]): Results => ({ criteria: [{ id: 'c1', name: 'Geschmack', weight: 1 }], wines })

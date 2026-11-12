@@ -1,6 +1,7 @@
 import {
   boolean,
   integer,
+  numeric,
   pgEnum,
   pgTable,
   smallint,
@@ -55,6 +56,8 @@ export const wines = pgTable(
     wineType: wineType('wine_type'),
     /** Taste description as printed or noted ("Süß & fruchtig") – free text, not the sweetness level */
     description: text('description'),
+    /** Alcohol by volume in %, one decimal (13.5) */
+    alcohol: numeric('alcohol', { precision: 3, scale: 1, mode: 'number' }),
   },
   (t) => [unique('wine_tasting_position_uq').on(t.tastingId, t.position)],
 ).enableRLS()

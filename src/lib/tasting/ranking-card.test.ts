@@ -5,6 +5,7 @@ import { computeResults, type ResultsInput } from './results'
 const wine = (id: string, position: number, name = `Wein ${id}`) => ({
   id, position, name, winery: null as string | null, vintage: 2020, grapeVariety: 'Riesling', sweetness: 'dry' as const, wineType: 'white' as const,
   description: null as string | null,
+  alcohol: null as number | null,
 })
 const criteria = [{ id: 'c1', name: 'Gesamt', position: 1, weight: 1 }]
 const rate = (wineId: string, value: number, participantId = 'p1') => ({ participantId, wineId, values: { c1: value } })

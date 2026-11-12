@@ -130,6 +130,57 @@ describe('vintage', () => {
   })
 })
 
+describe('alcohol', () => {
+  it('reads "% vol" in its usual spellings and is sure', () => {
+    expect(parse([['Riesling', 40], ['13,5 % vol', 12]]).alcohol).toEqual({ value: 13.5, sure: true })
+    expect(parse([['Riesling', 40], ['12,5%vol.', 12]]).alcohol).toEqual({ value: 12.5, sure: true })
+    expect(parse([['Riesling', 40], ['750 ml  12.5 % Vol', 12]]).alcohol).toEqual({ value: 12.5, sure: true })
+    expect(parse([['Riesling', 40], ['14 % VOL', 12]]).alcohol).toEqual({ value: 14, sure: true })
+    expect(parse([['Riesling', 40], ['alc. 13,0 % vol', 12]]).alcohol).toEqual({ value: 13, sure: true })
+    expect(parse([['Riesling', 40], ['Alc. 13.5% by vol.', 12]]).alcohol).toEqual({ value: 13.5, sure: true })
+    expect(parse([['Riesling', 40], ['13.5% ABV', 12]]).alcohol).toEqual({ value: 13.5, sure: true })
+  })
+
+  it('reads "alc."/"Alkohol" before the number without "vol"', () => {
+    expect(parse([['Riesling', 40], ['Alkoholgehalt: 11,5 %', 12]]).alcohol).toEqual({ value: 11.5, sure: true })
+    expect(parse([['Riesling', 40], ['Alc 13%', 12]]).alcohol).toEqual({ value: 13, sure: true })
+  })
+
+  it('is only a suggestion when the line is poorly read', () => {
+    expect(parse([['Riesling', 40], ['13,5 % vol', 12, 50]]).alcohol).toEqual({ value: 13.5, sure: false })
+  })
+
+  it('ignores percentages that are no alcohol and values outside 0–25', () => {
+    expect(parse([['Riesling', 40], ['100 % Riesling', 12]]).alcohol).toBeUndefined()
+    expect(parse([['Riesling', 40], ['Recycelt zu 30 %', 12]]).alcohol).toBeUndefined()
+    expect(parse([['Riesling', 40], ['13,5', 12]]).alcohol).toBeUndefined()
+    expect(parse([['Riesling', 40], ['45 % vol', 12]]).alcohol).toBeUndefined()
+  })
+
+  it('is not sure when a digit stands right before the number – OCR may have lost the comma', () => {
+    expect(parse([['Riesling', 40], ['13 5 % vol', 12]]).alcohol).toEqual({ value: 5, sure: false })
+    expect(parse([['Riesling', 40], ['1 3,5 % vol', 12]]).alcohol).toEqual({ value: 3.5, sure: false })
+    expect(parse([['Riesling', 40], ['13 , 5 % vol', 12]]).alcohol).toEqual({ value: 13.5, sure: true })
+  })
+
+  it('is not sure for an upper limit like "< 0,5 % vol"', () => {
+    for (const text of ['alkoholfrei < 0,5 % vol', 'Alkoholgehalt: <0,5 % vol', 'unter 0,5 % vol', 'alc. max. 0.5% vol', 'weniger als 0,5 % vol', 'bis 0,5 % vol', '≤ 0,5 % vol']) {
+      expect(parse([['Riesling', 40], [text, 12]]).alcohol, text).toEqual({ value: 0.5, sure: false })
+    }
+  })
+
+  it('is not sure when the label shows two different values', () => {
+    expect(parse([['Riesling', 40], ['12 % vol', 12], ['13 % vol', 12]]).alcohol).toEqual({ value: 12, sure: false })
+    expect(parse([['Riesling', 40], ['12 % vol', 12], ['e 12 % vol', 12]]).alcohol).toEqual({ value: 12, sure: true })
+  })
+
+  it('never makes the alcohol line a name or a vintage', () => {
+    const s = parse([['13,5 % vol', 40], ['Riesling', 30]])
+    expect(s.nameCandidates ?? []).not.toContainEqual(expect.stringMatching(/vol/i))
+    expect(s.vintage).toBeUndefined()
+  })
+})
+
 describe('sweetness', () => {
   it.each([
     ['trocken', 'dry'],

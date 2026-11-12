@@ -1,3 +1,4 @@
+import { formatAlcohol } from './alcohol'
 import { SWEETNESS_LABELS, type Sweetness } from './sweetness'
 import { WINE_TYPE_LABELS, type WineType } from './wine-type'
 
@@ -9,14 +10,17 @@ export type WineDetails = {
   wineType: WineType | null
   /** Free-text taste description ("Süß & fruchtig"), shown on its own line and never on the share image */
   description: string | null
+  /** % vol, last in the details line like on the label */
+  alcohol: number | null
 }
 export type WineLike = { position: number; name: string } & WineDetails
 
-/** "Weingut Dr. Loosen · Weißwein · 2022 · Riesling · trocken" – or null if nothing is set. Without the description. */
+/** "Weingut Dr. Loosen · Weißwein · 2022 · Riesling · trocken · 12,5 % vol" – or null if nothing is set. Without the description. */
 export function wineDetails(wine: WineDetails): string | null {
   const wineType = wine.wineType ? WINE_TYPE_LABELS[wine.wineType] : null
   const sweetness = wine.sweetness ? SWEETNESS_LABELS[wine.sweetness] : null
-  return [wine.winery, wineType, wine.vintage, wine.grapeVariety, sweetness].filter(Boolean).join(' · ') || null
+  const alcohol = wine.alcohol == null ? null : formatAlcohol(wine.alcohol)
+  return [wine.winery, wineType, wine.vintage, wine.grapeVariety, sweetness, alcohol].filter(Boolean).join(' · ') || null
 }
 
 /** Title, details line and description as a guest may see them: blind wines are only their number. */

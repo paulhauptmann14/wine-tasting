@@ -1,0 +1,1 @@
+ALTER TABLE "wine" ADD COLUMN "alcohol" numeric(3, 1);

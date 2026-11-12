@@ -1,10 +1,11 @@
+import { MAX_ALCOHOL, MIN_ALCOHOL, alcoholInput, formatAlcohol, parseAlcoholText } from '@/lib/tasting/alcohol'
 import { SWEETNESS_LABELS } from '@/lib/tasting/sweetness'
 import { WINE_TYPE_LABELS } from '@/lib/tasting/wine-type'
 import { labelLines, type LabelLine } from './lines'
 import type { FieldGuess, GuessSource, LabelSuggestion } from './types'
 
 /** Wine form fields a label scan can fill, by their form field name. */
-export const PREFILL_FIELDS = ['name', 'wineType', 'winery', 'vintage', 'grapeVariety', 'sweetness', 'description'] as const
+export const PREFILL_FIELDS = ['name', 'wineType', 'winery', 'vintage', 'alcohol', 'grapeVariety', 'sweetness', 'description'] as const
 export type PrefillField = (typeof PREFILL_FIELDS)[number]
 
 /** A tap-to-apply suggestion: `value` is what goes into the field, `label` what the button says. */
@@ -36,6 +37,9 @@ function toText(field: PrefillField, value: string | number): string | null {
       ? String(value)
       : null
   }
+  if (field === 'alcohol') {
+    return typeof value === 'number' && value >= MIN_ALCOHOL && value <= MAX_ALCOHOL ? alcoholInput(value) : null
+  }
   const text = String(value).replace(/\s+/g, ' ').trim()
   if (!text) return null
   const max = MAX_LENGTH[field]
@@ -51,7 +55,9 @@ function optionFor(field: PrefillField, text: string, from?: GuessSource): Prefi
       ? (WINE_TYPE_LABELS[text as keyof typeof WINE_TYPE_LABELS] ?? text)
       : field === 'sweetness'
         ? (SWEETNESS_LABELS[text as keyof typeof SWEETNESS_LABELS] ?? text)
-        : text
+        : field === 'alcohol'
+          ? formatAlcohol(parseAlcoholText(text))
+          : text
   return from ? { value: text, label, hint: SOURCE_HINTS[from] } : { value: text, label }
 }
 

@@ -6,6 +6,7 @@
 // unsure field guesses, `nameCandidates` / `wineryCandidates` for the host to tap, and taste lines
 // ("Süß & fruchtig") as `descriptionCandidates`, which are never sure.
 
+import { MAX_ALCOHOL, MIN_ALCOHOL } from '@/lib/tasting/alcohol'
 import type { Sweetness } from '@/lib/tasting/sweetness'
 import type { WineType } from '@/lib/tasting/wine-type'
 import {
@@ -394,6 +395,41 @@ function decide<T>(hits: LineHit<T>[]): FieldGuess<T> | undefined {
   const best = [...pool].sort(prominence)[0]
   const sure = strong.length > 0 && new Set(strong.map((h) => h.value)).size === 1
   return { value: best.value, sure }
+}
+
+// "13,5 % vol", "12.5%vol.", "13.5% by vol", "13% ABV" – and "Alc. 13 %", "Alkoholgehalt: 11,5 %".
+const ALCOHOL_NUMBER = String.raw`(\d{1,2})(?:\s?[.,]\s?(\d{1,2}))?`
+const ALCOHOL_PATTERNS = [
+  new RegExp(String.raw`(?<![\d.,])${ALCOHOL_NUMBER}\s?%\s?(?:(?:by\s)?vol\b|alc\b|alk\b|abv\b)`, 'giu'),
+  new RegExp(String.raw`\b(?:alc|alk|alcohol|alkohol|alkoholgehalt|alcool|alcol)\b\.?\s*:?\s*${ALCOHOL_NUMBER}\s?%`, 'giu'),
+]
+
+// Before the number: a digit and a space ("13 5 % vol" – OCR may have lost the comma) or an upper
+// limit ("alkoholfrei < 0,5 % vol", "max. 0,5 %") – the value may be wrong, so only a suggestion.
+const ALCOHOL_DOUBTFUL_BEFORE = /(?:\d\s|(?:<|≤|\bunter|\bmax\.?|\bbis|\bweniger als|\bless than|\bunder)\s*)$/iu
+
+/**
+ * Alcohol by volume. Works on the raw OCR lines: the cleaned lines drop what is mostly digits.
+ * Only a percentage marked as alcohol counts ("100 % Riesling" is not one). Sure when read well,
+ * not doubtful and the label shows only one value.
+ */
+function findAlcohol(lines: OcrLine[]): FieldGuess<number> | undefined {
+  const hits: { value: number; conf: number; doubtful: boolean }[] = []
+  for (const line of lines) {
+    for (const pattern of ALCOHOL_PATTERNS) {
+      for (const m of line.text.matchAll(pattern)) {
+        const value = Math.round(Number(`${m[1]}.${m[2] ?? '0'}`) * 10) / 10
+        if (value < MIN_ALCOHOL || value > MAX_ALCOHOL) continue
+        const numberStart = m.index + m[0].search(/\d/)
+        const doubtful = ALCOHOL_DOUBTFUL_BEFORE.test(line.text.slice(0, numberStart))
+        hits.push({ value, conf: line.confidence, doubtful })
+      }
+    }
+  }
+  if (hits.length === 0) return undefined
+  const { value } = hits[0]
+  const agreed = hits.every((h) => h.value === value && !h.doubtful)
+  return { value, sure: agreed && hits.some((h) => h.conf >= SURE_CONFIDENCE) }
 }
 
 function findSweetness(lines: Line[]): FieldGuess<Sweetness> | undefined {
@@ -1436,6 +1472,9 @@ export function parseLabel(lines: OcrLine[], options: ParseLabelOptions = {}): L
 
   const vintage = findVintage(all, layout, currentYear)
   if (vintage) suggestion.vintage = vintage
+
+  const alcohol = findAlcohol(lines)
+  if (alcohol) suggestion.alcohol = alcohol
 
   const sweetness = findSweetness(all)
   if (sweetness) suggestion.sweetness = sweetness

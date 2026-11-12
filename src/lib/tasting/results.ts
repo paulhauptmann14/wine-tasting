@@ -53,6 +53,7 @@ export function computeResults(input: ResultsInput): Results {
       sweetness: input.revealNames ? w.sweetness : null,
       wineType: input.revealNames ? w.wineType : null,
       description: input.revealNames ? w.description : null,
+      alcohol: input.revealNames ? w.alcohol : null,
       score: rs.length > 0 ? mean(personScores) : null,
       rank: null,
       ratingCount: rs.length,

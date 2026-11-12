@@ -47,6 +47,16 @@ it('stores the description on add and update and clears it again', async () => {
   expect(await getWineById(db, t.id, a.id)).toMatchObject({ description: null })
 })
 
+it('stores the alcohol as a number with one decimal and clears it again', async () => {
+  const t = await seedTasting(db)
+  const a = await addWine(db, t.id, wineInput('A', { alcohol: 13.5, wineType: 'red' }))
+  expect((await getWineByPosition(db, t.id, 1))?.alcohol).toBe(13.5)
+  await updateWine(db, t.id, a.id, wineInput('A', { alcohol: 0, wineType: 'red' }))
+  expect((await getWineById(db, t.id, a.id))?.alcohol).toBe(0)
+  await updateWine(db, t.id, a.id, wineInput('A', { wineType: 'red' }))
+  expect((await getWineById(db, t.id, a.id))?.alcohol).toBeNull()
+})
+
 it('stores the winery on add and update, and keeps wines without a wine type working', async () => {
   const t = await seedTasting(db)
   const a = await addWine(db, t.id, wineInput('A', { winery: 'Dr. Loosen', wineType: 'white' }))

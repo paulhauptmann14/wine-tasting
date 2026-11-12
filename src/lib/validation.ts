@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { ActionState } from '@/lib/action-state'
 import { normalizeCode } from '@/lib/tasting/code'
+import { parseAlcoholText } from '@/lib/tasting/alcohol'
 import { PRESET_KEYS } from '@/lib/tasting/presets'
 import { STATUS_KEYS } from '@/lib/tasting/rules'
 import { SWEETNESS_KEYS } from '@/lib/tasting/sweetness'
@@ -68,6 +69,8 @@ const optionalChoice = <const T extends readonly [string, ...string[]]>(keys: T,
     .transform((v) => (v === '' ? null : v))
     .pipe(z.enum(keys, { error }).nullable())
 
+const ALCOHOL_ERROR = 'Alkohol zwischen 0 und 25 % vol, z. B. 13,5.'
+
 export const wineSchema = z.object({
   name: z.string().trim().min(1, 'Bitte gib einen Namen ein.').max(80, 'Maximal 80 Zeichen.'),
   winery: optionalText(80),
@@ -92,6 +95,11 @@ export const wineSchema = z.object({
     .pipe(z.enum(WINE_TYPE_KEYS, { error: 'Bitte wähle eine Weinart aus der Liste.' })),
   // Free text such as "Süß & fruchtig" – the sweetness level stays its own field
   description: optionalText(200),
+  alcohol: z
+    .string()
+    .trim()
+    .transform((v) => (v === '' ? null : parseAlcoholText(v)))
+    .pipe(z.number({ error: ALCOHOL_ERROR }).nullable()),
 })
 export type WineInput = z.output<typeof wineSchema>
 

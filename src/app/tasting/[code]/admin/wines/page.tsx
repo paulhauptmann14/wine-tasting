@@ -14,7 +14,7 @@ export default async function WinesPage({ params }: { params: Promise<{ code: st
       locked={!canEditStructure(tasting.status)}
       status={tasting.status}
       unratedCount={wines.filter((wine) => !rated.has(wine.id)).length}
-      wines={wines.map(({ id, position, name, winery, vintage, grapeVariety, sweetness, wineType, description }) => ({
+      wines={wines.map(({ id, position, name, winery, vintage, grapeVariety, sweetness, wineType, description, alcohol }) => ({
         id,
         position,
         name,
@@ -24,6 +24,7 @@ export default async function WinesPage({ params }: { params: Promise<{ code: st
         sweetness,
         wineType,
         description,
+        alcohol,
       }))}
     />
   )

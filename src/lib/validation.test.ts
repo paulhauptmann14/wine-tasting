@@ -63,7 +63,7 @@ describe('adminLoginSchema', () => {
 })
 
 describe('wineSchema', () => {
-  const base = { name: 'Riesling', winery: '', vintage: '', grapeVariety: '', sweetness: '', wineType: 'white', description: '' }
+  const base = { name: 'Riesling', winery: '', vintage: '', grapeVariety: '', sweetness: '', wineType: 'white', description: '', alcohol: '' }
   const error = (raw: Record<string, string>, field: string) => {
     const result = wineSchema.safeParse(raw)
     return result.success ? undefined : result.error.issues.find((i) => i.path[0] === field)?.message
@@ -72,7 +72,15 @@ describe('wineSchema', () => {
   it('maps empty optional fields to null', () => {
     expect(wineSchema.parse({ ...base, grapeVariety: ' ', winery: '  ', description: ' ' })).toEqual({
       name: 'Riesling', winery: null, vintage: null, grapeVariety: null, sweetness: null, wineType: 'white', description: null,
+      alcohol: null,
     })
+  })
+  it('reads the optional alcohol with comma or dot, 0 to 25 % vol', () => {
+    expect(wineSchema.parse({ ...base, alcohol: ' 13,5 ' }).alcohol).toBe(13.5)
+    expect(wineSchema.parse({ ...base, alcohol: '12.5 % vol' }).alcohol).toBe(12.5)
+    expect(wineSchema.parse({ ...base, alcohol: '0' }).alcohol).toBe(0)
+    expect(error({ ...base, alcohol: '30' }, 'alcohol')).toBe('Alkohol zwischen 0 und 25 % vol, z. B. 13,5.')
+    expect(error({ ...base, alcohol: 'stark' }, 'alcohol')).toBe('Alkohol zwischen 0 und 25 % vol, z. B. 13,5.')
   })
   it('requires a name', () => {
     expect(error({ ...base, name: '  ' }, 'name')).toBe('Bitte gib einen Namen ein.')

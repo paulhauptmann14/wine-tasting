@@ -95,11 +95,11 @@ it('marks name and wine type as required in the add form, with one legend', () =
   }
 })
 
-it('orders the fields Name, Weinart, Weingut, Jahrgang, Rebsorte, Geschmacksrichtung, Beschreibung', () => {
+it('orders the fields Name, Weinart, Weingut, Jahrgang, Alkohol, Rebsorte, Geschmacksrichtung, Beschreibung', () => {
   render(<WineManager code="ABC123" wines={[]} locked={false} status="setup" unratedCount={0} />)
   const form = screen.getByRole('button', { name: 'Wein hinzufügen' }).closest('form')!
   const names = [...form.querySelectorAll('[name]')].map((el) => el.getAttribute('name'))
-  expect(names).toEqual(['name', 'wineType', 'winery', 'vintage', 'grapeVariety', 'sweetness', 'description'])
+  expect(names).toEqual(['name', 'wineType', 'winery', 'vintage', 'alcohol', 'grapeVariety', 'sweetness', 'description'])
 })
 
 it('asks for a wine type with a placeholder instead of "keine Angabe"', () => {
@@ -115,6 +115,7 @@ it('shows the winery in the list and prefills it when editing; old wines without
   const wine = {
     id: 'id-1', position: 1, name: 'Kabinett', winery: 'Dr. Loosen', vintage: 2022, grapeVariety: null, sweetness: null, wineType: null,
     description: null,
+    alcohol: null,
   }
   render(<WineManager code="ABC123" wines={[wine]} locked={false} status="setup" unratedCount={1} />)
   expect(screen.getByText('Dr. Loosen · 2022')).toBeInTheDocument()
@@ -128,7 +129,7 @@ it('shows the winery in the list and prefills it when editing; old wines without
 it('offers an optional description with an example, shows it in the list and prefills it when editing', async () => {
   const wine = {
     id: 'id-1', position: 1, name: 'Innamorati', winery: null, vintage: null, grapeVariety: null, sweetness: 'sweet' as const,
-    wineType: 'white' as const, description: 'Süß & fruchtig',
+    wineType: 'white' as const, description: 'Süß & fruchtig', alcohol: null,
   }
   render(<WineManager code="ABC123" wines={[wine]} locked={false} status="setup" unratedCount={1} />)
   const add = screen.getByRole('button', { name: 'Wein hinzufügen' }).closest('form')!

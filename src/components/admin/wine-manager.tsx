@@ -26,6 +26,7 @@ import type { FormAction } from '@/lib/action-state'
 import { PREFILL_FIELDS, planPrefill, type PrefillField, type PrefillOption, type PrefillPlan } from '@/lib/label/prefill'
 import type { LabelLine } from '@/lib/label/lines'
 import type { LabelSuggestion } from '@/lib/label/types'
+import { alcoholInput } from '@/lib/tasting/alcohol'
 import { wineDetails, type WineLike } from '@/lib/tasting/display'
 import {
   SHUFFLE_EXPLAIN_HINT,
@@ -92,6 +93,9 @@ function ChoiceField<K extends string>({
         {required && <RequiredMark />}
       </Label>
       <select
+        // React keeps a select's first defaultValue as the reset target, and resets the form after
+        // every action: remount when it changes, or a validation error elsewhere clears the choice
+        key={defaultValue}
         id={id}
         name={name}
         defaultValue={defaultValue}
@@ -398,6 +402,30 @@ function WineForm({
         <ScanExtras id={`${id}-vintage`} label="Jahrgang" scan={fieldScan('vintage')} />
       </div>
       <div>
+        <Label htmlFor={`${id}-alcohol`}>
+          Alkohol<span className="sr-only"> in % vol</span>
+        </Label>
+        <div className="relative mt-2">
+          <Input
+            id={`${id}-alcohol`}
+            name="alcohol"
+            inputMode="decimal"
+            autoComplete="off"
+            defaultValue={values?.alcohol ?? alcoholInput(initial?.alcohol)}
+            maxLength={10}
+            placeholder="13,5"
+            aria-invalid={!!errors.alcohol}
+            aria-describedby={describedBy('alcohol')}
+            className={cn('h-12 pr-16', scanMarkClass(!!marked.alcohol))}
+          />
+          <span aria-hidden className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-base text-muted-foreground md:text-sm">
+            % vol
+          </span>
+        </div>
+        <FieldError errors={errors.alcohol} />
+        <ScanExtras id={`${id}-alcohol`} label="Alkohol" scan={fieldScan('alcohol')} />
+      </div>
+      <div>
         <Label htmlFor={`${id}-grape`}>Rebsorte</Label>
         <Input
           id={`${id}-grape`}
@@ -421,7 +449,7 @@ function WineForm({
         errors={errors.sweetness}
         scan={fieldScan('sweetness')}
       />
-      <div>
+      <div className="sm:col-span-2">
         <Label htmlFor={`${id}-description`}>Beschreibung</Label>
         <Input
           id={`${id}-description`}
