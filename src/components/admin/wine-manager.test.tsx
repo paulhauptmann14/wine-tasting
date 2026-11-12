@@ -80,7 +80,9 @@ it('marks name and wine type as required in the add form, with one legend', () =
     expect(field).toBeRequired()
     expect(field).toHaveAttribute('aria-required', 'true')
   }
-  for (const name of ['Weingut', 'Jahrgang', 'Rebsorte']) {
+  // The winery field has a suggestion list, so it is a combobox
+  expect(screen.getByRole('combobox', { name: 'Weingut' })).not.toBeRequired()
+  for (const name of ['Jahrgang', 'Rebsorte']) {
     expect(screen.getByRole('textbox', { name })).not.toBeRequired()
   }
   expect(screen.getByRole('combobox', { name: 'Geschmacksrichtung' })).not.toBeRequired()
@@ -117,7 +119,7 @@ it('shows the winery in the list and prefills it when editing; old wines without
   expect(screen.getByText('Dr. Loosen · 2022')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Wein #1 bearbeiten' }))
   const form = screen.getByRole('button', { name: 'Speichern' }).closest('form')!
-  expect(within(form).getByRole('textbox', { name: 'Weingut' })).toHaveValue('Dr. Loosen')
+  expect(within(form).getByRole('combobox', { name: 'Weingut' })).toHaveValue('Dr. Loosen')
   expect(within(form).getByRole('combobox', { name: 'Weinart' })).toHaveValue('')
   expect(within(form).getByText('Pflichtfeld')).toBeInTheDocument()
 })

@@ -24,6 +24,7 @@ Der Gastgeber erstellt ein Tasting, trägt die Weine ein und zeigt einen QR-Code
 - **Tasting erstellen** mit Name, optionaler Blindverkostung, Bewertungssystem und Admin-PIN
 - **Bewertungssysteme:** Einfach (ein Gesamturteil), 5-, 20- oder 100-Punkte-Schema mit gewichteten Kriterien – die App erklärt, wie gerechnet wird
 - **Weine** mit Name und Weinart (Pflicht) sowie Weingut, Jahrgang, Rebsorte und Geschmacksrichtung (freiwillig); die Reihenfolge lässt sich auch während des Abends ändern; „Reihenfolge mischen“ mischt nur Weine, die noch niemand bewertet hat
+- **Etikett scannen:** die App liest das Etikett direkt auf dem Gerät (das Foto wird nie hochgeladen), füllt sichere Angaben in leere Felder vor und bietet unsichere als Vorschlag zum Antippen an – vorbefüllte Felder sind markiert und müssen geprüft werden
 - **Einladen** per QR-Code, Link oder 6-stelligem Code
 - **Bewerten** mit Sternen und optionaler Notiz; auf dem Handy wischt man zwischen den Weinen
 - **Ergebnisse** live mit Podest, Durchschnitt je Kriterium und – nach dem Ende – den Notizen aller Gäste ohne Namen
@@ -34,7 +35,34 @@ Der Gastgeber erstellt ein Tasting, trägt die Weine ein und zeigt einen QR-Code
 
 ## Datenschutz
 
-Keine Konten, keine E-Mail-Adressen, keine Werbung. Gespeichert wird nur, was für den Abend nötig ist: die Weine, selbst gewählte Namen, Sterne und Notizen. Jedes Tasting wird 90 Tage nach dem Erstellen automatisch gelöscht, auf Wunsch auch früher.
+Keine Konten, keine E-Mail-Adressen, keine Werbung. Gespeichert wird nur, was für den Abend nötig ist: die Weine, selbst gewählte Namen, Sterne und Notizen. Jedes Tasting wird 90 Tage nach dem Erstellen automatisch gelöscht, auf Wunsch auch früher. Etikett-Fotos werden nur auf dem Gerät ausgewertet und nie hochgeladen.
+
+## Etikett scannen
+
+Im Formular „Wein hinzufügen“ öffnet „Etikett scannen“ die Auswahl des Geräts: auf dem Handy Kamera, Fotos oder Dateien, am Laptop die Dateiauswahl. Die Texterkennung ([tesseract.js](https://github.com/naptha/tesseract.js)) läuft komplett im Browser, in sechs Sprachen (Deutsch, Englisch, Französisch, Italienisch, Spanisch, Portugiesisch). Erst beim ersten Scan werden Engine, Sprachdaten und Referenzlisten von der App selbst geladen: rund 10 MB, danach liegen sie im normalen Browser-Cache (ein Tag frisch, dann wird im Hintergrund geprüft). Tipp: den ersten Scan vor dem Abend im WLAN machen. **Das Foto bleibt auf dem Gerät.**
+
+Der Parser (`src/lib/label`) sucht Jahrgang, Rebsorte, Weinart, Geschmacksrichtung, Name und Weingut. Er gleicht außerdem mit Listen in `public/data` ab: Weingüter, EU-Herkunftsbezeichnungen (z. B. „Chianti Classico“) und amtliche Weinlagen (Einzellagen, Rieden, Vigna). Der Grundsatz ist „lieber leer als falsch“:
+
+- **Sichere Werte** (Faustregel: sehr wahrscheinlich richtig) landen in leeren Feldern. Diese Felder sind markiert (weinroter Rand und der Hinweis „vom Etikett – bitte prüfen“); die Markierung verschwindet, sobald du das Feld änderst oder „passt“ tippst. Bereits Getipptes wird nie überschrieben.
+- **Unsichere Werte** werden nicht eingetragen, sondern unter dem Feld als „Vielleicht: …“ zum Antippen angeboten. Das gilt für Name und Weingut (mehrere Kandidaten) und für eine Weinart, die nur aus der Rebsorte abgeleitet ist.
+- **Jahrgang:** Steht noch eine andere Jahreszahl auf dem Etikett, die als Medaille, Prämierung oder Gründungsjahr aussortiert wurde, wird der verbliebene Jahrgang nur vorgeschlagen. Ein Etikett mit nur „2022“ füllt das Feld wie gewohnt.
+- **Vorder- und Rückenetikett ergänzen sich:** Ein zweiter Scan füllt weitere leere Felder. Ein Feld, das der erste Scan gefüllt hat (noch markiert und unverändert), ersetzt er nur durch einen eigenen sicheren Wert; sonst bleibt der alte Wert samt Markierung stehen. Vorschläge gelten immer nur für das letzte Foto.
+- Über dem Formular steht, solange etwas zu prüfen ist: „Vom Etikett gelesen – das kann falsch sein.“
+
+**Genauigkeit:** Eine einmalige, von Hand ausgewertete Messung (November 2026, 25 Fotos: 5 eigene, 20 aus Open Food Facts) ergab: Jahrgang, Rebsorte, Weinart und Geschmacksrichtung waren nie falsch, wenn sie ausgefüllt wurden (Trefferquote je nach Feld 40–85 %, vieles steht schlicht nicht auf dem Etikett). Die Zahlen aktualisieren sich nicht von selbst und gelten für den Parser-Stand vom 11. November 2026, also vor späteren Korrekturen. Name und Weingut sind dagegen meist nur Vorschläge, weil Marke, Name und Abfüller auf Etiketten schwer zu trennen sind. Gute Ergebnisse brauchen ein scharfes, gerade und formatfüllend fotografiertes Etikett. Markierte Felder immer prüfen.
+
+Die Listen neu erzeugen: `node scripts/build-wineries.mjs` und `node scripts/build-reference-data.mjs` (nur nötig, wenn sich Quellen ändern; die Ergebnisse liegen eingecheckt in `public/data`).
+
+## Datenquellen & Lizenzen
+
+Quellen und Lizenzen der mitgelieferten Daten stehen vollständig in [public/data/SOURCES.md](public/data/SOURCES.md) und im Impressum der App.
+
+- **Texterkennung:** [tesseract.js](https://github.com/naptha/tesseract.js) und Sprachdaten aus [tessdata_fast](https://github.com/tesseract-ocr/tessdata_fast), Apache-2.0, selbst ausgeliefert aus `public/tesseract` ([README](public/tesseract/README.md)).
+- **Weingüter:** © [OpenStreetMap-Mitwirkende](https://www.openstreetmap.org/copyright), [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) (`craft=winery`); dazu [Wikidata](https://www.wikidata.org/), CC0 1.0.
+- **Herkunftsbezeichnungen:** © Europäische Union, [eAmbrosia](https://ec.europa.eu/agriculture/eambrosia/geographical-indications-register/) (Weiterverwendung nach Beschluss 2011/833/EU).
+- **Weinlagen Rheinland-Pfalz:** Weinbergsrolle Einzellagen, © Landwirtschaftskammer Rheinland-Pfalz (2020), [Datenlizenz Deutschland – Namensnennung – Version 2.0](https://www.govdata.de/dl-de/by-2-0), [Datensatz](https://weinlagen.lwk-rlp.de/), Daten verändert (nur Name, Ort, Region).
+- **Weinlagen Niederösterreich:** Weinbau Rieden, © Land Niederösterreich, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- **Weinlagen Südtirol:** © Autonome Provinz Bozen – Südtirol, Open Data, [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de), Quelle trotzdem genannt.
 
 ## Tech-Stack
 
@@ -50,3 +78,5 @@ Es gibt kein separates Backend: Seiten, Server-Logik und Datenbankzugriff laufen
 ## Lizenz
 
 MIT – siehe [LICENSE](LICENSE).
+
+Die mitgelieferten Dateien in `public/tesseract` (Texterkennung, Sprachdaten) und die Daten in `public/data` behalten ihre eigenen Lizenzen, siehe [public/tesseract/README.md](public/tesseract/README.md) und [public/data/SOURCES.md](public/data/SOURCES.md).

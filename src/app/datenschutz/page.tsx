@@ -92,6 +92,22 @@ export default function DatenschutzPage() {
         dem per E-Mail widersprechen.
       </p>
 
+      <h2>Etikett scannen</h2>
+      <p>
+        Wenn du beim Anlegen eines Weins „Etikett scannen“ tippst, wählst du über die Auswahl deines Geräts ein Foto
+        (Kamera, Fotos oder Dateien). Die App liest den Text direkt auf deinem Gerät. Das Foto wird nicht hochgeladen und
+        nicht gespeichert; übernommen wird nur, was du danach im Formular speicherst.
+      </p>
+      <p>
+        Beim ersten Scan lädt dein Browser die Texterkennung (tesseract.js) mit den Sprachdaten und Listen mit
+        Weingütern, Herkunftsbezeichnungen und Weinlagen, zusammen rund 10 MB. Alles kommt von diesem Server, es gibt
+        keine Verbindung zu Dritten. Die Dateien können im normalen Browser-Cache liegen, damit sie nicht erneut geladen
+        werden; du kannst ihn jederzeit in den Browser-Einstellungen leeren. Der Abgleich läuft auf deinem Gerät. Die
+        Listen enthalten Daten von <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (©
+        OpenStreetMap-Mitwirkende, Lizenz <a href="https://opendatacommons.org/licenses/odbl/1-0/">ODbL 1.0</a>) und
+        weiteren offenen Quellen; sie sind im <Link href="/impressum">Impressum</Link> aufgeführt.
+      </p>
+
       <h2>Schriften</h2>
       <p>Alle Schriften werden von dieser App selbst ausgeliefert. Es besteht keine Verbindung zu Google Fonts.</p>
 

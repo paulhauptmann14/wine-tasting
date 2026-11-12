@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Self-hosted OCR files and reference lists. The paths are not versioned, so no `immutable`:
+        // a day of caching, then serve stale while revalidating in the background
+        source: '/(tesseract|data)/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
+      },
+      {
         // Tastings are private – even if a link ends up somewhere public
         source: '/(tasting|manage)/:path*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],

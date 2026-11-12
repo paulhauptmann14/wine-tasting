@@ -2,6 +2,8 @@
 
 Die App braucht nur Node.js, PostgreSQL und die [Umgebungsvariablen](DEVELOPMENT.md#umgebungsvariablen). Es gibt zwei vorbereitete Wege; der Code ist für beide derselbe.
 
+Der Ordner `public/` (Texterkennung und Referenzlisten für den Etikett-Scan) wird von der App selbst ausgeliefert; das Docker-Image kopiert ihn mit (`Dockerfile`).
+
 Wer die App öffentlich betreibt, trägt in `src/lib/legal.ts` die eigenen Betreiberdaten für Impressum und Datenschutzerklärung ein und prüft die Texte unter `src/app/impressum` und `src/app/datenschutz`.
 
 ## Variante A: Vercel + Supabase (empfohlen)

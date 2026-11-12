@@ -26,6 +26,10 @@ Im selben WLAN den Dev-Server für das Netzwerk öffnen und die Seite über die 
 npm run dev -- -H 0.0.0.0
 ```
 
+## Etikett-Scan
+
+Der Code liegt in `src/components/admin/label-scan/` (Oberfläche, OCR im Browser) und `src/lib/label/` (Parser, Vorausfüllen, Abgleich). Worker, WASM-Core und Sprachdaten liegen selbst gehostet in `public/tesseract/`, die Referenzlisten in `public/data/`. Listen neu bauen: `node scripts/build-wineries.mjs` (Weingüter) und `node scripts/build-reference-data.mjs` (Herkunftsbezeichnungen und Lagen). Tesseract aktualisieren: Schritte in `public/tesseract/README.md`.
+
 ## Umgebungsvariablen
 
 | Variable | Pflicht | Bedeutung |

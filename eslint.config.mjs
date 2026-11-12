@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Local agent skill folders (gitignored, third-party scripts – not part of the app)
     ".claude/**",
     ".agents/**",
+    // Vendored tesseract.js worker/core (minified third-party code, see public/tesseract/README.md)
+    "public/tesseract/**",
   ]),
 ]);
 
