@@ -188,6 +188,11 @@ export const GRAPES: Grape[] = [
   white('Hárslevelű'),
   white('Assyrtiko'),
   white('Rkatsiteli'),
+  // Grapes the appellation list names (public/data/appellations.json)
+  // Lugana: "Trebbiano di Lugana" is not the Trebbiano of Tuscany or Abruzzo
+  white('Turbiana', 'Trebbiano di Lugana'),
+  // Salice Salentino Aleatico: printed, it keeps the appellation's main grape (Negroamaro) out
+  red('Aleatico'),
 ]
 
 /**
@@ -282,6 +287,8 @@ export const WINE_TYPE_TERMS: Term<WineType>[] = [
   { term: 'spumante', value: 'sparkling' },
   { term: 'frizzante', value: 'sparkling' },
   { term: 'franciacorta', value: 'sparkling' },
+  // Collective mark of the Trento DOC (only bottle-fermented sparkling wine); "Trento" alone is also the town
+  { term: 'trentodoc', value: 'sparkling' },
   { term: 'sparkling', value: 'sparkling' },
   { term: 'mousseux', value: 'sparkling' },
   { term: 'petillant', value: 'sparkling' },
@@ -299,6 +306,8 @@ export const WINE_TYPE_TERMS: Term<WineType>[] = [
   { term: 'rose', value: 'rose' },
   { term: 'rosato', value: 'rose' },
   { term: 'rosado', value: 'rose' },
+  // Italian rosé of Lake Garda ("Bardolino Chiaretto")
+  { term: 'chiaretto', value: 'rose' },
   { term: 'blush', value: 'rose' },
   { term: '*rotwein', value: 'red' },
   { term: 'rouge', value: 'red' },
@@ -497,3 +506,39 @@ export const LEGAL_PATTERNS: RegExp[] = [
 
 /** Appellation tokens removed from a name line ("Chianti Classico DOCG" → "Chianti Classico"). Case-sensitive. */
 export const APPELLATION_TOKENS = /(^|[^\p{L}])(D\.?O\.?C\.?G\.?|D\.?O\.?C\.?a?\.?|D\.?O\.?P\.?|I\.?G\.?T\.?|I\.?G\.?P\.?|A\.?O\.?C\.?|A\.?O\.?P\.?|D\.?O\.?|VDP|QbA)(?=$|[^\p{L}])/gu
+
+// --- criteria terms (parse-label.ts "criteria") -------------------------------------------------
+
+/**
+ * "Blanc de Noirs" (white wine from red grapes) and "Blanc de Blancs": the wine is white, whatever
+ * the grape. Tolerant of OCR: separators may be missing or doubled ("Blanc-de-Noirs",
+ * "BLANCDENOIRS"), the plural "s" may be missing, and 0/o, 1/l/i and 5/s may be swapped.
+ * Matched on folded text (lowercase, no accents).
+ */
+export const BLANC_DE_PATTERN = /(?<![\p{L}\p{N}])b[l1i]anc[\s\-'·.]*d[e3][\s\-'·.]*(n[o0][i1l|]r|b[l1i]anc)[s5]?(?![\p{L}\p{N}])/gu
+
+/**
+ * How a grape is called in the appellation's country, where that differs from the canonical
+ * (mostly German) name in GRAPES: Sancerre Rouge is "Pinot Noir", not "Spätburgunder". Used for
+ * grapes that come from the appellation list, never for grapes printed on the label (those keep
+ * the label's spelling). `*` is the name for every country without an own entry.
+ */
+export const ORIGIN_GRAPE_NAMES: Record<string, Record<string, string>> = {
+  Spätburgunder: { DE: 'Spätburgunder', AT: 'Blauburgunder', IT: 'Pinot Nero', '*': 'Pinot Noir' },
+  Grauburgunder: { DE: 'Grauburgunder', AT: 'Grauburgunder', IT: 'Pinot Grigio', '*': 'Pinot Gris' },
+  Weißburgunder: { DE: 'Weißburgunder', AT: 'Weißburgunder', IT: 'Pinot Bianco', '*': 'Pinot Blanc' },
+  Schwarzriesling: { DE: 'Schwarzriesling', AT: 'Schwarzriesling', '*': 'Pinot Meunier' },
+  Lemberger: { DE: 'Lemberger', HU: 'Kékfrankos', '*': 'Blaufränkisch' },
+  Trollinger: { DE: 'Trollinger', IT: 'Schiava', '*': 'Trollinger' },
+  Gutedel: { DE: 'Gutedel', CH: 'Chasselas', FR: 'Chasselas', '*': 'Gutedel' },
+  Muskateller: { DE: 'Muskateller', AT: 'Muskateller', IT: 'Moscato', ES: 'Moscatel', PT: 'Moscatel', '*': 'Muscat' },
+  Silvaner: { FR: 'Sylvaner', '*': 'Silvaner' },
+  Welschriesling: { IT: 'Riesling Italico', HU: 'Olaszrizling', '*': 'Welschriesling' },
+  Grenache: { ES: 'Garnacha', IT: 'Cannonau', '*': 'Grenache' },
+  Mourvèdre: { ES: 'Monastrell', '*': 'Mourvèdre' },
+  Carignan: { ES: 'Cariñena', IT: 'Carignano', '*': 'Carignan' },
+  Tempranillo: { PT: 'Tinta Roriz', '*': 'Tempranillo' },
+  Albariño: { PT: 'Alvarinho', '*': 'Albariño' },
+  Trebbiano: { FR: 'Ugni Blanc', '*': 'Trebbiano' },
+  'Grenache Blanc': { ES: 'Garnacha Blanca', '*': 'Grenache Blanc' },
+}

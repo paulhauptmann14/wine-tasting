@@ -1,12 +1,14 @@
 # Reference data sources
 
 Data for the label scan (`src/components/admin/label-scan`). Names only, no addresses or geometry.
-Data as of 2026-11-11. Rebuild: `node scripts/build-wineries.mjs` and `node scripts/build-reference-data.mjs`.
+Data as of 2026-11-11 (eAmbrosia, sites, wineries) and 2026-11-12 (Wikidata appellation data, product specifications).
+Rebuild: `node scripts/build-wineries.mjs` and `node scripts/build-reference-data.mjs [--cache <dir>]` (with a cache
+directory the raw downloads are kept, so a rebuild gives the same file).
 
 | File | Content | Entries | Size |
 | --- | --- | --- | --- |
 | `wineries.json` | `string[]` winery names worldwide | 16,584 | 371 KB (125 KB gzip) |
-| `appellations.json` | `{ name, country, wineType? }[]` EU wine PDO/PGI | 1,612 (90 with wineType) | 67 KB (12 KB gzip) |
+| `appellations.json` | `{ name, country, wineType?, grapes?, mainGrape?, sources? }[]` EU wine PDO/PGI | 1,612 (218 with wineType, 305 with grapes, 71 with mainGrape) | 101 KB (16 KB gzip) |
 | `sites.json` | `{ name, village?, region }[]` official vineyard sites | 4,994 | 355 KB (40 KB gzip) |
 
 ## wineries.json
@@ -25,10 +27,45 @@ Data as of 2026-11-11. Rebuild: `node scripts/build-wineries.mjs` and `node scri
   API https://webgate.ec.europa.eu/eambrosia-api/. License: European Commission reuse policy
   (Decision 2011/833/EU), i.e. CC BY 4.0 equivalent.
   Attribution: © European Union, eAmbrosia – the EU geographical indications register.
-  Data changed: only names and country taken, `wineType` added (see below).
-- `wineType` is a hand-curated mapping in `scripts/build-reference-data.mjs` (`TYPE_RULES`), only for
-  names that imply the type unambiguously (Champagne, Prosecco, Cava, Crémant, Asti, Franciacorta,
-  Trento, Barolo, Chablis, Tavel, …). Ambiguous names have no type.
+  Data changed: only names and country taken; `wineType`, `grapes`, `mainGrape` and `sources` added (see below).
+- `wineType` only where the appellation allows exactly one colour:
+  - names that imply the type unambiguously (`TYPE_RULES` in `scripts/build-reference-data.mjs`: Champagne,
+    Prosecco, Cava, Crémant, Barolo, Chablis, Tavel, …),
+  - Italian DOPs whose product specification (disciplinare) names one colour only (`IT_ONE_COLOUR`, 123 names,
+    article 1 and the "colore" lines of article 6, no rosé type anywhere in the text), or only sparkling wine
+    (Vernaccia di Serrapetrona); "Trento" (sparkling only) has no type because the word is mostly the town,
+  - the verified rules (`VERIFIED`, see below),
+  - Wikidata, only for an item with the same eAmbrosia ID that names exactly one colour (P462 or the
+    class red/white/rosé/sparkling wine), when no other matched item, grape or the name says otherwise.
+    In the current data this adds none (Wikidata has colours for very few appellations).
+- `grapes`: typical grapes, most important first, as canonical names of `GRAPES` in
+  `src/lib/label/dictionaries.ts`; at most 5. From `VERIFIED` where present, otherwise Wikidata.
+- `mainGrape` (and `sources`): only from `VERIFIED`, checked by hand in the product specification: the rules
+  require at least 85 % of that grape (the EU threshold for naming a single variety on the label) for every
+  wine of the grape's colour, for every wine when `wineType` is set. Example: Sancerre has `mainGrape`
+  "Sauvignon Blanc" (white wines 100 % Sauvignon, red and rosé 100 % Pinot Noir) and no `wineType`.
+- Wikidata (https://www.wikidata.org/, CC0 1.0), via the Wikidata Query Service and `wbgetentities`:
+  items with an eAmbrosia ID (P9854), wines (Q282 and subclasses) and items of the appellation classes
+  (AOC, PDO, DOCG, DO, DOC, wine-producing region, PGI, …). Taken: labels and aliases (de/en/it/fr/es/pt),
+  country (P17), grapes (P186 "made from material", ordered by the proportion qualifier P1107 where given,
+  otherwise by statement order) and colour (P462). Matching to the eAmbrosia names: same eAmbrosia ID
+  (406 items), otherwise exact label or alias after removing "DOC", "AOC", "wine", … in the same country
+  (766 items). Grapes that are not in the dictionary are dropped; a grape whose name is the town in the
+  appellation name ("Vin Santo di Montepulciano") is dropped.
+- Product specifications read for `VERIFIED` and `IT_ONE_COLOUR` (public documents of the national
+  authorities, used as facts; not redistributed):
+  - Italy: MASAF, "Disciplinari di produzione vini DOP", consolidated texts as three archives (A–D, E–N, O–Z),
+    https://www.masaf.gov.it/flex/cm/pages/ServeBLOB.php/L/IT/IDPagina/4625 (downloaded 2026-11-12; the archive
+    links are in the script). The archive links change with every update, so `sources` links each appellation's
+    own entry in eAmbrosia (`…/geographical-indications-register/details/<EUGI id>`).
+  - France: INAO cahiers des charges, linked from the product pages on https://www.inao.gouv.fr – either
+    the PDF on extranet.inao.gouv.fr (read from the Wayback Machine copy, the host is not reachable from
+    here) or the text in the Bulletin officiel of the Ministry of Agriculture (info.agriculture.gouv.fr).
+    The URL of each document is stored in `sources`.
+  - Spain: eAmbrosia technical files and amendments (Rioja, Ribera del Duero, Rías Baixas, Rueda, Cava,
+    Priorat); no Spanish appellation qualifies for `mainGrape`.
+  - Austria: DAC-Verordnung „Weinviertel" (RIS, https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20006693):
+    Grüner Veltliner – used for suggestions only, because "Weinviertel" alone is not always DAC wine.
 
 ## sites.json
 

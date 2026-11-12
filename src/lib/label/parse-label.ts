@@ -11,6 +11,7 @@ import type { WineType } from '@/lib/tasting/wine-type'
 import {
   APPELLATION_TOKENS,
   AWARD_NOTE,
+  BLANC_DE_PATTERN,
   BOTTLER_PREFIXES,
   CONNECTORS,
   CONTACT_NOTE,
@@ -20,6 +21,7 @@ import {
   LEGAL_PATTERNS,
   PRODUCER_NOTE,
   NOT_A_NAME,
+  ORIGIN_GRAPE_NAMES,
   REGIONS,
   SWEETNESS_TERMS,
   SWEET_STYLE_TERMS,
@@ -41,7 +43,7 @@ import {
 } from './match-reference'
 import { cleanLine, displayCase, fold, foldText, letterCount, type Folded } from './normalize'
 import { tasteDescription } from './taste'
-import type { FieldGuess, LabelSuggestion, OcrLine } from './types'
+import type { FieldGuess, GuessSource, LabelSuggestion, OcrLine } from './types'
 
 export type ParseLabelOptions = {
   /** Fuzzy lookup in the winery list; returns the canonical name or null. */
@@ -491,31 +493,357 @@ function findGrapes(hits: GrapeHit[]): FieldGuess<string> | undefined {
   return { value, sure }
 }
 
-function findWineType(lines: Line[], grapes: GrapeHit[], fromAppellation?: FieldGuess<WineType>): FieldGuess<WineType> | undefined {
-  const hits = scan(lines, TYPES, FUZZY_TYPES)
-    .map((hit) => {
-      // "ROSE" without accent may just be a word; "rosé" is the wine.
-      if (hit.term === 'rose' && !hit.fuzzy) {
-        const written = hit.line.text.slice(hit.line.f.map[hit.start], hit.line.f.map[hit.end])
-        return { ...hit, weak: !/[éÉ]/.test(written) }
-      }
-      return hit
-    })
-    // Bare "red"/"white" in running text is a tasting note ("red berries"), not the wine.
-    .filter((hit) => !(hit.weak && hit.line.prose))
+// --- criteria: wine type and grape -----------------------------------------------------------
+//
+// Which evidence fills in the wine type and the grape (sure) and which is only offered (a
+// suggestion to tap). Rather empty than wrong: whatever is printed on the label wins over what an
+// appellation implies, and evidence that disagrees gives no sure value. The rules are tried in
+// order; the first one that gives a value decides. A poorly read word is still sure when a clearly
+// read appellation says the same.
+//
+// "Clearly read" (sure): confidence ≥ SURE_CONFIDENCE, not running text; an appellation also spelled
+// exactly or filling most of its line (APPELLATION_COVERAGE); a one-word appellation, often also a
+// town ("Dogliani", "Aversa"), in addition set at least half as large as the largest line or named
+// with a designation ("DOCG", "Premier Cru", also on the line below). Appellations only count
+// outside the producer's lines (unless the line is nothing but the appellation: "Domaine" /
+// "CHABLIS"), address, contact and bottling note ("Imbottigliato da …, Barolo" is a town), and
+// never as the end of a longer name set over two lines ("BARBERA" / "d'Asti" is not Asti). An
+// appellation read less clearly only gives suggestions.
+//
+// | Field | Evidence                                                          | Result             |
+// |-------|-------------------------------------------------------------------|--------------------|
+// | type  | sparkling term ("Sekt", "Crémant", "brut")                        | sure if clear      |
+// | type  | "Blanc de Noirs" / "Blanc de Blancs" → white (over red grapes)    | sure if clear      |
+// | type  | type word ("Rotwein", "Rosé", "Bianco")                           | sure if clear      |
+// | type  | appellation that allows one colour (Chablis → white)              | sure if clear, no  |
+// |       |                                                                   | appellation and no |
+// |       |                                                                   | printed grape      |
+// |       |                                                                   | disagrees          |
+// | type  | printed grapes all of one colour                                  | suggestion         |
+// |       |                                                                   | "aus der Rebsorte" |
+// | type  | no printed grape, the appellation's typical grapes of one colour  | suggestion         |
+// |       |                                                                   | "aus der Herkunft" |
+// | type  | method or region word ("Appassimento", "Chianti")                 | suggestion         |
+// | grape | printed grape                                                     | sure if clear, or  |
+// |       |                                                                   | if it is the sure  |
+// |       |                                                                   | main grape below   |
+// | grape | appellation requiring ≥ 85 % of one grape (Barolo → Nebbiolo),    | sure, only when    |
+// |       | colour fixed by the appellation or by a sure type of the grape's  | no grape printed   |
+// |       | colour (Sancerre Blanc → Sauvignon Blanc), no appellation         |                    |
+// |       | disagrees, no "Blanc de Noirs" (red grapes) on a white main grape |                    |
+// | grape | typical grapes of the appellation (Rioja → Tempranillo, …), at    | suggestion         |
+// |       | most 3, only grapes of the colour the label fixes                 | "aus der Herkunft" |
+//
+// Grapes from the appellation are named as in its country
+// (ORIGIN_GRAPE_NAMES: "Pinot Noir" for a Sancerre); printed grapes keep the label's spelling.
+// Sweetness has no rules from appellations.
 
-  const sparkling = hits.filter((h) => h.value === 'sparkling')
-  if (sparkling.length > 0) return { value: 'sparkling', sure: sparkling.some(strongHit) }
-  const explicit = decide(hits)
-  if (explicit) return explicit
-  // "Prosecco DOC", "Asti": the appellation only allows one type.
-  if (fromAppellation) return fromAppellation
+/** What the type and grape rules look at. */
+type Evidence = {
+  lines: Line[]
+  /** Grapes printed on the label (also unsure readings) */
+  printedGrapes: GrapeHit[]
+  /** Appellations on the label, in reading order */
+  origins: Origin[]
+}
 
-  const colours = new Set(grapes.map((g) => g.colour))
-  if (colours.size === 1) return { value: [...colours][0], sure: false }
+/** An appellation found on the label; `clear` when read clearly enough for a sure value. */
+type Origin = { ref: AppellationRef; clear: boolean }
 
-  const hint = [...scan(lines, TYPE_HINTS)].sort(prominence)[0]
-  return hint ? { value: hint.value, sure: false } : undefined
+type TypeRule = { criterion: string; decide: (e: Evidence) => FieldGuess<WineType> | undefined }
+
+const GRAPE_COLOUR = new Map<string, GrapeColour>(GRAPES.map((g) => [g.canonical, g.colour]))
+
+/** One colour for all known grapes, or undefined (none known, or both colours). */
+function colourOf(canonicals: string[]): GrapeColour | undefined {
+  const colours = new Set(canonicals.flatMap((c) => GRAPE_COLOUR.get(c) ?? []))
+  return colours.size === 1 ? [...colours][0] : undefined
+}
+
+const guess = <T>(value: T, sure: boolean, from?: GuessSource): FieldGuess<T> => (from ? { value, sure, from } : { value, sure })
+
+function typeTermHits(lines: Line[]): LineHit<WineType>[] {
+  return (
+    scan(lines, TYPES, FUZZY_TYPES)
+      .map((hit) => {
+        // "ROSE" without accent may just be a word; "rosé" is the wine.
+        if (hit.term === 'rose' && !hit.fuzzy) {
+          const written = hit.line.text.slice(hit.line.f.map[hit.start], hit.line.f.map[hit.end])
+          return { ...hit, weak: !/[éÉ]/.test(written) }
+        }
+        return hit
+      })
+      // Bare "red"/"white" in running text is a tasting note ("red berries"), not the wine.
+      .filter((hit) => !(hit.weak && hit.line.prose))
+  )
+}
+
+/** "Blanc de Noirs" / "Blanc de Blancs", valued by the colour of the grapes (the wine is white). */
+function blancDeHits(lines: Line[]): LineHit<GrapeColour>[] {
+  return lines.flatMap((line) =>
+    [...line.f.folded.matchAll(BLANC_DE_PATTERN)].map((m) => ({
+      value: m[1].startsWith('n') ? ('red' as const) : ('white' as const),
+      weak: false,
+      term: 'blanc de',
+      start: m.index,
+      end: m.index + m[0].length,
+      line,
+    })),
+  )
+}
+
+const WINE_TYPE_RULES: TypeRule[] = [
+  {
+    criterion: 'sparkling term → sparkling, sure if clear',
+    decide: ({ lines }) => {
+      const sparkling = typeTermHits(lines).filter((h) => h.value === 'sparkling')
+      return sparkling.length > 0 ? guess<WineType>('sparkling', sparkling.some(strongHit)) : undefined
+    },
+  },
+  {
+    criterion: '"Blanc de Noirs" / "Blanc de Blancs" → white, sure if clear',
+    decide: ({ lines }) => decide(blancDeHits(lines).map((h) => ({ ...h, value: 'white' as const }))),
+  },
+  {
+    criterion: 'type word → that type, sure if clear and unambiguous',
+    decide: ({ lines }) => decide(typeTermHits(lines)),
+  },
+  {
+    criterion: 'appellation of one colour → that type, sure if clear, no appellation and no printed grape disagrees',
+    decide: (e) => originType(e),
+  },
+  {
+    criterion: 'printed grapes of one colour → suggestion "aus der Rebsorte"',
+    decide: ({ printedGrapes }) => {
+      const colour = colourOf(printedGrapes.map((g) => g.canonical))
+      return colour ? guess<WineType>(colour, false, 'grape') : undefined
+    },
+  },
+  {
+    criterion: 'no printed grape, typical grapes of the appellation of one colour → suggestion "aus der Herkunft"',
+    decide: ({ printedGrapes, origins }) => {
+      if (printedGrapes.length > 0) return undefined
+      const colour = colourOf(origins.flatMap((o) => o.ref.grapes ?? []))
+      return colour ? guess<WineType>(colour, false, 'origin') : undefined
+    },
+  },
+  {
+    criterion: 'method or region word → suggestion',
+    decide: ({ lines }) => {
+      const hits = lines.flatMap((line) => findTerms(originText(line) ?? '', TYPE_HINTS).map((h) => ({ ...h, line })))
+      const hint = hits.sort(prominence)[0]
+      return hint ? guess<WineType>(hint.value, false) : undefined
+    },
+  },
+]
+
+/** Whether grapes of this colour make this type: rosé and red from red grapes, sparkling from both. */
+const madeFrom = (type: WineType, colour: GrapeColour) =>
+  type === 'sparkling' || (type === 'white' ? colour === 'white' : colour === 'red')
+
+/**
+ * The one type the appellations allow; undefined when none says, they disagree, or a printed grape
+ * is of the other colour (Barolo with "Chardonnay": something was misread).
+ */
+function originType({ origins, printedGrapes }: Evidence): FieldGuess<WineType> | undefined {
+  const typed = origins.filter((o) => o.ref.wineType)
+  const types = new Set(typed.map((o) => o.ref.wineType))
+  if (types.size !== 1) return undefined
+  const type = [...types][0]!
+  const colours = printedGrapes.flatMap((g) => GRAPE_COLOUR.get(g.canonical) ?? [])
+  if (colours.some((c) => !madeFrom(type, c))) return undefined
+  return guess(type, typed.some((o) => o.clear), 'origin')
+}
+
+function findWineType(e: Evidence): FieldGuess<WineType> | undefined {
+  for (const rule of WINE_TYPE_RULES) {
+    const found = rule.decide(e)
+    if (!found) continue
+    // A poorly read type word that a clearly read appellation confirms ("Prosecco", "spumante")
+    const origin = found.sure || found.from ? undefined : originType(e)
+    return origin?.sure && origin.value === found.value ? origin : found
+  }
+  return undefined
+}
+
+/** The part of a line that may name the wine's origin: not the producer's address, contact or bottling note. */
+function originText(line: Line): string | null {
+  if (line.prose || line.address || line.conf < NAME_CONFIDENCE || CONTACT_NOTE.test(line.loose)) return null
+  const note = PRODUCER_NOTE.exec(line.f.folded)
+  return note ? line.f.folded.slice(0, note.index) : line.f.folded
+}
+
+// Words that tie a line to the one above: "BARBERA" / "d'Asti", "VIN SANTO" / "DI CARMIGNANO".
+const ORIGIN_LINKS = new Set(['d', 'di', 'de', 'del', 'dell', 'della', 'dello', 'dei', 'degli', 'delle', 'du', 'des', 'da', 'dal'])
+
+// Words that make a one-word appellation the wine's designation, not a town: "Dogliani DOCG",
+// "Chablis Premier Cru", "Appellation Morgon Contrôlée".
+const DESIGNATION_WORDS = new Set([
+  'doc', 'docg', 'igt', 'igp', 'aoc', 'aop', 'do', 'dop', 'doca', 'docq', 'pdo', 'pgi', 'dac',
+  'appellation', 'denominazione', 'denominacion', 'controlee', 'controllata', 'garantita', 'protegee', 'protetta',
+  'cru', 'classico', 'superiore', 'riserva', 'villages',
+])
+
+/** Folded words with their positions, split like `words()` of match-reference. */
+const wordSpans = (folded: string) => [...folded.matchAll(/[\p{L}\p{N}]+/gu)].map((m) => ({ start: m.index, end: m.index + m[0].length }))
+
+/** "CHASSACNF-MONTRACHET": the match is the second half of a longer, misread name. */
+function hyphenated(folded: string, m: AppellationMatch): boolean {
+  if (m.start === 0) return false
+  const spans = wordSpans(folded)
+  return folded.slice(spans[m.start - 1].end, spans[m.start].start) === '-'
+}
+
+/** Two word lists, the second inside the first: "vin santo di carmignano" contains "carmignano". */
+function containsWords(outer: string[], inner: string[]): boolean {
+  for (let i = 0; i + inner.length <= outer.length; i++) if (inner.every((w, k) => outer[i + k] === w)) return true
+  return false
+}
+
+/**
+ * Appellations on the label, outside the producer's lines; also those set over two lines. Clear
+ * (good for a sure value): read with high confidence, and either spelled exactly or filling the
+ * line ("CHABLIS" read as "CHABUS" is still Chablis; one misread word in a long line is not). A
+ * one-word appellation is often also a town ("Dogliani", "Aversa"): it is clear only when set at
+ * least half as large as the largest line or named with a designation ("DOCG", "Premier Cru").
+ */
+function findOrigins(lines: Line[], layout: Line[], groups: Group[], list: readonly AppellationRef[], producer: (l: Line) => boolean): Origin[] {
+  if (list.length === 0) return []
+  const confident = lines.filter((l) => l.conf >= NAME_CONFIDENCE)
+  const largest = Math.max(0, ...(confident.length > 0 ? confident : lines).map((l) => l.h))
+  const whole = (l: Line) => !producer(l) && originText(l) === l.f.folded
+  // The end of a name begun on the line above: "d'Asti" is not Asti, "MONTRACHET" after "CHASSAGNE-" not Montrachet
+  const linked = (text: string) => ORIGIN_LINKS.has(foldedWords(text)[0] ?? '')
+  const afterHyphen = (above: Line | undefined) => above !== undefined && above.f.folded.trimEnd().endsWith('-')
+  // A designation of its own right under the appellation: "DOGLIANI" / "Denominazione di Origine Controllata"
+  const designationBelow = (l: Line) => {
+    const below = layout.find((b) => lineAbove(b, layout) === l)
+    const ws = below ? foldedWords(below.f.folded) : []
+    return ws.length > 0 && ws.some((w) => DESIGNATION_WORDS.has(w)) && ws.every((w) => DESIGNATION_WORDS.has(w) || ORIGIN_LINKS.has(w) || w === 'e' || w === 'origine' || w === 'origen')
+  }
+  // A producer line counts only when it is nothing but an appellation: "Domaine" / "CHABLIS"
+  const onlyAppellation = (m: AppellationMatch) => m.extra === 0 && m.coverage >= APPELLATION_COVERAGE
+
+  const found: { ref: AppellationRef; clear: boolean; lines: Line[] }[] = []
+  const look = (text: string, conf: number, from: Line[], skip: (m: AppellationMatch) => boolean = () => false) => {
+    const designated = foldedWords(text).some((w) => DESIGNATION_WORDS.has(w)) || designationBelow(from[from.length - 1])
+    const prominent = from.some((l) => l.h >= 0.5 * largest)
+    for (const m of findAppellations(text, list)) {
+      if (skip(m)) continue
+      const oneWord = foldedWords(m.ref.name).length === 1
+      const read = conf >= SURE_CONFIDENCE && (m.exact || m.coverage >= APPELLATION_COVERAGE)
+      found.push({ ref: m.ref, clear: read && (!oneWord || prominent || designated), lines: from })
+    }
+  }
+  for (const line of lines) {
+    const inProducer = producer(line)
+    const text = originText(line)
+    if (!text) continue
+    const above = lineAbove(line, layout)
+    const link = linked(text)
+    const hyphen = afterHyphen(above)
+    look(text, line.conf, [line], (m) =>
+      (inProducer && !onlyAppellation(m)) || (link && m.start === 1) || (hyphen && m.start === 0) || hyphenated(text, m),
+    )
+    if ((link || hyphen) && above && whole(above) && whole(line)) {
+      look(`${above.f.folded} ${text}`, Math.min(above.conf, line.conf), [above, line])
+    }
+  }
+  for (const g of groups) {
+    const first = g.lines[0]
+    const continued = linked(first.f.folded) || afterHyphen(lineAbove(first, layout))
+    if (g.lines.length > 1 && !continued && g.lines.every(whole)) look(g.text, g.conf, g.lines)
+  }
+  // A part of a longer name read over several lines: "Chianti" of "Vin Santo del Chianti"
+  const longer = (f: (typeof found)[number]) =>
+    found.some(
+      (o) =>
+        o.lines.length > 1 &&
+        o.ref !== f.ref &&
+        f.lines.some((l) => o.lines.includes(l)) &&
+        containsWords(foldedWords(o.ref.name), foldedWords(f.ref.name)),
+    )
+  return found.filter((f) => !longer(f)).map(({ ref, clear }) => ({ ref, clear }))
+}
+
+/** The grape's name in the appellation's country: "Pinot Noir" for a Sancerre, not "Spätburgunder". */
+const originGrapeName = (canonical: string, country: string) =>
+  ORIGIN_GRAPE_NAMES[canonical]?.[country.toUpperCase()] ?? ORIGIN_GRAPE_NAMES[canonical]?.['*'] ?? canonical
+
+/**
+ * The colour of the grapes, when the label fixes it: "Blanc de Noirs" is white wine from red
+ * grapes, "Blanc de Blancs" from white ones; otherwise a sure still type (rosé is made from red
+ * grapes). Undefined when unknown, also for a "Blanc de …" read poorly.
+ */
+function grapeColourOnLabel(lines: Line[], type: FieldGuess<WineType> | undefined): GrapeColour | undefined {
+  const blancDe = decide(blancDeHits(lines))
+  if (blancDe) return blancDe.sure ? blancDe.value : undefined
+  if (!type?.sure || type.value === 'sparkling') return undefined
+  return type.value === 'white' ? 'white' : 'red'
+}
+
+/**
+ * Whether the colour of the wine is fixed for the main grape: by the appellation itself, or by
+ * the label showing the grape's colour (Sancerre Blanc → Sauvignon Blanc). A sure type or grape
+ * colour that contradicts the appellation means something was misread (or the main grape does
+ * not apply: a "Blanc de Noirs" is not made from the white main grape).
+ */
+function colourFixed(ref: AppellationRef, main: string, type: FieldGuess<WineType> | undefined, grapeColour: GrapeColour | undefined): boolean {
+  const mainColour = GRAPE_COLOUR.get(main)
+  if (grapeColour && grapeColour !== mainColour) return false
+  const sureType = type?.sure ? type.value : undefined
+  if (ref.wineType) return !sureType || sureType === ref.wineType
+  return grapeColour !== undefined
+}
+
+type OriginGrapes = { grapeVariety?: FieldGuess<string>; grapeCandidates?: string[] }
+
+/**
+ * The grape the clearly read appellations require (≥ 85 %), as a sure value: all of them name the
+ * same main grape, every other appellation allows it, and the colour is fixed (see criteria above).
+ */
+function sureMainGrape(
+  origins: Origin[],
+  type: FieldGuess<WineType> | undefined,
+  grapeColour: GrapeColour | undefined,
+): { canonical: string; guess: FieldGuess<string> } | undefined {
+  const withMain = origins.filter((o) => o.clear && o.ref.mainGrape)
+  const mains = new Set(withMain.map((o) => o.ref.mainGrape))
+  if (mains.size !== 1) return undefined
+  const main = [...mains][0]!
+  const agree = origins.every((o) => !o.ref.grapes || o.ref.grapes.includes(main))
+  if (!agree || !withMain.every((o) => colourFixed(o.ref, main, type, grapeColour))) return undefined
+  return { canonical: main, guess: guess(truncate(originGrapeName(main, withMain[0].ref.country), MAX_GRAPES), true, 'origin') }
+}
+
+/**
+ * A poorly read printed grape is sure when it is exactly the main grape the appellation requires
+ * ("NTEPULCIANO" under a clear "Montepulciano d'Abruzzo"); otherwise it stays as read.
+ */
+function confirmPrintedGrape(
+  printed: FieldGuess<string>,
+  hits: GrapeHit[],
+  origins: Origin[],
+  type: FieldGuess<WineType> | undefined,
+  grapeColour: GrapeColour | undefined,
+): FieldGuess<string> {
+  if (printed.sure) return printed
+  const main = sureMainGrape(origins, type, grapeColour)
+  return main && hits.every((h) => h.canonical === main.canonical) ? main.guess : printed
+}
+
+/** Grape from the appellations, only when no grape is printed (see criteria above). */
+function grapesFromOrigin(origins: Origin[], type: FieldGuess<WineType> | undefined, grapeColour: GrapeColour | undefined): OriginGrapes {
+  const main = sureMainGrape(origins, type, grapeColour)
+  if (main) return { grapeVariety: main.guess }
+  // Only grapes of the colour the label shows: Sancerre Rouge → Pinot Noir, not Sauvignon Blanc
+  const names = origins.flatMap((o) =>
+    (o.ref.grapes ?? [])
+      .filter((g) => !grapeColour || (GRAPE_COLOUR.get(g) ?? grapeColour) === grapeColour)
+      .map((g) => truncate(originGrapeName(g, o.ref.country), MAX_GRAPES)),
+  )
+  const candidates = [...new Set(names)].slice(0, MAX_CANDIDATES)
+  return candidates.length > 0 ? { grapeCandidates: candidates } : {}
 }
 
 // --- plausible words -------------------------------------------------------------------------
@@ -1040,24 +1368,6 @@ function smallPrintAppellations(lines: Line[], list: readonly AppellationRef[]):
   return out
 }
 
-/** The type an appellation allows, sure when one clearly read appellation says it. */
-function appellationType(lines: Line[], groups: Group[], list: readonly AppellationRef[]): FieldGuess<WineType> | undefined {
-  if (list.length === 0) return undefined
-  const types = new Set<WineType>()
-  let sure = false
-  const look = (text: string, conf: number) => {
-    for (const m of findAppellations(text, list)) {
-      if (!m.ref.wineType) continue
-      types.add(m.ref.wineType)
-      if (conf >= SURE_CONFIDENCE) sure = true
-    }
-  }
-  for (const line of lines) if (!line.prose && !line.address && line.conf >= NAME_CONFIDENCE) look(line.text, line.conf)
-  for (const g of groups) if (g.lines.length > 1) look(g.text, g.conf)
-  if (types.size !== 1) return undefined
-  return { value: [...types][0], sure }
-}
-
 const placeCache = new WeakMap<readonly SiteRef[], Set<string>>()
 
 /** Vineyard and village names: "FALKENSTEIN" on a label is a site, even if a winery has that name. */
@@ -1135,7 +1445,8 @@ export function parseLabel(lines: OcrLine[], options: ParseLabelOptions = {}): L
   const grapeHits = findGrapeHits(all, layout).filter((h) => !producerBoxes.some((b) => sameSpot(b, h.line.box)))
   const grapes: GrapeIndex = new Map()
   for (const hit of grapeHits) grapes.set(hit.line, [...(grapes.get(hit.line) ?? []), hit])
-  const grapeVariety = findGrapes(joinSplitGrapes(grapeHits, layout))
+  const printedGrapes = joinSplitGrapes(grapeHits, layout)
+  const grapeVariety = findGrapes(printedGrapes)
   if (grapeVariety) suggestion.grapeVariety = grapeVariety
 
   // --- winery: a strong list hit is filled in, keyword lines are offered
@@ -1195,8 +1506,17 @@ export function parseLabel(lines: OcrLine[], options: ParseLabelOptions = {}): L
     }
   }
 
-  const wineType = findWineType(all, joinSplitGrapes(grapeHits, layout), appellationType(all, groups, options.appellations ?? []))
+  // --- wine type and grape from the criteria (see "criteria" above)
+  const inProducer = inBoxes([...wineryBoxes, ...producerBoxes])
+  const origins = findOrigins(all, layout, groups, options.appellations ?? [], inProducer)
+  const wineType = findWineType({ lines: all, printedGrapes, origins })
   if (wineType) suggestion.wineType = wineType
+  const grapeColour = grapeColourOnLabel(all, wineType)
+  if (suggestion.grapeVariety) {
+    suggestion.grapeVariety = confirmPrintedGrape(suggestion.grapeVariety, printedGrapes, origins, wineType, grapeColour)
+  } else if (printedGrapes.length === 0) {
+    Object.assign(suggestion, grapesFromOrigin(origins, wineType, grapeColour))
+  }
 
   // A name from the reference lists is filled in only when no other headline competes with it.
   const references = [

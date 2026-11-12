@@ -5,8 +5,20 @@
 
 import { WINE_TYPE_KEYS, type WineType } from '@/lib/tasting/wine-type'
 
-/** EU wine PDO/PGI (eAmbrosia); `wineType` only where the name implies it unambiguously. */
-export type Appellation = { name: string; country: string; wineType?: WineType }
+/**
+ * EU wine PDO/PGI (eAmbrosia). `wineType` only where the appellation allows exactly one colour.
+ * `grapes`: typical grapes, most important first, canonical names of GRAPES in dictionaries.ts.
+ * `mainGrape`: only where the rules require ≥ 85 % of one grape (verified at `sources`); always
+ * `grapes[0]`.
+ */
+export type Appellation = {
+  name: string
+  country: string
+  wineType?: WineType
+  grapes?: string[]
+  mainGrape?: string
+  sources?: string[]
+}
 /** Official vineyard site (Einzellage, Ried, Vigna) with its village and wine region. */
 export type Site = { name: string; village?: string; region: string }
 
@@ -29,9 +41,25 @@ export function parseAppellations(json: unknown): Appellation[] {
     const name = text(v.name)
     const country = text(v.country)
     if (!name || !country) return []
+    const out: Appellation = { name, country }
     const wineType = WINE_TYPE_KEYS.find((k) => k === v.wineType)
-    return [wineType ? { name, country, wineType } : { name, country }]
+    if (wineType) out.wineType = wineType
+    const mainGrape = text(v.mainGrape)
+    const listed = textList(v.grapes)
+    const grapes = listed.length > 0 ? listed : mainGrape ? [mainGrape] : []
+    if (grapes.length > 0) out.grapes = grapes
+    // A main grape that is not the first typical grape is a data error: rather none.
+    if (mainGrape && grapes[0] === mainGrape) out.mainGrape = mainGrape
+    const sources = textList(v.sources)
+    if (sources.length > 0) out.sources = sources
+    return [out]
   })
+}
+
+/** Distinct non-empty strings of an array, in order; anything else gives an empty list. */
+function textList(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  return [...new Set(v.flatMap((x) => text(x) ?? []))]
 }
 
 export function parseSites(json: unknown): Site[] {

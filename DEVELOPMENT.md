@@ -28,7 +28,7 @@ npm run dev -- -H 0.0.0.0
 
 ## Etikett-Scan
 
-Der Code liegt in `src/components/admin/label-scan/` (Oberfläche, OCR im Browser) und `src/lib/label/` (Parser, Vorausfüllen, Abgleich). Worker, WASM-Core und Sprachdaten liegen selbst gehostet in `public/tesseract/`, die Referenzlisten in `public/data/`. Listen neu bauen: `node scripts/build-wineries.mjs` (Weingüter) und `node scripts/build-reference-data.mjs` (Herkunftsbezeichnungen und Lagen). Tesseract aktualisieren: Schritte in `public/tesseract/README.md`.
+Der Code liegt in `src/components/admin/label-scan/` (Oberfläche, OCR im Browser) und `src/lib/label/` (Parser, Vorausfüllen, Abgleich). Worker, WASM-Core und Sprachdaten liegen selbst gehostet in `public/tesseract/`, die Referenzlisten in `public/data/`. Listen neu bauen: `node scripts/build-wineries.mjs` (Weingüter) und `node scripts/build-reference-data.mjs` (Herkunftsbezeichnungen samt Weinart und Rebsorten aus Wikidata und den geprüften Regeln `VERIFIED`/`IT_ONE_COLOUR` im Skript, dazu Lagen; `--only appellations|sites` baut nur eine Liste, `--cache <dir>` hebt die Rohantworten für einen gleichen Neubau auf). Tesseract aktualisieren: Schritte in `public/tesseract/README.md`.
 
 ## Umgebungsvariablen
 

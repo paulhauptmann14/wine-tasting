@@ -74,14 +74,37 @@ describe('planPrefill', () => {
 
   it('explains a wine type inferred from the grape', () => {
     const plan = planPrefill(
-      { wineType: { value: 'red', sure: false }, grapeVariety: { value: 'Merlot', sure: true } },
+      { wineType: { value: 'red', sure: false, from: 'grape' }, grapeVariety: { value: 'Merlot', sure: true } },
       {},
     )
     expect(plan.values).toEqual({ grapeVariety: 'Merlot' })
     expect(plan.suggestions.wineType).toEqual([{ value: 'red', label: 'Rotwein', hint: 'aus der Rebsorte' }])
-    // Without a grape on the label there is nothing to point at
+    // A type from a method word ("Appassimento") has nothing to point at
     const bare = planPrefill({ wineType: { value: 'red', sure: false } }, {})
     expect(bare.suggestions.wineType).toEqual([{ value: 'red', label: 'Rotwein' }])
+  })
+
+  it('explains a wine type and grapes from the appellation', () => {
+    const plan = planPrefill(
+      { wineType: { value: 'red', sure: false, from: 'origin' }, grapeCandidates: ['Tempranillo', 'Garnacha', 'Graciano', 'Mazuelo'] },
+      {},
+    )
+    expect(plan.values).toEqual({})
+    expect(plan.suggestions.wineType).toEqual([{ value: 'red', label: 'Rotwein', hint: 'aus der Herkunft' }])
+    expect(plan.suggestions.grapeVariety).toEqual([
+      { value: 'Tempranillo', label: 'Tempranillo', hint: 'aus der Herkunft' },
+      { value: 'Garnacha', label: 'Garnacha', hint: 'aus der Herkunft' },
+      { value: 'Graciano', label: 'Graciano', hint: 'aus der Herkunft' },
+    ])
+    expect(plan.found).toBe(2)
+  })
+
+  it('writes a sure grape from the appellation like any sure value, and never second-guesses typed text', () => {
+    const plan = planPrefill({ grapeVariety: { value: 'Nebbiolo', sure: true, from: 'origin' } }, {})
+    expect(plan.values).toEqual({ grapeVariety: 'Nebbiolo' })
+    expect(plan.marked).toEqual(['grapeVariety'])
+    const typed = planPrefill({ grapeCandidates: ['Tempranillo'] }, { grapeVariety: 'Garnacha' })
+    expect(typed.suggestions.grapeVariety).toBeUndefined()
   })
 
   it('offers candidate lines next to a sure value, without repeating it', () => {

@@ -49,7 +49,7 @@ const uncertain: LabelSuggestion = {
   listedWineries: ['Cave Belle'],
   vintage: { value: 2021, sure: true },
   grapeVariety: { value: 'Merlot', sure: true },
-  wineType: { value: 'red', sure: false },
+  wineType: { value: 'red', sure: false, from: 'grape' },
   sweetness: { value: 'dry', sure: true },
 }
 
@@ -390,6 +390,23 @@ it('with a suggestion only, the margin note points at the suggestion instead of 
   await user.upload(fileInput, photo)
   expect(await screen.findByText(/Tipp auf einen Vorschlag/)).toBeInTheDocument()
   expect(screen.queryByText(UNSURE_NOTE)).toBeNull()
+})
+
+it('offers grapes and a wine type from the appellation, saying where they come from', async () => {
+  const { user, fileInput } = setup({ wineType: { value: 'red', sure: false, from: 'origin' }, grapeCandidates: ['Tempranillo', 'Garnacha'] })
+  await user.upload(fileInput, photo)
+  expect(await screen.findByText(/Tipp auf einen Vorschlag/)).toBeInTheDocument()
+  expect(within(suggestionsFor('Weinart')!).getByRole('button')).toHaveTextContent('Rotwein (aus der Herkunft)')
+  expect(within(suggestionsFor('Rebsorte')!).getAllByRole('button').map((b) => b.textContent)).toEqual([
+    'Tempranillo (aus der Herkunft)',
+    'Garnacha (aus der Herkunft)',
+  ])
+  // Nothing is filled in until the host taps one
+  const grape = screen.getByRole('textbox', { name: 'Rebsorte' })
+  expect(grape).toHaveValue('')
+  await user.click(screen.getByRole('button', { name: 'Tempranillo (aus der Herkunft)' }))
+  expect(grape).toHaveValue('Tempranillo')
+  expect(grape).toHaveAccessibleDescription(SCAN_MARKER_TEXT)
 })
 
 it('with label lines only, the block itself is the message', async () => {

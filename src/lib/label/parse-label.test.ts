@@ -213,8 +213,8 @@ describe('wine type', () => {
   })
 
   it('infers the colour from grapes, unsure', () => {
-    expect(parse([['Spätburgunder', 30]]).wineType).toEqual({ value: 'red', sure: false })
-    expect(parse([['Riesling', 30]]).wineType).toEqual({ value: 'white', sure: false })
+    expect(parse([['Spätburgunder', 30]]).wineType).toEqual({ value: 'red', sure: false, from: 'grape' })
+    expect(parse([['Riesling', 30]]).wineType).toEqual({ value: 'white', sure: false, from: 'grape' })
   })
 
   it('does not guess from grapes of both colours', () => {
@@ -259,7 +259,7 @@ describe('grape variety', () => {
   it('reads a grape name set over two lines as one grape', () => {
     const result = parse([['CABERNET', 30], ['SAUVIGNON', 30]])
     expect(result.grapeVariety).toEqual({ value: 'Cabernet Sauvignon', sure: true })
-    expect(result.wineType).toEqual({ value: 'red', sure: false })
+    expect(result.wineType).toEqual({ value: 'red', sure: false, from: 'grape' })
   })
 
   it('does not find grapes inside other words', () => {
@@ -515,7 +515,7 @@ describe('name', () => {
 
   it('reads the wine type from the appellation, sure', () => {
     expect(parseWith([['Hausmarke', 40], ['Prosecco DOC', 14]]).wineType).toEqual({ value: 'sparkling', sure: true })
-    expect(parseWith([['CINZANO', 40], ['ASTI', 20], ['D.O.C.G.', 10]]).wineType).toEqual({ value: 'sparkling', sure: true })
+    expect(parseWith([['CINZANO', 40], ['ASTI', 20], ['D.O.C.G.', 10]]).wineType).toEqual({ value: 'sparkling', sure: true, from: 'origin' })
   })
 
   it('without the appellation list fills in a grape with its place', () => {

@@ -31,7 +31,7 @@ export default function ImpressumPage() {
         Die Listen liegen auf diesem Server. Die Daten wurden verändert: Aus den Quellen wurden nur Namen übernommen
         (bei Weinlagen zusätzlich Ort oder Region), Platzhalter wie „Weinbauflur ohne Riednamen“ wurden entfernt, die
         Schreibweise wurde vereinheitlicht (zum Beispiel Großbuchstaben in Groß- und Kleinschreibung), und bei einigen
-        Herkunftsbezeichnungen wurde die Weinart ergänzt.
+        Herkunftsbezeichnungen wurden Weinart und typische Rebsorten ergänzt.
       </p>
       <ul>
         <li>
@@ -44,7 +44,8 @@ export default function ImpressumPage() {
           Datenbank und wird ebenfalls unter der ODbL 1.0 angeboten.
         </li>
         <li>
-          Weingüter: <a href="https://www.wikidata.org/">Wikidata</a>, Lizenz{' '}
+          Weingüter und typische Rebsorten der Herkunftsbezeichnungen: <a href="https://www.wikidata.org/">Wikidata</a>,
+          Lizenz{' '}
           <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.de">CC0 1.0</a>.
         </li>
         <li>
@@ -52,7 +53,16 @@ export default function ImpressumPage() {
           <a href="https://ec.europa.eu/agriculture/eambrosia/geographical-indications-register/">eAmbrosia</a>, das
           Register der geografischen Angaben der EU (Weiterverwendung nach dem Beschluss 2011/833/EU der Kommission,
           vergleichbar mit <a href="https://creativecommons.org/licenses/by/4.0/deed.de">CC BY 4.0</a>). Daten
-          verändert: nur Namen übernommen, Weinart bei einigen Bezeichnungen ergänzt.
+          verändert: nur Namen übernommen, Weinart und Rebsorten bei einigen Bezeichnungen ergänzt.
+        </li>
+        <li>
+          Farbe und Hauptrebsorte einiger Herkunftsbezeichnungen: amtliche Produktspezifikationen, für Italien die
+          Disciplinari di produzione des{' '}
+          <a href="https://www.masaf.gov.it/flex/cm/pages/ServeBLOB.php/L/IT/IDPagina/4625">
+            Landwirtschaftsministeriums (MASAF)
+          </a>
+          , für Frankreich die Cahiers des charges des <a href="https://www.inao.gouv.fr/">INAO</a>. Übernommen
+          wurden nur einzelne Angaben (Farbe, Rebsorte), nicht die Texte.
         </li>
         <li>
           Weinlagen Rheinland-Pfalz: Weinbergsrolle Einzellagen, Landwirtschaftskammer Rheinland-Pfalz (2020),{' '}

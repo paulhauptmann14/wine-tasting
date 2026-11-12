@@ -1,7 +1,7 @@
 import { SWEETNESS_LABELS } from '@/lib/tasting/sweetness'
 import { WINE_TYPE_LABELS } from '@/lib/tasting/wine-type'
 import { labelLines, type LabelLine } from './lines'
-import type { FieldGuess, LabelSuggestion } from './types'
+import type { FieldGuess, GuessSource, LabelSuggestion } from './types'
 
 /** Wine form fields a label scan can fill, by their form field name. */
 export const PREFILL_FIELDS = ['name', 'wineType', 'winery', 'vintage', 'grapeVariety', 'sweetness', 'description'] as const
@@ -42,14 +42,17 @@ function toText(field: PrefillField, value: string | number): string | null {
   return max ? text.slice(0, max).trim() : text
 }
 
-function optionFor(field: PrefillField, text: string, suggestion: LabelSuggestion): PrefillOption {
-  if (field === 'wineType') {
-    const label = WINE_TYPE_LABELS[text as keyof typeof WINE_TYPE_LABELS] ?? text
-    // A type without a keyword on the label comes from the grape – say so
-    return suggestion.grapeVariety ? { value: text, label, hint: 'aus der Rebsorte' } : { value: text, label }
-  }
-  if (field === 'sweetness') return { value: text, label: SWEETNESS_LABELS[text as keyof typeof SWEETNESS_LABELS] ?? text }
-  return { value: text, label: text }
+/** Says where a suggestion comes from when it is not printed on the label as such. */
+export const SOURCE_HINTS: Record<GuessSource, string> = { grape: 'aus der Rebsorte', origin: 'aus der Herkunft' }
+
+function optionFor(field: PrefillField, text: string, from?: GuessSource): PrefillOption {
+  const label =
+    field === 'wineType'
+      ? (WINE_TYPE_LABELS[text as keyof typeof WINE_TYPE_LABELS] ?? text)
+      : field === 'sweetness'
+        ? (SWEETNESS_LABELS[text as keyof typeof SWEETNESS_LABELS] ?? text)
+        : text
+  return from ? { value: text, label, hint: SOURCE_HINTS[from] } : { value: text, label }
 }
 
 /**
@@ -69,7 +72,11 @@ export function planPrefill(
     winery: suggestion.wineryCandidates,
     // Taste lines are never sure: candidates only, so they are never written
     description: suggestion.descriptionCandidates,
+    // Typical grapes of the appellation: never sure either
+    grapeVariety: suggestion.grapeCandidates,
   }
+  // Candidates come from the label, except the appellation's grapes
+  const candidateSource: Partial<Record<PrefillField, GuessSource>> = { grapeVariety: 'origin' }
   for (const field of PREFILL_FIELDS) {
     const guess: FieldGuess<string | number> | undefined = field === 'description' ? undefined : suggestion[field]
     const guessText = guess ? toText(field, guess.value) : null
@@ -85,14 +92,17 @@ export function planPrefill(
     }
     // Name and winery: only sure values are written, the rest is in `lines`
     if (field === 'name' || field === 'winery') continue
-    const texts = [...(guessText !== null && !writes ? [guessText] : []), ...candidateTexts]
+    const texts = [
+      ...(guessText !== null && !writes ? [{ text: guessText, from: guess?.from }] : []),
+      ...candidateTexts.map((text) => ({ text, from: candidateSource[field] })),
+    ]
     const taken = new Set(writes ? [guessText.toLowerCase()] : [])
     const options: PrefillOption[] = []
-    for (const text of texts) {
+    for (const { text, from } of texts) {
       const key = text.toLowerCase()
       if (taken.has(key)) continue
       taken.add(key)
-      options.push(optionFor(field, text, suggestion))
+      options.push(optionFor(field, text, from))
       if (options.length === MAX_OPTIONS) break
     }
     if (options.length > 0) plan.suggestions[field] = options
