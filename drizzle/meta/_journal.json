@@ -57,6 +57,13 @@
       "when": 1794476610466,
       "tag": "0007_wine_description",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794499903574,
+      "tag": "0008_tasting_description",
+      "breakpoints": true
     }
   ]
 }

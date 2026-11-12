@@ -26,6 +26,8 @@ export const tastings = pgTable('tasting', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: text('code').notNull().unique(),
   name: text('name').notNull(),
+  /** Optional note from the host, shown under the name wherever it appears (not in the share image) */
+  description: text('description'),
   blindTasting: boolean('blind_tasting').notNull().default(false),
   status: tastingStatus('status').notNull().default('setup'),
   scale: ratingScale('scale').notNull().default('five'),

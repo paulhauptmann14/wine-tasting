@@ -10,6 +10,7 @@ import { BottomBar } from '@/components/bottom-bar'
 import { CornerStain } from '@/components/corner-stain'
 import { JoinForm } from '@/components/join-form'
 import { PageShell } from '@/components/page-shell'
+import { TastingDescription } from '@/components/tasting-description'
 import { marginNote, textLink } from '@/components/styles'
 import { TastingSplit } from '@/components/tasting-split'
 import { buttonVariants } from '@/components/ui/button'
@@ -26,7 +27,17 @@ type Props = { params: Promise<{ code: string }>; searchParams: Promise<{ saved?
 const mainAction = cn(buttonVariants({ size: 'lg' }), 'h-14 text-base lg:px-8')
 
 /** Large title with a greeting above it, on the corner stain – the start of every pre-tasting view. */
-function Intro({ kicker, name, children }: { kicker: string; name: string; children?: ReactNode }) {
+function Intro({
+  kicker,
+  name,
+  description,
+  children,
+}: {
+  kicker: string
+  name: string
+  description: string | null
+  children?: ReactNode
+}) {
   return (
     <div className="relative">
       <CornerStain seed={name.length} />
@@ -34,6 +45,7 @@ function Intro({ kicker, name, children }: { kicker: string; name: string; child
       <h1 className="relative mt-1 font-display text-4xl md:text-5xl leading-[1.08] font-medium tracking-tight lg:text-6xl lg:leading-[1.02]">
         {name}
       </h1>
+      <TastingDescription text={description} className="relative mt-3" />
       {children}
     </div>
   )
@@ -60,7 +72,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
   if (!participant) {
     return (
       <PageShell>
-        <Intro kicker="Du bist eingeladen zu" name={tasting.name}>
+        <Intro kicker="Du bist eingeladen zu" name={tasting.name} description={tasting.description}>
           <JoinForm action={joinAction.bind(null, tasting.code)} />
         </Intro>
         <CodeRow code={tasting.code} />
@@ -72,7 +84,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
     // The host rates along – only they can start, so don't make them wait
     return (
       <PageShell>
-        <Intro kicker={`Hallo ${participant.name}`} name={tasting.name}>
+        <Intro kicker={`Hallo ${participant.name}`} name={tasting.name} description={tasting.description}>
           <p className="relative mt-4 max-w-[34ch] text-muted-foreground">
             Du bist Gastgeber. Starte das Tasting, sobald alle da sind.
           </p>
@@ -89,7 +101,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
     return (
       <PageShell>
         <AutoRefresh />
-        <Intro kicker={`Hallo ${participant.name}`} name={tasting.name}>
+        <Intro kicker={`Hallo ${participant.name}`} name={tasting.name} description={tasting.description}>
           <p className="relative mt-4 max-w-[34ch] text-muted-foreground">
             Du bist dabei. Sobald der Gastgeber startet, erscheinen hier die Weine.
           </p>
@@ -118,6 +130,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
           </div>
         </div>
         <h1 className="mt-1 font-display text-4xl md:text-5xl leading-[1.08] font-medium tracking-tight lg:text-5xl">{tasting.name}</h1>
+        <TastingDescription text={tasting.description} className="mt-2" />
         <p className="mt-2 text-sm text-muted-foreground tabular-nums">
           {doneCount} von {items.length} bewertet
         </p>

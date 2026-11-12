@@ -4,6 +4,7 @@ import { TastingCode } from '@/components/tasting-code'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { BottomBar } from '@/components/bottom-bar'
 import { PageShell } from '@/components/page-shell'
+import { TastingDescription } from '@/components/tasting-description'
 import { ResultsSection } from '@/components/results-section'
 import { ShareResultsImage } from '@/components/share-results-image'
 import { StatusPill } from '@/components/status-pill'
@@ -41,6 +42,7 @@ export default async function ResultsPage({ params, searchParams }: Props) {
         </div>
       </div>
       <h1 className="mt-4 font-display text-4xl md:text-5xl leading-tight lg:text-5xl">{tasting.name}</h1>
+      <TastingDescription text={tasting.description} className="mt-3" />
       {/* A guest who was in the middle of rating lands here via ?ended=1 */}
       {ended === '1' && tasting.status === 'finished' && (
         <p role="status" className={cn(marginNote, 'mt-4')}>

@@ -7,15 +7,18 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 
 export function SettingsForm({
   code,
   name,
+  description,
   blindTasting,
   blindLocked,
 }: {
   code: string
   name: string
+  description: string | null
   blindTasting: boolean
   blindLocked: boolean
 }) {
@@ -41,7 +44,7 @@ export function SettingsForm({
 
   return (
     <div className="grid gap-8">
-      <form action={action} noValidate className="grid gap-3">
+      <form action={action} noValidate className="grid gap-5">
         <div>
           <Label htmlFor="settings-name">Name der Verkostung</Label>
           <Input
@@ -54,9 +57,27 @@ export function SettingsForm({
           />
           <FieldError errors={state?.fieldErrors?.name} />
         </div>
+        <div>
+          <Label htmlFor="settings-description">Beschreibung</Label>
+          <Textarea
+            id="settings-description"
+            name="description"
+            defaultValue={state?.values?.description ?? description ?? ''}
+            placeholder="Rieslinge von der Mosel. Bring gern Brot mit."
+            maxLength={300}
+            rows={2}
+            aria-invalid={!!state?.fieldErrors?.description}
+            aria-describedby="settings-description-hint"
+            className="mt-2 min-h-12 text-base"
+          />
+          <p id="settings-description-hint" className="mt-1.5 text-sm text-muted-foreground">
+            Optional. Steht unter dem Namen, für alle mit dem Code sichtbar.
+          </p>
+          <FieldError errors={state?.fieldErrors?.description} />
+        </div>
         <div className="flex items-center gap-4">
           <Button type="submit" size="lg" variant="outline" className="h-12" disabled={pending}>
-            Namen speichern
+            Speichern
           </Button>
           {state?.ok && (
             <p aria-live="polite" className="text-sm text-muted-foreground">

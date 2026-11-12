@@ -24,7 +24,7 @@ export default function DatenschutzPage() {
       <h2>Was gespeichert wird</h2>
       <ul>
         <li>
-          <strong>Beim Erstellen eines Tastings:</strong> der Name der Verkostung, die Weine mit ihren Angaben, die
+          <strong>Beim Erstellen eines Tastings:</strong> der Name der Verkostung und eine freiwillige Beschreibung, die Weine mit ihren Angaben, die
           Bewertungskriterien und die Admin-PIN – die PIN nur verschlüsselt (als Hash), nie im Klartext.
         </li>
         <li>

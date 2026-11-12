@@ -18,7 +18,7 @@ const CODE_ATTEMPTS = 5
 
 export async function createTasting(
   db: Db,
-  input: { name: string; blindTasting: boolean; preset: PresetKey; pin: string },
+  input: { name: string; description?: string | null; blindTasting: boolean; preset: PresetKey; pin: string },
 ): Promise<Tasting> {
   const adminPinHash = await hashPin(input.pin)
   await purgeExpired(db)
@@ -29,6 +29,7 @@ export async function createTasting(
         .values({
           code: generateCode(),
           name: input.name,
+          description: input.description ?? null,
           blindTasting: input.blindTasting,
           scale: PRESETS[input.preset].scale,
           adminPinHash,
@@ -120,8 +121,16 @@ export async function verifyAdminPin(
   return { ok: false, reason: 'wrong_pin' }
 }
 
-export async function renameTasting(db: Db, tastingId: string, name: string): Promise<void> {
-  await db.update(tastings).set({ name }).where(eq(tastings.id, tastingId))
+/** Name and description – always editable, they reveal nothing about the wines. */
+export async function updateTastingDetails(
+  db: Db,
+  tastingId: string,
+  details: { name: string; description: string | null },
+): Promise<void> {
+  await db
+    .update(tastings)
+    .set({ name: details.name, description: details.description })
+    .where(eq(tastings.id, tastingId))
 }
 
 /** Setup only (StructureLockedError otherwise) – switching later would reveal or re-hide names mid-tasting. */

@@ -22,8 +22,16 @@ const tastingName = z
   .min(1, 'Wie soll dein Tasting heißen?')
   .max(60, 'Maximal 60 Zeichen.')
 
+/** Free text under the tasting name. CRLF counts as one character, like a textarea's maxLength; blank lines squeezed. */
+const tastingDescription = z
+  .string()
+  .transform((v) => v.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim())
+  .pipe(z.string().max(300, 'Maximal 300 Zeichen.'))
+  .transform((v) => (v === '' ? null : v))
+
 export const createTastingSchema = z.object({
   name: tastingName,
+  description: tastingDescription,
   blindTasting: z.boolean(),
   preset: z.enum(PRESET_KEYS, { error: 'Bitte wähle ein Bewertungssystem.' }),
   pin: z.string().regex(/^\d{4,12}$/, 'Die PIN besteht aus 4 bis 12 Ziffern.'),
@@ -31,6 +39,7 @@ export const createTastingSchema = z.object({
 
 export const settingsSchema = z.object({
   name: tastingName,
+  description: tastingDescription,
 })
 
 export const joinSchema = z.object({

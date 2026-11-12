@@ -29,6 +29,7 @@ export default async function TablePage({ params }: { params: Promise<{ code: st
       <AutoRefresh />
       <TableView
         name={tasting.name}
+        description={tasting.description}
         code={tasting.code}
         status={tasting.status}
         joinUrl={joinUrl}

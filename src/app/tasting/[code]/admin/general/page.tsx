@@ -28,6 +28,7 @@ export default async function GeneralPage({ params }: { params: Promise<{ code: 
       <SettingsForm
         code={tasting.code}
         name={tasting.name}
+        description={tasting.description}
         blindTasting={tasting.blindTasting}
         blindLocked={!canEditStructure(tasting.status)}
       />

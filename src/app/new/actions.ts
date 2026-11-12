@@ -10,13 +10,19 @@ import { createTasting } from '@/server/tastings'
 export async function createTastingAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const raw = {
     name: formValue(formData, 'name'),
+    description: formValue(formData, 'description'),
     blindTasting: formData.get('blindTasting') === 'on',
     preset: formValue(formData, 'preset'),
     pin: formValue(formData, 'pin'),
   }
   const parsed = createTastingSchema.safeParse(raw)
   if (!parsed.success) {
-    return invalid(parsed.error, { name: raw.name, preset: raw.preset, blindTasting: raw.blindTasting ? 'on' : 'off' })
+    return invalid(parsed.error, {
+      name: raw.name,
+      description: raw.description,
+      preset: raw.preset,
+      blindTasting: raw.blindTasting ? 'on' : 'off',
+    })
   }
   const tasting = await createTasting(db, parsed.data)
   await setAdminCookie(tasting.code, tasting.id)

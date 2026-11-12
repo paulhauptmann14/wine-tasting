@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { PresetPicker } from '@/components/preset-picker'
 import { RequiredLegend, RequiredMark } from '@/components/required-mark'
 import { useRevealErrors } from '@/components/use-reveal-errors'
@@ -41,6 +42,25 @@ export function CreateTastingForm() {
           className="mt-2 h-12 lg:bg-card text-base"
         />
         <FieldError errors={errors.name} />
+      </div>
+
+      <div>
+        <Label htmlFor="description">Beschreibung</Label>
+        <Textarea
+          id="description"
+          name="description"
+          defaultValue={state?.values?.description}
+          placeholder="Rieslinge von der Mosel. Bring gern Brot mit."
+          maxLength={300}
+          rows={2}
+          aria-invalid={!!errors.description}
+          aria-describedby="description-hint"
+          className="mt-2 min-h-12 lg:bg-card text-base"
+        />
+        <p id="description-hint" className="mt-1.5 text-sm text-muted-foreground">
+          Optional. Steht unter dem Namen, für alle mit dem Code sichtbar.
+        </p>
+        <FieldError errors={errors.description} />
       </div>
 
       <div className="flex items-center justify-between gap-4">

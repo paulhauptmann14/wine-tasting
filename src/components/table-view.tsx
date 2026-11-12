@@ -6,6 +6,7 @@ import type { TastingStatus } from '@/lib/tasting/rules'
 import type { RingState } from '@/lib/tasting/progress'
 import { SITE_FRAME_CLASSES } from '@/lib/site-frame'
 import { cn } from '@/lib/utils'
+import { TastingDescription } from '@/components/tasting-description'
 
 type TableWine = { id: string; position: number; title: string; ratingCount: number }
 
@@ -15,6 +16,7 @@ type TableWine = { id: string; position: number; title: string; ratingCount: num
  */
 export function TableView({
   name,
+  description,
   code,
   status,
   joinUrl,
@@ -25,6 +27,7 @@ export function TableView({
   scale,
 }: {
   name: string
+  description: string | null
   code: string
   status: TastingStatus
   joinUrl: string
@@ -37,9 +40,12 @@ export function TableView({
   return (
     <main className={cn('mx-auto w-full pt-4 pb-16 sm:pt-8', SITE_FRAME_CLASSES.table)}>
       <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
-        <h1 className="font-display text-4xl leading-[1.05] font-medium tracking-tight md:text-5xl lg:text-7xl">
-          {name}
-        </h1>
+        <div className="min-w-0">
+          <h1 className="font-display text-4xl leading-[1.05] font-medium tracking-tight md:text-5xl lg:text-7xl">
+            {name}
+          </h1>
+          <TastingDescription text={description} className="mt-3 lg:text-xl" />
+        </div>
         <p className="text-muted-foreground lg:text-lg">{guests === 1 ? '1 Gast dabei' : `${guests} Gäste dabei`}</p>
       </header>
 

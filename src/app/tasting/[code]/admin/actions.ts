@@ -25,7 +25,7 @@ import { PRESET_KEYS } from '@/lib/tasting/presets'
 import { addCriterion, applyPreset, deleteCriterion, moveCriterion, renameCriterion } from '@/server/criteria'
 import { StructureLockedError } from '@/server/structure'
 import { removeParticipant } from '@/server/participants'
-import { deleteTasting, renameTasting, setBlindTasting, setTastingStatus } from '@/server/tastings'
+import { deleteTasting, updateTastingDetails, setBlindTasting, setTastingStatus } from '@/server/tastings'
 import { addWine, deleteWine, moveWine, shuffleWines, updateWine } from '@/server/wines'
 
 const refresh = (code: string) => revalidatePath(`/tasting/${code}`, 'layout')
@@ -42,11 +42,11 @@ async function unlessLocked(change: () => Promise<unknown>): Promise<void> {
 
 export async function updateSettingsAction(code: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const tasting = await getAdminTasting(code)
-  // Name only – the blind tasting switch saves itself instantly (updateBlindTastingAction)
-  const raw = { name: formValue(fd, 'name') }
+  // Name and description – the blind tasting switch saves itself instantly (updateBlindTastingAction)
+  const raw = { name: formValue(fd, 'name'), description: formValue(fd, 'description') }
   const parsed = settingsSchema.safeParse(raw)
-  if (!parsed.success) return invalid(parsed.error, { name: raw.name })
-  await renameTasting(db, tasting.id, parsed.data.name)
+  if (!parsed.success) return invalid(parsed.error, raw)
+  await updateTastingDetails(db, tasting.id, parsed.data)
   refresh(tasting.code)
   return { ok: true, message: 'Gespeichert.' }
 }

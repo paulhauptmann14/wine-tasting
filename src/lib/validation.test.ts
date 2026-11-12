@@ -5,6 +5,7 @@ import {
   idSchema,
   createTastingSchema,
   joinSchema,
+  settingsSchema,
   parseRatingForm,
   wineSchema,
 } from './validation'
@@ -16,9 +17,13 @@ const fd = (entries: Record<string, string>) => {
 }
 
 describe('createTastingSchema', () => {
-  const valid = { name: '  Weinabend 2026 ', blindTasting: true, preset: 'five', pin: '1234' }
+  const valid = { name: '  Weinabend 2026 ', description: '', blindTasting: true, preset: 'five', pin: '1234' }
   it('accepts and trims valid input', () => {
-    expect(createTastingSchema.parse(valid)).toEqual({ ...valid, name: 'Weinabend 2026' })
+    expect(createTastingSchema.parse(valid)).toEqual({ ...valid, name: 'Weinabend 2026', description: null })
+  })
+  it('keeps a description with its line breaks', () => {
+    const parsed = createTastingSchema.parse({ ...valid, description: '  Rieslinge von der Mosel.\r\nBitte Brot mitbringen. ' })
+    expect(parsed.description).toBe('Rieslinge von der Mosel.\nBitte Brot mitbringen.')
   })
   it('rejects empty names, bad pins and unknown presets', () => {
     expect(createTastingSchema.safeParse({ ...valid, name: '   ' }).success).toBe(false)
@@ -26,6 +31,19 @@ describe('createTastingSchema', () => {
     expect(createTastingSchema.safeParse({ ...valid, pin: '12a4' }).success).toBe(false)
     expect(createTastingSchema.safeParse({ ...valid, pin: '1234567890123' }).success).toBe(false)
     expect(createTastingSchema.safeParse({ ...valid, preset: 'fancy' }).success).toBe(false)
+  })
+})
+
+describe('settingsSchema', () => {
+  it('takes name and description, empty description → null', () => {
+    expect(settingsSchema.parse({ name: ' Neu ', description: '   ' })).toEqual({ name: 'Neu', description: null })
+  })
+  it('allows 300 characters after normalising line breaks and squeezes blank lines', () => {
+    // Browsers send CRLF – a textarea's maxLength counts it as one character, so must we
+    const text = `${'a'.repeat(149)}\r\n${'b'.repeat(150)}`
+    expect(settingsSchema.parse({ name: 'X', description: text }).description).toHaveLength(300)
+    expect(settingsSchema.safeParse({ name: 'X', description: 'a'.repeat(301) }).success).toBe(false)
+    expect(settingsSchema.parse({ name: 'X', description: 'a\n\n\n\nb' }).description).toBe('a\n\nb')
   })
 })
 

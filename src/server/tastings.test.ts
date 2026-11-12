@@ -14,7 +14,7 @@ import {
   getTastingByCode,
   purgeExpired,
   setTastingStatus,
-  renameTasting,
+  updateTastingDetails,
   setBlindTasting,
   verifyAdminPin,
 } from './tastings'
@@ -126,13 +126,25 @@ describe('setTastingStatus', () => {
   })
 })
 
-describe('renameTasting / setBlindTasting', () => {
-  it('changes only its own field', async () => {
+describe('updateTastingDetails / setBlindTasting', () => {
+  it('changes only its own fields', async () => {
     const t = await createTasting(db, input)
-    await renameTasting(db, t.id, 'Neu')
-    expect(await getTastingByCode(db, t.code)).toMatchObject({ name: 'Neu', blindTasting: t.blindTasting })
+    expect(t.description).toBeNull()
+    await updateTastingDetails(db, t.id, { name: 'Neu', description: 'Mosel-Abend' })
+    expect(await getTastingByCode(db, t.code)).toMatchObject({
+      name: 'Neu',
+      description: 'Mosel-Abend',
+      blindTasting: t.blindTasting,
+    })
     await setBlindTasting(db, t.id, !t.blindTasting)
     expect(await getTastingByCode(db, t.code)).toMatchObject({ name: 'Neu', blindTasting: !t.blindTasting })
+    await updateTastingDetails(db, t.id, { name: 'Neu', description: null })
+    expect((await getTastingByCode(db, t.code))?.description).toBeNull()
+  })
+
+  it('stores the description given when creating', async () => {
+    const t = await createTasting(db, { ...input, description: 'Bitte Brot mitbringen.' })
+    expect((await getTastingByCode(db, t.code))?.description).toBe('Bitte Brot mitbringen.')
   })
 
   it('refuses to switch blind mode once the tasting runs – names would be revealed', async () => {

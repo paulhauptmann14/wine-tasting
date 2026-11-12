@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Wine } from 'lucide-react'
 import { AdminNav } from '@/components/admin/admin-nav'
 import { TastingCode } from '@/components/tasting-code'
+import { TastingDescription } from '@/components/tasting-description'
 import { buttonVariants } from '@/components/ui/button'
 import { requireAdmin } from '@/lib/auth/admin-session'
 import { requireTasting } from '@/lib/data'
@@ -37,6 +38,7 @@ export default async function AdminLayout({
               {STATUS_LABELS[tasting.status]}
             </span>
           </div>
+          <TastingDescription text={tasting.description} className="mt-1 text-sm" />
         </div>
         {/* The host can enter the tasting at any time – join, rate or view results */}
         <Link
