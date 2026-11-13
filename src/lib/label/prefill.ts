@@ -1,6 +1,7 @@
 import { LIMITS } from '@/lib/limits'
 import { MAX_ALCOHOL, MIN_ALCOHOL, alcoholInput, formatAlcohol, parseAlcoholText } from '@/lib/tasting/alcohol'
 import { SWEETNESS_LABELS } from '@/lib/tasting/sweetness'
+import { isVintage } from '@/lib/tasting/vintage'
 import { WINE_TYPE_LABELS } from '@/lib/tasting/wine-type'
 import { labelLines, type LabelLine } from './lines'
 import type { FieldGuess, GuessSource, LabelSuggestion } from './types'
@@ -33,15 +34,11 @@ const MAX_LENGTH: Partial<Record<PrefillField, number>> = {
   grapeVariety: LIMITS.grapeVariety,
   description: LIMITS.wineDescription,
 }
-// Same range as the wine form (wineSchema in src/lib/validation.ts)
-const MIN_VINTAGE = 1900
-const MAX_VINTAGE = 2100
 
 function toText(field: PrefillField, value: string | number): string | null {
   if (field === 'vintage') {
-    return typeof value === 'number' && Number.isInteger(value) && value >= MIN_VINTAGE && value <= MAX_VINTAGE
-      ? String(value)
-      : null
+    // Same range as the wine form, so a prefilled year never fails on saving
+    return typeof value === 'number' && isVintage(value) ? String(value) : null
   }
   if (field === 'alcohol') {
     return typeof value === 'number' && value >= MIN_ALCOHOL && value <= MAX_ALCOHOL ? alcoholInput(value) : null

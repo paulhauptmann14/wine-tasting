@@ -98,7 +98,11 @@ export const sessions = pgTable(
     createdAt: timestamptz('created_at').notNull().defaultNow(),
     expiresAt: timestamptz('expires_at').notNull(),
   },
-  (t) => [index('session_participant_id_idx').on(t.participantId)],
+  (t) => [
+    index('session_participant_id_idx').on(t.participantId),
+    // purgeExpired deletes expired sessions daily – without it every run reads the whole table
+    index('session_expires_at_idx').on(t.expiresAt),
+  ],
 ).enableRLS()
 
 export const ratingCriteria = pgTable(

@@ -2,7 +2,8 @@ import { z } from 'zod'
 import type { ActionState } from '@/lib/action-state'
 import { LIMITS } from '@/lib/limits'
 import { normalizeCode } from '@/lib/tasting/code'
-import { parseAlcoholText } from '@/lib/tasting/alcohol'
+import { MAX_ALCOHOL, MIN_ALCOHOL, parseAlcoholText } from '@/lib/tasting/alcohol'
+import { MAX_VINTAGE, MIN_VINTAGE } from '@/lib/tasting/vintage'
 import { PRESET_KEYS } from '@/lib/tasting/presets'
 import { STATUS_KEYS } from '@/lib/tasting/rules'
 import { SWEETNESS_KEYS } from '@/lib/tasting/sweetness'
@@ -74,7 +75,8 @@ const optionalChoice = <const T extends readonly [string, ...string[]]>(keys: T,
     .transform((v) => (v === '' ? null : v))
     .pipe(z.enum(keys, { error }).nullable())
 
-const ALCOHOL_ERROR = 'Alkohol zwischen 0 und 25 % vol, z. B. 13,5.'
+const ALCOHOL_ERROR = `Alkohol zwischen ${MIN_ALCOHOL} und ${MAX_ALCOHOL} % vol, z. B. 13,5.`
+const VINTAGE_RANGE_ERROR = `Jahrgang zwischen ${MIN_VINTAGE} und ${MAX_VINTAGE}.`
 
 export const wineSchema = z.object({
   name: z
@@ -91,8 +93,8 @@ export const wineSchema = z.object({
       z
         .number({ error: 'Jahrgang als Zahl, z. B. 2022.' })
         .int('Jahrgang als Zahl, z. B. 2022.')
-        .min(1900, 'Jahrgang zwischen 1900 und 2100.')
-        .max(2100, 'Jahrgang zwischen 1900 und 2100.')
+        .min(MIN_VINTAGE, VINTAGE_RANGE_ERROR)
+        .max(MAX_VINTAGE, VINTAGE_RANGE_ERROR)
         .nullable(),
     ),
   grapeVariety: optionalText(LIMITS.grapeVariety),
