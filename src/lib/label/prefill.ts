@@ -1,3 +1,4 @@
+import { LIMITS } from '@/lib/limits'
 import { MAX_ALCOHOL, MIN_ALCOHOL, alcoholInput, formatAlcohol, parseAlcoholText } from '@/lib/tasting/alcohol'
 import { SWEETNESS_LABELS } from '@/lib/tasting/sweetness'
 import { WINE_TYPE_LABELS } from '@/lib/tasting/wine-type'
@@ -24,10 +25,15 @@ export type PrefillPlan = {
   found: number
 }
 
-export const MAX_OPTIONS = 3
+const MAX_OPTIONS = 3
 
-// Same limits as the wine form (src/lib/validation.ts)
-const MAX_LENGTH: Partial<Record<PrefillField, number>> = { name: 80, winery: 80, grapeVariety: 60, description: 200 }
+const MAX_LENGTH: Partial<Record<PrefillField, number>> = {
+  name: LIMITS.wineName,
+  winery: LIMITS.winery,
+  grapeVariety: LIMITS.grapeVariety,
+  description: LIMITS.wineDescription,
+}
+// Same range as the wine form (wineSchema in src/lib/validation.ts)
 const MIN_VINTAGE = 1900
 const MAX_VINTAGE = 2100
 
@@ -47,7 +53,7 @@ function toText(field: PrefillField, value: string | number): string | null {
 }
 
 /** Says where a suggestion comes from when it is not printed on the label as such. */
-export const SOURCE_HINTS: Record<GuessSource, string> = { grape: 'aus der Rebsorte', origin: 'aus der Herkunft' }
+const SOURCE_HINTS: Record<GuessSource, string> = { grape: 'aus der Rebsorte', origin: 'aus der Herkunft' }
 
 function optionFor(field: PrefillField, text: string, from?: GuessSource): PrefillOption {
   const label =

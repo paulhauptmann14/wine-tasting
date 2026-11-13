@@ -1,6 +1,7 @@
 // Strict lookups in the reference lists (appellations, vineyard sites, wineries). Pure and
 // browser-safe. Everything here errs on the side of "no match": a hit may fill a field.
 
+import { ORIGIN_ABBREVIATIONS } from './dictionaries'
 import { foldText } from './normalize'
 import type { Appellation, Site } from './reference-data'
 
@@ -14,7 +15,10 @@ export function words(text: string): string[] {
 
 const letterSum = (ws: string[]) => ws.reduce((s, w) => s + w.length, 0)
 
-/** Bounded Levenshtein distance; returns max + 1 when the words are further apart. */
+/**
+ * Bounded Levenshtein distance; returns max + 1 when the words are further apart.
+ * wineries/match.ts keeps its own copy (`distance`) for the hot loop of matchWinery – see there.
+ */
 export function editDistance(a: string, b: string, max: number): number {
   if (Math.abs(a.length - b.length) > max) return max + 1
   let prev = Array.from({ length: b.length + 1 }, (_, i) => i)
@@ -32,7 +36,7 @@ export function editDistance(a: string, b: string, max: number): number {
 }
 
 /** Same word, allowing one misread letter from 6 letters and two from 10. Short words must be exact. */
-export function sameWord(read: string, known: string): boolean {
+function sameWord(read: string, known: string): boolean {
   if (read === known) return true
   const max = known.length >= 10 ? 2 : known.length >= 6 ? 1 : 0
   if (max === 0) return false
@@ -63,7 +67,9 @@ function indexAppellations(list: readonly AppellationRef[]): IndexedAppellation[
 
 // Words that may stand next to an appellation on its line without making it a different name.
 const APPELLATION_COMPANIONS = new Set([
-  'doc', 'docg', 'igt', 'igp', 'aoc', 'aop', 'do', 'dop', 'doca', 'doq', 'pdo', 'pgi', 'dac', 'qba',
+  ...ORIGIN_ABBREVIATIONS,
+  'doq',
+  'qba',
   'classico', 'superiore', 'riserva', 'reserva', 'gran', 'grand', 'cru', 'premier', '1er', 'villages',
   'rosso', 'bianco', 'rosato', 'rouge', 'blanc', 'rose', 'tinto', 'blanco', 'rosado', 'crianza',
 ])
@@ -240,6 +246,3 @@ export function wineryMatchStrength(listed: string, read: string): WineryStrengt
   }
   return core.some((w) => !GENERIC_NAMES.has(w)) ? 'full' : 'none'
 }
-
-/** Whether a winery list hit may be filled in at all (see `wineryMatchStrength`). */
-export const isStrongWineryMatch = (listed: string, read: string) => wineryMatchStrength(listed, read) !== 'none'

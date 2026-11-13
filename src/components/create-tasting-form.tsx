@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
 import { PresetPicker } from '@/components/preset-picker'
 import { RequiredLegend, RequiredMark } from '@/components/required-mark'
+import { TastingDetailsFields } from '@/components/tasting-details-fields'
 import { useRevealErrors } from '@/components/use-reveal-errors'
+import { LIMITS } from '@/lib/limits'
 import { RETENTION_DAYS } from '@/lib/tasting/retention'
 import type { PresetKey } from '@/lib/tasting/presets'
 
@@ -25,44 +26,13 @@ export function CreateTastingForm() {
   return (
     <form ref={formRef} action={action} noValidate className="grid gap-8">
       <RequiredLegend className="-mb-4 text-sm text-muted-foreground" />
-      <div>
-        <Label htmlFor="name">
-          Name der Verkostung
-          <RequiredMark />
-        </Label>
-        <Input
-          id="name"
-          name="name"
-          defaultValue={state?.values?.name}
-          placeholder="Weinabend 2026"
-          maxLength={60}
-          required
-          aria-required="true"
-          aria-invalid={!!errors.name}
-          aria-describedby={describedBy('name', errors.name)}
-          className="mt-2 h-12 lg:bg-card text-base"
-        />
-        <FieldError fieldId="name" errors={errors.name} />
-      </div>
-
-      <div>
-        <Label htmlFor="description">Beschreibung</Label>
-        <Textarea
-          id="description"
-          name="description"
-          defaultValue={state?.values?.description}
-          placeholder="Rieslinge von der Mosel. Bring gern Brot mit."
-          maxLength={300}
-          rows={2}
-          aria-invalid={!!errors.description}
-          aria-describedby={describedBy('description', errors.description, 'description-hint')}
-          className="mt-2 min-h-12 lg:bg-card text-base"
-        />
-        <p id="description-hint" className="mt-1.5 text-sm text-muted-foreground">
-          Optional. Steht unter dem Namen, für alle mit dem Code sichtbar.
-        </p>
-        <FieldError fieldId="description" errors={errors.description} />
-      </div>
+      <TastingDetailsFields
+        defaultName={state?.values?.name}
+        defaultDescription={state?.values?.description}
+        errors={errors}
+        namePlaceholder="Weinabend 2026"
+        fieldClassName="lg:bg-card"
+      />
 
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -103,7 +73,7 @@ export function CreateTastingForm() {
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          maxLength={12}
+          maxLength={LIMITS.pin}
           required
           aria-required="true"
           aria-invalid={!!errors.pin}
@@ -121,7 +91,7 @@ export function CreateTastingForm() {
       </div>
 
       <BottomBar>
-        <Button type="submit" size="lg" className="h-14 w-full text-base lg:w-auto lg:px-10" disabled={pending}>
+        <Button type="submit" size="main" disabled={pending}>
           {pending ? 'Wird erstellt …' : 'Verkostung erstellen'}
         </Button>
       </BottomBar>

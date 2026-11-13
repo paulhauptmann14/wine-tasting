@@ -5,13 +5,12 @@
  */
 
 /**
+ * The variants the OCR passes use (see OCR_SETTINGS in ocr.ts):
  * - `gray`: grayscale only
- * - `stretch`: grayscale + contrast stretch (clips the darkest/brightest 1 %)
- * - `adaptive`: stretch + local mean threshold (black text on white), robust against uneven light
- * - `adaptiveLight`: like `adaptive`, but for light text on dark labels (text becomes black)
- * - `inverted`: stretch + inversion, for light text on dark labels
+ * - `adaptive`: contrast stretch (clips the darkest/brightest 1 %) + local mean threshold (black
+ *   text on white), robust against uneven light
  */
-export type PreprocessVariant = 'gray' | 'stretch' | 'adaptive' | 'adaptiveLight' | 'inverted'
+export type PreprocessVariant = 'gray' | 'adaptive'
 
 /** Scales (up or down) so the longer side hits `longSide`; never returns a side below 1 px. */
 export function fitSize(width: number, height: number, longSide: number): { width: number; height: number } {
@@ -59,16 +58,9 @@ export function stretchContrast(gray: Uint8ClampedArray, clip = 0.01): Uint8Clam
   return out
 }
 
-export function invert(gray: Uint8ClampedArray): Uint8ClampedArray {
-  const out = new Uint8ClampedArray(gray.length)
-  for (let i = 0; i < gray.length; i++) out[i] = 255 - gray[i]
-  return out
-}
-
 /**
  * Local mean threshold via an integral image: a pixel becomes black when it is clearly darker
- * than the average of its surrounding window (`ratio` < 1), otherwise white. With `lightText` it
- * is the other way round: clearly brighter pixels become black.
+ * than the average of its surrounding window (`ratio` < 1), otherwise white.
  */
 export function adaptiveThreshold(
   gray: Uint8ClampedArray,
@@ -76,7 +68,6 @@ export function adaptiveThreshold(
   height: number,
   windowSize = Math.max(15, Math.round(Math.min(width, height) / 16)),
   ratio = 0.9,
-  lightText = false,
 ): Uint8ClampedArray {
   const stride = width + 1
   const integral = new Float64Array(stride * (height + 1))
@@ -98,9 +89,8 @@ export function adaptiveThreshold(
       const sum = integral[y1 * stride + x1] - integral[y0 * stride + x1] - integral[y1 * stride + x0] + integral[y0 * stride + x0]
       const mean = sum / ((x1 - x0) * (y1 - y0))
       const value = gray[y * width + x]
-      // Foreground (text) is clearly darker – or, for light text, clearly brighter – than its surroundings
-      const isText = lightText ? value > Math.min(255, mean / ratio) : value < mean * ratio
-      out[y * width + x] = isText ? 0 : 255
+      // Foreground (text) is clearly darker than its surroundings
+      out[y * width + x] = value < mean * ratio ? 0 : 255
     }
   }
   return out
@@ -115,10 +105,7 @@ export function applyVariant(
 ): Uint8ClampedArray {
   const gray = toGrayscale(rgba)
   if (variant === 'gray') return gray
-  const stretched = stretchContrast(gray)
-  if (variant === 'stretch') return stretched
-  if (variant === 'inverted') return invert(stretched)
-  return adaptiveThreshold(stretched, width, height, undefined, undefined, variant === 'adaptiveLight')
+  return adaptiveThreshold(stretchContrast(gray), width, height)
 }
 
 /** A decoded, scaled photo as plain RGBA pixels – the shared input for all preprocessing variants. */

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { CreateTastingForm } from '@/components/create-tasting-form'
 import { FormPage } from '@/components/form-page'
 
-export const metadata: Metadata = { title: 'Tasting erstellen · Wine Tasting' }
+export const metadata: Metadata = { title: 'Tasting erstellen' }
 
 export default function NewTastingPage() {
   return (

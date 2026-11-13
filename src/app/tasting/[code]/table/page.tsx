@@ -8,7 +8,7 @@ import { joinQrSvg } from '@/lib/qr'
 import { countParticipants } from '@/server/participants'
 import { loadResults } from '@/server/results-data'
 
-export const metadata: Metadata = { title: 'Tisch-Ansicht · Wine Tasting' }
+export const metadata: Metadata = { title: 'Tisch-Ansicht' }
 
 /** Table view: anyone with the code, no joining – so it shows only counts, never guest names. */
 export default async function TablePage({ params }: { params: Promise<{ code: string }> }) {

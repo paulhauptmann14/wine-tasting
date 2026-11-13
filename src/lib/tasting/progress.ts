@@ -7,3 +7,8 @@ export function ratingState(valueCount: number | undefined, criteriaCount: numbe
   if (valueCount === undefined) return 'open'
   return valueCount >= criteriaCount ? 'done' : 'incomplete'
 }
+
+/** How many wines in a list are fully rated */
+export function countDone(items: readonly { state: RingState }[]): number {
+  return items.filter((item) => item.state === 'done').length
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findAppellations, findSite, isStrongWineryMatch, type AppellationRef, type SiteRef } from './match-reference'
+import { findAppellations, findSite, wineryMatchStrength, type AppellationRef, type SiteRef } from './match-reference'
 
 const appellations: AppellationRef[] = [
   { name: "Montepulciano d'Abruzzo", country: 'IT' },
@@ -88,24 +88,25 @@ describe('findSite', () => {
   })
 })
 
-describe('isStrongWineryMatch', () => {
+describe('wineryMatchStrength', () => {
   it('accepts the same name with or without a winery keyword', () => {
-    expect(isStrongWineryMatch('Weingut Dr. Loosen', 'WEINGUT DR. LOOSEN')).toBe(true)
-    expect(isStrongWineryMatch('Weingut Schmitts Kinder', 'Schmitts Kinder')).toBe(true)
-    expect(isStrongWineryMatch('Gallo Family Vineyards', 'Gallo FAMILY VINEYARDS')).toBe(true)
-    expect(isStrongWineryMatch('Cinzano', 'CINZANO')).toBe(true)
+    expect(wineryMatchStrength('Weingut Dr. Loosen', 'WEINGUT DR. LOOSEN')).toBe('full')
+    expect(wineryMatchStrength('Weingut Schmitts Kinder', 'Schmitts Kinder')).toBe('full')
+    expect(wineryMatchStrength('Gallo Family Vineyards', 'Gallo FAMILY VINEYARDS')).toBe('full')
+    // A one-word brand is only safe as the label's headline – the caller checks that
+    expect(wineryMatchStrength('Cinzano', 'CINZANO')).toBe('single')
   })
 
   it('tolerates one misread letter in long words', () => {
-    expect(isStrongWineryMatch('Weingut Dr. Bürklin-Wolf', 'Dr. Burkiin-Wolf')).toBe(true)
+    expect(wineryMatchStrength('Weingut Dr. Bürklin-Wolf', 'Dr. Burkiin-Wolf')).toBe('full')
   })
 
   it('rejects partial names, short names and extra words', () => {
-    expect(isStrongWineryMatch('Gallo Family Vineyards', 'Gallo')).toBe(false)
-    expect(isStrongWineryMatch('Delta', 'DELTA')).toBe(false)
-    expect(isStrongWineryMatch('Weingut Wann', 'wann')).toBe(false)
-    expect(isStrongWineryMatch('Weingut Tradition', 'TRADITION')).toBe(false)
-    expect(isStrongWineryMatch('Della Luna', 'Delta Mt')).toBe(false)
-    expect(isStrongWineryMatch('Weingut Müller', 'Müller Thurgau')).toBe(false)
+    expect(wineryMatchStrength('Gallo Family Vineyards', 'Gallo')).toBe('none')
+    expect(wineryMatchStrength('Delta', 'DELTA')).toBe('none')
+    expect(wineryMatchStrength('Weingut Wann', 'wann')).toBe('none')
+    expect(wineryMatchStrength('Weingut Tradition', 'TRADITION')).toBe('none')
+    expect(wineryMatchStrength('Della Luna', 'Delta Mt')).toBe('none')
+    expect(wineryMatchStrength('Weingut Müller', 'Müller Thurgau')).toBe('none')
   })
 })

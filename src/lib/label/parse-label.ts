@@ -6,9 +6,11 @@
 // unsure field guesses, `nameCandidates` / `wineryCandidates` for the host to tap, and taste lines
 // ("Süß & fruchtig") as `descriptionCandidates`, which are never sure.
 
+import { LIMITS } from '@/lib/limits'
 import { MAX_ALCOHOL, MIN_ALCOHOL } from '@/lib/tasting/alcohol'
 import type { Sweetness } from '@/lib/tasting/sweetness'
 import type { WineType } from '@/lib/tasting/wine-type'
+import { MIN_CONFIDENCE } from './confidence'
 import {
   APPELLATION_TOKENS,
   AWARD_NOTE,
@@ -22,6 +24,7 @@ import {
   LEGAL_PATTERNS,
   PRODUCER_NOTE,
   NOT_A_NAME,
+  ORIGIN_ABBREVIATIONS,
   ORIGIN_GRAPE_NAMES,
   REGIONS,
   SWEETNESS_TERMS,
@@ -57,20 +60,12 @@ export type ParseLabelOptions = {
   currentYear?: number
 }
 
-/** Tesseract confidence (0–100) below which a line is ignored. */
-export const MIN_CONFIDENCE = 30
 /** Confidence a line needs for its value to count as sure. */
-export const SURE_CONFIDENCE = 75
+const SURE_CONFIDENCE = 75
 /** Confidence a line needs to be considered as the wine's name or producer. */
 const NAME_CONFIDENCE = 50
 /** Lines with more words are running text, not names. */
 const PROSE_WORDS = 6
-
-// Field limits of the wine form (src/lib/validation.ts).
-const MAX_NAME = 80
-const MAX_WINERY = 80
-const MAX_GRAPES = 60
-const MAX_DESCRIPTION = 200
 
 type Box = OcrLine['bbox']
 
@@ -80,7 +75,7 @@ const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const SEP = "[\\s\\-'·.]*"
 
 /** Regex for a dictionary term on folded text. Separators are optional; "*term" also matches as a word ending. */
-export function termRegex(term: string): RegExp {
+function termRegex(term: string): RegExp {
   const asEnding = term.startsWith('*')
   const body = foldText(asEnding ? term.slice(1) : term)
     .split(/[\s\-'·.]+/)
@@ -98,6 +93,16 @@ function compile<T>(terms: { term: string; value: T; weak?: boolean }[]): Compil
 }
 
 const mask = (text: string, start: number, end: number) => text.slice(0, start) + '\u0001'.repeat(end - start) + text.slice(end)
+
+/** Folded text with the hits blanked out (as spaces): what is left besides them, e.g. besides the grapes. */
+function withoutHits(folded: string, hits: readonly { start: number; end: number }[]): string {
+  let rest = folded
+  for (const h of hits) rest = mask(rest, h.start, h.end)
+  return rest.replace(/\u0001/g, ' ')
+}
+
+/** Whether a word of three letters or more is left besides the hits. */
+const wordLeft = (folded: string, hits: readonly { start: number; end: number }[]) => /\p{L}{3,}/u.test(withoutHits(folded, hits))
 
 /** All non-overlapping hits, earlier terms first (compound terms are listed before their parts). */
 function findTerms<T>(folded: string, terms: Compiled<T>[]): Hit<T>[] {
@@ -293,7 +298,7 @@ type YearToken = { year: number; fixed: boolean; start: number; end: number }
 // Four characters of digits or digit look-alikes (O → 0, l/I/| → 1), not part of a date or number.
 const YEAR_TOKEN = /(?<![\p{L}\p{N}])(?<!\d[./-])[\dOoIl|]{4}(?![\p{L}\p{N}])(?![./-]\d)/gu
 
-export function yearTokens(text: string): YearToken[] {
+function yearTokens(text: string): YearToken[] {
   const tokens: YearToken[] = []
   for (const m of text.matchAll(YEAR_TOKEN)) {
     const token = m[0]
@@ -380,6 +385,9 @@ function findVintage(lines: Line[], layout: Line[], currentYear: number): FieldG
 
 type LineHit<T> = Hit<T> & { line: Line }
 
+/** The original text of a hit on a line, as printed (the hit itself is on the folded text). */
+const printedText = (hit: { line: Line; start: number; end: number }) => hit.line.text.slice(hit.line.f.map[hit.start], hit.line.f.map[hit.end])
+
 function scan<T>(lines: Line[], terms: Compiled<T>[], fuzzy: FuzzyWord<T>[] = []): LineHit<T>[] {
   return lines.flatMap((line) => {
     const exact = findTerms(line.f.folded, terms)
@@ -451,8 +459,7 @@ function findGrapeHits(lines: Line[], layout: Line[]): GrapeHit[] {
   return scan(lines, GRAPE_ALIASES, FUZZY_GRAPES)
     .map((hit) => {
       // Exact hits keep the label's spelling; a misread is replaced by the dictionary spelling.
-      const slice = hit.line.text.slice(hit.line.f.map[hit.start], hit.line.f.map[hit.end])
-      const written = hit.fuzzy ? hit.value.alias : displayCase(slice)
+      const written = hit.fuzzy ? hit.value.alias : displayCase(printedText(hit))
       return { ...hit.value, written, line: hit.line, start: hit.start, end: hit.end, fuzzy: hit.fuzzy ?? false }
     })
     .filter((hit) => !inSmallPrint(hit) && !isPlace(hit, layout))
@@ -527,7 +534,7 @@ function findGrapes(hits: GrapeHit[]): FieldGuess<string> | undefined {
   let value = ''
   for (const hit of chosen) {
     const next = value ? `${value}, ${hit.written}` : hit.written
-    if (next.length > MAX_GRAPES) break
+    if (next.length > LIMITS.grapeVariety) break
     value = next
   }
   const sure = chosen.every((h) => !h.fuzzy && h.line.conf >= SURE_CONFIDENCE && !h.line.prose)
@@ -609,8 +616,7 @@ function typeTermHits(lines: Line[]): LineHit<WineType>[] {
       .map((hit) => {
         // "ROSE" without accent may just be a word; "rosé" is the wine.
         if (hit.term === 'rose' && !hit.fuzzy) {
-          const written = hit.line.text.slice(hit.line.f.map[hit.start], hit.line.f.map[hit.end])
-          return { ...hit, weak: !/[éÉ]/.test(written) }
+          return { ...hit, weak: !/[éÉ]/.test(printedText(hit)) }
         }
         return hit
       })
@@ -719,8 +725,10 @@ const ORIGIN_LINKS = new Set(['d', 'di', 'de', 'del', 'dell', 'della', 'dello', 
 
 // Words that make a one-word appellation the wine's designation, not a town: "Dogliani DOCG",
 // "Chablis Premier Cru", "Appellation Morgon Contrôlée".
+// Only here 'docq', only in the appellation lookup 'doq' (match-reference.ts): aligning them changes results.
 const DESIGNATION_WORDS = new Set([
-  'doc', 'docg', 'igt', 'igp', 'aoc', 'aop', 'do', 'dop', 'doca', 'docq', 'pdo', 'pgi', 'dac',
+  ...ORIGIN_ABBREVIATIONS,
+  'docq',
   'appellation', 'denominazione', 'denominacion', 'controlee', 'controllata', 'garantita', 'protegee', 'protetta',
   'cru', 'classico', 'superiore', 'riserva', 'villages',
 ])
@@ -859,7 +867,7 @@ function sureMainGrape(
   const main = [...mains][0]!
   const agree = origins.every((o) => !o.ref.grapes || o.ref.grapes.includes(main))
   if (!agree || !withMain.every((o) => colourFixed(o.ref, main, type, grapeColour))) return undefined
-  return { canonical: main, guess: guess(truncate(originGrapeName(main, withMain[0].ref.country), MAX_GRAPES), true, 'origin') }
+  return { canonical: main, guess: guess(truncate(originGrapeName(main, withMain[0].ref.country), LIMITS.grapeVariety), true, 'origin') }
 }
 
 /**
@@ -886,7 +894,7 @@ function grapesFromOrigin(origins: Origin[], type: FieldGuess<WineType> | undefi
   const names = origins.flatMap((o) =>
     (o.ref.grapes ?? [])
       .filter((g) => !grapeColour || (GRAPE_COLOUR.get(g) ?? grapeColour) === grapeColour)
-      .map((g) => truncate(originGrapeName(g, o.ref.country), MAX_GRAPES)),
+      .map((g) => truncate(originGrapeName(g, o.ref.country), LIMITS.grapeVariety)),
   )
   const candidates = [...new Set(names)].slice(0, MAX_CANDIDATES)
   return candidates.length > 0 ? { grapeCandidates: candidates } : {}
@@ -901,13 +909,20 @@ const ONSETS = new Set([
   'vr', 'wh', 'wr', 'zw', 'xi', 'gh',
 ])
 
+// Quality and style words that often follow a grape name ("Bacchus Kabinett", "Tempranillo Crianza").
+const QUALITY_WORDS = new Set([
+  'kabinett', 'spatlese', 'auslese', 'classic', 'selection', 'reserva', 'gran', 'crianza', 'riserva', 'classico',
+  'superiore', 'reserve', 'grand', 'cru', 'premier', 'vieilles', 'vignes', 'alte', 'reben',
+])
+
 // Words a name may contain even when they are short or look odd.
 const BASE_WORDS = new Set<string>([
   ...['di', 'de', 'del', 'della', 'delle', 'dei', 'da', 'dal', 'du', 'des', 'la', 'le', 'les', 'il', 'lo', 'el', 'los', 'las'],
   ...['von', 'vom', 'van', 'der', 'den', 'am', 'im', 'an', 'auf', 'zu', 'zum', 'zur', 'st', 'dr', 'gg', 'san', 'sant', 'santa', 'santo'],
   ...['mit', 'und', 'and', 'et', 'e', 'y', 'of', 'the', 'en', 'au', 'aux', 'sur', 'sous', 'd', 'l', 'vin', 'vino', 'wein'],
-  ...['kabinett', 'spatlese', 'auslese', 'classic', 'selection', 'reserva', 'gran', 'crianza', 'riserva', 'classico'],
-  ...['superiore', 'reserve', 'grand', 'cru', 'premier', 'vieilles', 'vignes', 'alte', 'reben', 'cuvee', 'tradition'],
+  ...QUALITY_WORDS,
+  'cuvee',
+  'tradition',
 ])
 
 const known = new WeakMap<object, Set<string>>()
@@ -974,11 +989,9 @@ function cutAtAddress(text: string): string {
 }
 
 function keywordFree(text: string): string {
-  const f = fold(text)
-  let rest = f.folded
-  for (const h of findTerms(f.folded, WINERY)) rest = mask(rest, h.start, h.end)
-  return rest
-    .split(/[\s\u0001]+/)
+  const folded = foldText(text)
+  return withoutHits(folded, findTerms(folded, WINERY))
+    .split(/\s+/)
     .filter((w) => w && !CONNECTORS.has(w) && letterCount(w) > 0)
     .join(' ')
 }
@@ -1000,9 +1013,8 @@ type WineryOption = { value: string; raw: string; conf: number; used: Box[]; sco
 
 /** Only grape names: "WEINGUT" over "RIESLING" names no producer. */
 function grapeOnlyText(line: Line): boolean {
-  let rest = line.f.folded
-  for (const hit of findTerms(rest, GRAPE_ALIASES)) rest = mask(rest, hit.start, hit.end)
-  return rest !== line.f.folded && !/\p{L}{3,}/u.test(rest.replace(/\u0001/g, ' '))
+  const hits = findTerms(line.f.folded, GRAPE_ALIASES)
+  return hits.length > 0 && !wordLeft(line.f.folded, hits)
 }
 
 /**
@@ -1214,8 +1226,11 @@ function isDescriptorLine(line: Line): boolean {
   return words.filter(isDescriptorWord).length / words.length > 0.5
 }
 
-const CONJUNCTIONS = new Set(['&', 'und', 'mit', 'and', 'et', 'e', 'y'])
-const LINK_WORDS = new Set(['&', 'und', 'mit', 'and', 'et', 'e', 'y', 'di', 'de', 'del', 'della', 'du', 'des', 'von', "d'"])
+const CONJUNCTIONS = ['&', 'und', 'mit', 'and', 'et', 'e', 'y']
+const CONJUNCTION_SET = new Set(CONJUNCTIONS)
+/** Words that join a name to what follows: conjunctions and particles. */
+const LINK_WORDS = [...CONJUNCTIONS, 'di', 'de', 'del', 'della', 'du', 'des', 'von', "d'"]
+const LINK_SET = new Set(LINK_WORDS)
 
 type GrapeIndex = Map<Line, GrapeHit[]>
 
@@ -1248,22 +1263,20 @@ function isOriginOrFiller(line: Line): boolean {
 /** A name never starts or ends with a joining word ("Trollinger mit" → "Trollinger"). */
 function trimLinks(text: string): string {
   const words = text.split(' ')
-  while (words.length > 1 && LINK_WORDS.has(foldText(words[words.length - 1]))) words.pop()
+  while (words.length > 1 && LINK_SET.has(foldText(words[words.length - 1]))) words.pop()
   // Particles may start a name ("Della Luna", "Von Winning"), conjunctions may not.
-  while (words.length > 1 && CONJUNCTIONS.has(foldText(words[0]))) words.shift()
+  while (words.length > 1 && CONJUNCTION_SET.has(foldText(words[0]))) words.shift()
   return words.join(' ')
 }
 
-const ENDS_WITH_LINK = /(?<![\p{L}])(&|und|mit|and|et|e|y|di|de|del|della|du|des|von|d')$/u
-const STARTS_WITH_LINK = /^(&|und|mit|and|et|e|y|di|de|del|della|du|des|von|d'|dell'|l')(?![\p{L}])|^d'/u
+const ENDS_WITH_LINK = new RegExp(`(?<![\\p{L}])(${LINK_WORDS.map(escapeRegex).join('|')})$`, 'u')
+const STARTS_WITH_LINK = new RegExp(`^(${[...LINK_WORDS, "dell'", "l'"].map(escapeRegex).join('|')})(?![\\p{L}])|^d'`, 'u')
 
 /** Only grapes and joining words: "Trollinger mit Lemberger". */
 function isGrapeOnly(line: Line, grapes: GrapeIndex): boolean {
   if (!grapes.has(line)) return false
-  let rest = line.f.folded
-  for (const hit of grapes.get(line) ?? []) rest = mask(rest, hit.start, hit.end)
-  return rest
-    .split(/[\s,/+\u0001]+/)
+  return withoutHits(line.f.folded, grapes.get(line) ?? [])
+    .split(/[\s,/+]+/)
     .filter(Boolean)
     .every((w) => CONNECTORS.has(w) || !/\p{L}/u.test(w))
 }
@@ -1298,19 +1311,11 @@ type Group = { lines: Line[]; score: number; conf: number; text: string }
 const groupText = (lines: Line[], grapes: GrapeIndex) =>
   trimLinks(trimJunk(lines.map((line, i) => nameText(line, i > 0, grapes)).join(' ')))
 
-// Quality and style words that often follow a grape name ("Bacchus Kabinett", "Tempranillo Crianza").
-const QUALITY_WORDS = new Set([
-  'kabinett', 'spatlese', 'auslese', 'classic', 'selection', 'reserva', 'gran', 'crianza', 'riserva', 'classico',
-  'superiore', 'reserve', 'grand', 'cru', 'premier', 'vieilles', 'vignes', 'alte', 'reben',
-])
-
 /** Only grapes plus quality or taste words: "GRÜNER VELTLINER", "Riesling Kabinett". */
 function isGrapeGroup(g: Group, grapes: GrapeIndex): boolean {
   return g.lines.every((line) => {
     if (!grapes.has(line)) return false
-    let rest = line.f.folded
-    for (const hit of grapes.get(line) ?? []) rest = mask(rest, hit.start, hit.end)
-    return rest
+    return withoutHits(line.f.folded, grapes.get(line) ?? [])
       .split(/[^\p{L}]+/u)
       .filter(Boolean)
       .every((w) => CONNECTORS.has(w) || QUALITY_WORDS.has(w) || isDescriptorWord(w))
@@ -1464,7 +1469,7 @@ function findDescriptions(all: Line[]): string[] | undefined {
   const seen = new Set<string>()
   const spots: Box[] = []
   for (const line of lines) {
-    const text = truncate(line.taste!, MAX_DESCRIPTION)
+    const text = truncate(line.taste!, LIMITS.wineDescription)
     const key = squash(text)
     if (seen.has(key) || spots.some((b) => sameSpot(b, line.box))) continue
     seen.add(key)
@@ -1475,12 +1480,15 @@ function findDescriptions(all: Line[]): string[] | undefined {
   return out.length > 0 ? out : undefined
 }
 
-/** Up to three distinct values, best first, without the filled-in one. */
-function pickCandidates(values: string[], filled?: string): string[] | undefined {
+/** A value as `pickCandidates` offers it, cut to the field's limit. */
+const candidateText = (raw: string, max: number) => truncate(trimJunk(raw), max)
+
+/** Up to three distinct values, best first, without the filled-in one; each at most `max` characters. */
+function pickCandidates(values: string[], max: number, filled?: string): string[] | undefined {
   const seen = new Set(filled ? [squash(filled)] : [])
   const out: string[] = []
   for (const raw of values) {
-    const value = truncate(trimJunk(raw), MAX_NAME)
+    const value = candidateText(raw, max)
     const key = squash(value)
     // Names start with a capital; "tradition des vins de …" is running text.
     if (key.length < 3 || seen.has(key) || /^\p{Ll}/u.test(value)) continue
@@ -1533,9 +1541,7 @@ export function parseLabel(lines: OcrLine[], options: ParseLabelOptions = {}): L
     if (ws.length === 0 || REGIONS.has(ws.join(' ')) || ws.every((w) => REGIONS.has(w) || QUALITY_WORDS.has(w))) return true
     if (findAppellations(text, options.appellations ?? []).some((m) => m.coverage >= APPELLATION_COVERAGE)) return true
     const f = foldText(text)
-    let rest = f
-    for (const h of findTerms(f, GRAPE_ALIASES)) rest = mask(rest, h.start, h.end)
-    return !/\p{L}{3,}/u.test(rest.replace(/\u0001/g, ' '))
+    return !wordLeft(f, findTerms(f, GRAPE_ALIASES))
   }
   const winery = findWinery(all, layout, keywords, grapeOnly, vocab, isReference, options.matchWinery)
   const wineryBoxes = [...(winery.sure?.used ?? []), ...winery.keywordBoxes]
@@ -1610,7 +1616,7 @@ export function parseLabel(lines: OcrLine[], options: ParseLabelOptions = {}): L
         !isQualityOnly(g.text) &&
         !references.some((r) => r.lines.some((l) => g.lines.includes(l))),
     )
-    if (!competing) name = truncate(best.value, MAX_NAME)
+    if (!competing) name = truncate(best.value, LIMITS.wineName)
   }
   if (name) suggestion.name = { value: name, sure: true }
 
@@ -1620,23 +1626,25 @@ export function parseLabel(lines: OcrLine[], options: ParseLabelOptions = {}): L
       .filter((g) => plausibleGroup(g) && !(name && best?.lines.some((l) => g.lines.includes(l))))
       .map((g) => ({ value: references.find((r) => r.lines.every((l) => g.lines.includes(l)))?.value ?? g.text, score: g.score })),
   ].sort((a, b) => b.score - a.score)
-  const nameCandidates = pickCandidates(nameOptions.map((o) => o.value), name)
+  const nameCandidates = pickCandidates(nameOptions.map((o) => o.value), LIMITS.wineName, name)
   if (nameCandidates) suggestion.nameCandidates = nameCandidates
 
-  if (winery.sure) suggestion.winery = { value: truncate(winery.sure.value, MAX_WINERY), sure: true }
+  if (winery.sure) suggestion.winery = { value: truncate(winery.sure.value, LIMITS.winery), sure: true }
+  const wineryText = (v: string) => truncate(v, LIMITS.winery)
   const wineryCandidates = pickCandidates(
     [
       ...winery.listHits.slice(0, winery.keywordHits),
       ...winery.options.map((o) => o.value),
       ...winery.listHits.slice(winery.keywordHits),
       ...wineryGuesses,
-    ].map((v) => truncate(v, MAX_WINERY)),
+    ].map(wineryText),
+    LIMITS.winery,
     winery.sure?.value,
   )
   if (wineryCandidates) {
     suggestion.wineryCandidates = wineryCandidates
     // Which of them the winery list knows: the form tells the host so
-    const listed = new Set(winery.listHits.map((v) => squash(truncate(trimJunk(truncate(v, MAX_WINERY)), MAX_NAME))))
+    const listed = new Set(winery.listHits.map((v) => squash(candidateText(wineryText(v), LIMITS.winery))))
     const listedWineries = wineryCandidates.filter((c) => listed.has(squash(c)))
     if (listedWineries.length > 0) suggestion.listedWineries = listedWineries
   }

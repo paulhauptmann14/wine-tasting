@@ -3,29 +3,27 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { rejoinAction } from '../../actions'
 import { BottomBar } from '@/components/bottom-bar'
-import { CornerStain } from '@/components/corner-stain'
 import { PageShell } from '@/components/page-shell'
 import { RejoinForm } from '@/components/rejoin-form'
 import { marginNote } from '@/components/styles'
-import { TastingDescription } from '@/components/tasting-description'
+import { IntroNote, TastingIntro } from '@/components/tasting-intro'
 import { buttonVariants } from '@/components/ui/button'
 import { db } from '@/db/client'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { requireTasting } from '@/lib/data'
 import { getSessionSecret } from '@/lib/env'
+import { LIMITS } from '@/lib/limits'
 import { cn } from '@/lib/utils'
 import { findRejoinParticipant } from '@/server/participants'
 
 // The token is a key to the guest's seat: keep it out of search engines and Referer headers
 export const metadata: Metadata = {
-  title: 'Zurück zum Tasting · Wine Tasting',
+  title: 'Zurück zum Tasting',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
 }
 
 type Props = { params: Promise<{ code: string; token: string }> }
-
-const MAX_LINK_LENGTH = 100
 
 /**
  * Personal link the host sends a guest who lost their seat (new phone, cleared cookies).
@@ -37,7 +35,7 @@ export default async function RejoinPage({ params }: Props) {
   if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
 
   const [guest, current] = await Promise.all([
-    token.length <= MAX_LINK_LENGTH ? findRejoinParticipant(db, tasting.id, token, getSessionSecret()) : null,
+    token.length <= LIMITS.rejoinLink ? findRejoinParticipant(db, tasting.id, token, getSessionSecret()) : null,
     getCurrentParticipant(tasting),
   ])
 
@@ -45,21 +43,11 @@ export default async function RejoinPage({ params }: Props) {
     // No names here: an invalid link must not tell who it once belonged to
     return (
       <PageShell>
-        <div className="relative">
-          <CornerStain seed={tasting.name.length} />
-          <p className="relative pt-28 text-sm text-muted-foreground lg:pt-16">{tasting.name}</p>
-          <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight md:text-5xl">
-            Dieser Link gilt nicht mehr.
-          </h1>
-          <p className="relative mt-4 max-w-[34ch] text-muted-foreground">
-            Frag den Gastgeber nach einem neuen – oder tritt neu bei.
-          </p>
-        </div>
+        <TastingIntro kicker={tasting.name} title="Dieser Link gilt nicht mehr." seed={tasting.name.length} sentence>
+          <IntroNote>Frag den Gastgeber nach einem neuen – oder tritt neu bei.</IntroNote>
+        </TastingIntro>
         <BottomBar>
-          <Link
-            href={`/tasting/${tasting.code}`}
-            className={cn(buttonVariants({ size: 'lg' }), 'h-14 w-full text-base lg:w-auto lg:px-10')}
-          >
+          <Link href={`/tasting/${tasting.code}`} className={cn(buttonVariants({ size: 'main' }))}>
             Zum Tasting
           </Link>
         </BottomBar>
@@ -72,13 +60,12 @@ export default async function RejoinPage({ params }: Props) {
 
   return (
     <PageShell>
-      <div className="relative">
-        <CornerStain seed={tasting.name.length} />
-        <p className="relative pt-28 text-sm text-muted-foreground lg:pt-16">Willkommen zurück</p>
-        <h1 className="relative mt-1 font-display text-4xl leading-[1.08] font-medium tracking-tight md:text-5xl lg:text-6xl lg:leading-[1.02]">
-          {tasting.name}
-        </h1>
-        <TastingDescription text={tasting.description} className="relative mt-3" />
+      <TastingIntro
+        kicker="Willkommen zurück"
+        title={tasting.name}
+        seed={tasting.name.length}
+        description={tasting.description}
+      >
         <p className="relative mt-6 max-w-[34ch]">
           Du machst als <strong className="font-semibold">{guest.name}</strong> weiter – mit allem, was du schon
           bewertet hast.
@@ -89,7 +76,7 @@ export default async function RejoinPage({ params }: Props) {
           </p>
         )}
         <RejoinForm action={rejoinAction.bind(null, tasting.code, token)} name={guest.name} />
-      </div>
+      </TastingIntro>
     </PageShell>
   )
 }

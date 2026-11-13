@@ -6,6 +6,7 @@ import { moveInOrder, shuffleUnrated, type RandomInt } from '@/lib/tasting/order
 import { SHUFFLE_FINISHED_HINT, canShuffleWines, type TastingStatus } from '@/lib/tasting/rules'
 import type { WineType } from '@/lib/tasting/wine-type'
 import type { Direction, WineInput } from '@/lib/validation'
+import { scoped } from './scoped'
 import { assertStructureEditable } from './structure'
 
 export type Wine = typeof wines.$inferSelect
@@ -36,7 +37,7 @@ export async function getWineById(db: Db, tastingId: string, wineId: string): Pr
   const [wine] = await db
     .select()
     .from(wines)
-    .where(and(eq(wines.id, wineId), eq(wines.tastingId, tastingId)))
+    .where(scoped(wines, tastingId, wineId))
   return wine ?? null
 }
 
@@ -73,7 +74,7 @@ export async function updateWine(db: Db, tastingId: string, wineId: string, inpu
   await db
     .update(wines)
     .set(input)
-    .where(and(eq(wines.id, wineId), eq(wines.tastingId, tastingId)))
+    .where(scoped(wines, tastingId, wineId))
 }
 
 /**
@@ -105,7 +106,7 @@ export async function deleteWine(db: Db, tastingId: string, wineId: string): Pro
     await assertStructureEditable(tx, tastingId)
     const deleted = await tx
       .delete(wines)
-      .where(and(eq(wines.id, wineId), eq(wines.tastingId, tastingId)))
+      .where(scoped(wines, tastingId, wineId))
       .returning({ id: wines.id })
     if (deleted.length === 0) return
     await renumber(tx, await orderedIds(tx, tastingId))

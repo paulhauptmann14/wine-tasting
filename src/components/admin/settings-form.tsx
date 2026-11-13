@@ -2,12 +2,11 @@
 
 import { useActionState, useState, useTransition } from 'react'
 import { updateBlindTastingAction, updateSettingsAction } from '@/app/tasting/[code]/admin/actions'
-import { describedBy, FieldError } from '@/components/field-error'
+import { RequiredLegend } from '@/components/required-mark'
+import { TastingDetailsFields } from '@/components/tasting-details-fields'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
 
 export function SettingsForm({
   code,
@@ -45,37 +44,13 @@ export function SettingsForm({
   return (
     <div className="grid gap-8">
       <form action={action} noValidate className="grid gap-5">
-        <div>
-          <Label htmlFor="settings-name">Name der Verkostung</Label>
-          <Input
-            id="settings-name"
-            name="name"
-            defaultValue={state?.values?.name ?? name}
-            maxLength={60}
-            aria-invalid={!!state?.fieldErrors?.name}
-            aria-describedby={describedBy('settings-name', state?.fieldErrors?.name)}
-            className="mt-2 h-12 text-base"
-          />
-          <FieldError fieldId="settings-name" errors={state?.fieldErrors?.name} />
-        </div>
-        <div>
-          <Label htmlFor="settings-description">Beschreibung</Label>
-          <Textarea
-            id="settings-description"
-            name="description"
-            defaultValue={state?.values?.description ?? description ?? ''}
-            placeholder="Rieslinge von der Mosel. Bring gern Brot mit."
-            maxLength={300}
-            rows={2}
-            aria-invalid={!!state?.fieldErrors?.description}
-            aria-describedby={describedBy('settings-description', state?.fieldErrors?.description, 'settings-description-hint')}
-            className="mt-2 min-h-12 text-base"
-          />
-          <p id="settings-description-hint" className="mt-1.5 text-sm text-muted-foreground">
-            Optional. Steht unter dem Namen, für alle mit dem Code sichtbar.
-          </p>
-          <FieldError fieldId="settings-description" errors={state?.fieldErrors?.description} />
-        </div>
+        <RequiredLegend className="-mb-1 text-sm text-muted-foreground" />
+        <TastingDetailsFields
+          idPrefix="settings-"
+          defaultName={state?.values?.name ?? name}
+          defaultDescription={state?.values?.description ?? description ?? ''}
+          errors={state?.fieldErrors ?? {}}
+        />
         <div className="flex items-center gap-4">
           <Button type="submit" size="lg" variant="outline" className="h-12" disabled={pending}>
             Speichern

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { FormPage } from '@/components/form-page'
 import { ManageLoginForm } from '@/components/manage-login-form'
 
-export const metadata: Metadata = { title: 'Tasting verwalten · Wine Tasting' }
+export const metadata: Metadata = { title: 'Tasting verwalten' }
 
 export default async function ManagePage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   const { code } = await searchParams

@@ -21,6 +21,8 @@ const buttonVariants = cva(
       size: {
         default: "h-8 gap-1.5 px-2.5",
         lg: "h-9 gap-1.5 px-2.5",
+        // The one main action of a page: full width on phones, natural width from lg on
+        main: "h-14 w-full gap-1.5 px-2.5 text-base lg:w-auto lg:px-10",
         icon: "size-8",
       },
     },

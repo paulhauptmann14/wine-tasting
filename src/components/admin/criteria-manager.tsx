@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ActionState, FormAction } from '@/lib/action-state'
+import { LIMITS } from '@/lib/limits'
 import { STRUCTURE_LOCK_HINT } from '@/lib/tasting/rules'
 
 type CriterionData = { id: string; name: string; position: number }
@@ -58,7 +59,7 @@ function NameForm({
           id={id}
           name="name"
           defaultValue={state?.values?.name ?? initial}
-          maxLength={40}
+          maxLength={LIMITS.criterionName}
           autoFocus={autoFocus}
           onChange={() => setDismissed(state)}
           aria-invalid={!!state?.fieldErrors?.name}

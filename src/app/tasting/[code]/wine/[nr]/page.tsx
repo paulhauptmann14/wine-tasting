@@ -11,7 +11,9 @@ import { WineSwipe } from '@/components/wine-swipe'
 import { db } from '@/db/client'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { requireTasting } from '@/lib/data'
+import { parsePosition } from '@/lib/search-params'
 import { wineTitle } from '@/lib/tasting/display'
+import { countDone } from '@/lib/tasting/progress'
 import { canRate, canSeeWineNames } from '@/lib/tasting/rules'
 import { cn } from '@/lib/utils'
 import { listCriteria } from '@/server/criteria'
@@ -24,8 +26,8 @@ type Props = { params: Promise<{ code: string; nr: string }>; searchParams: Prom
 export default async function WinePage({ params, searchParams }: Props) {
   const { code, nr } = await params
   const { saved, from } = await searchParams
-  const position = Number(nr)
-  if (!Number.isInteger(position) || position < 1) notFound()
+  const position = parsePosition(nr)
+  if (position === undefined) notFound()
   const tasting = await requireTasting(code, `/wine/${position}`)
 
   // Wine and criteria only need the tasting: load them alongside the session check, not after it
@@ -46,12 +48,12 @@ export default async function WinePage({ params, searchParams }: Props) {
   ])
   const showName = canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin: false })
   const { title, subtitle, description } = wineTitle(wine, showName)
-  const savedPosition = saved && Number.isInteger(Number(saved)) && Number(saved) >= 1 ? Number(saved) : undefined
+  const savedPosition = parsePosition(saved)
   // Where we came from (saved or swiped) decides the direction the wine arrives from
   const cameFrom = Number(saved ?? from)
   const arrival = cameFrom === position - 1 ? 'arrive-next' : cameFrom === position + 1 ? 'arrive-prev' : undefined
   const wineHref = (n: number) => `/tasting/${tasting.code}/wine/${n}?from=${position}`
-  const doneCount = items.filter((i) => i.state === 'done').length
+  const doneCount = countDone(items)
 
   return (
     // One unsaved-stars state for the swipe, the ring strip, the list and "Alle Weine"; fresh per wine

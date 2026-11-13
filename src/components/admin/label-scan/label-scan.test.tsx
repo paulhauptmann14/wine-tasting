@@ -32,13 +32,11 @@ vi.stubGlobal(
   vi.fn(async () => ({ ok: true, json: async () => ['Weingut Dr. Loosen', 'Weingut Egon Müller'] })),
 )
 
-import { WineManager } from '../wine-manager'
+import { SCAN_UNSURE_NOTE, WineManager } from '../wine-manager'
 import { SCAN_ERROR, SCAN_LOAD_ERROR, SCAN_PRIVACY_NOTE } from './label-scan'
 import { OcrLoadError } from './ocr'
 import { LABEL_LINES_HEADING, WINERY_LIST_NOTE } from './label-lines'
 import { SCAN_MARKER_TEXT } from './scan-fields'
-
-const UNSURE_NOTE = 'Vom Etikett gelesen – das kann falsch sein. Prüf die markierten Felder, bevor du speicherst.'
 
 // Brand and name mixed up – the typical hard case: the parser is unsure and offers candidates
 const uncertain: LabelSuggestion = {
@@ -63,7 +61,7 @@ function setup(suggestion: LabelSuggestion = uncertain) {
   const fileInput = container.querySelector<HTMLInputElement>('input[type="file"]')!
   const scan = async () => {
     await user.upload(fileInput, photo)
-    await screen.findByText(UNSURE_NOTE)
+    await screen.findByText(SCAN_UNSURE_NOTE)
   }
   return { user, fileInput, scan }
 }
@@ -114,7 +112,7 @@ it('shows reading progress and gives the parser the OCR lines and the reference 
   expect(button).toHaveFocus()
   const lines = stack([['DR. LOOSEN']])
   finish(lines)
-  await screen.findByText(UNSURE_NOTE)
+  await screen.findByText(SCAN_UNSURE_NOTE)
   expect(recognizeLabel).toHaveBeenCalledWith(photo, expect.any(Function))
   const [passedLines, options] = parseLabel.mock.calls[0] as [unknown, { appellations: unknown[]; sites: unknown[]; matchWinery: (t: string) => string | null }]
   expect(passedLines).toBe(lines)
@@ -127,7 +125,7 @@ it('writes only sure values into the fields and marks them as not guaranteed', a
   const { scan } = setup()
   await scan()
 
-  expect(screen.getByText(UNSURE_NOTE).closest('[role="status"]')).not.toBeNull()
+  expect(screen.getByText(SCAN_UNSURE_NOTE).closest('[role="status"]')).not.toBeNull()
   expect(screen.getByRole('combobox', { name: 'Weingut' })).toHaveValue('Domaine de la Croix')
   expect(screen.getByRole('textbox', { name: 'Jahrgang' })).toHaveValue('2021')
   expect(screen.getByRole('textbox', { name: 'Rebsorte' })).toHaveValue('Merlot')
@@ -352,7 +350,7 @@ it('removes the block after a wine was added', async () => {
   await user.selectOptions(screen.getByRole('combobox', { name: /Weinart/ }), 'red')
   await user.click(screen.getByRole('button', { name: 'Wein hinzufügen' }))
   await waitFor(() => expect(linesBlock()).toBeNull())
-  expect(screen.queryByText(UNSURE_NOTE)).toBeNull()
+  expect(screen.queryByText(SCAN_UNSURE_NOTE)).toBeNull()
 })
 
 it('removes the marker when the host edits the field or confirms it with "passt"', async () => {
@@ -380,16 +378,16 @@ it('keeps the margin note until every marked field was handled and nothing is le
   const { user, scan } = setup({ vintage: { value: 2021, sure: true }, grapeVariety: { value: 'Riesling', sure: true } })
   await scan()
   await user.click(screen.getByRole('button', { name: 'Jahrgang passt' }))
-  expect(screen.getByText(UNSURE_NOTE)).toBeInTheDocument()
+  expect(screen.getByText(SCAN_UNSURE_NOTE)).toBeInTheDocument()
   await user.type(screen.getByRole('textbox', { name: 'Rebsorte' }), '!')
-  expect(screen.queryByText(UNSURE_NOTE)).toBeNull()
+  expect(screen.queryByText(SCAN_UNSURE_NOTE)).toBeNull()
 })
 
 it('with a suggestion only, the margin note points at the suggestion instead of marked fields', async () => {
   const { user, fileInput } = setup({ wineType: { value: 'red', sure: false } })
   await user.upload(fileInput, photo)
   expect(await screen.findByText(/Tipp auf einen Vorschlag/)).toBeInTheDocument()
-  expect(screen.queryByText(UNSURE_NOTE)).toBeNull()
+  expect(screen.queryByText(SCAN_UNSURE_NOTE)).toBeNull()
 })
 
 it('offers grapes and a wine type from the appellation, saying where they come from', async () => {
@@ -413,7 +411,7 @@ it('with label lines only, the block itself is the message', async () => {
   const { user, fileInput } = setup({ name: { value: 'Camp del Gal', sure: false } })
   await user.upload(fileInput, photo)
   expect(await screen.findByRole('region', { name: LABEL_LINES_HEADING })).toBeInTheDocument()
-  expect(screen.queryByText(UNSURE_NOTE)).toBeNull()
+  expect(screen.queryByText(SCAN_UNSURE_NOTE)).toBeNull()
   expect(screen.queryByText(/Nichts erkannt/)).toBeNull()
   expect(screen.queryByText(/Tipp auf einen Vorschlag/)).toBeNull()
 })
@@ -423,7 +421,7 @@ it('says so when nothing was found and leaves the form alone', async () => {
   await user.upload(fileInput, photo)
   expect(await screen.findByText(/Nichts erkannt/)).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: 'Weingut' })).toHaveValue('')
-  expect(screen.queryByText(UNSURE_NOTE)).toBeNull()
+  expect(screen.queryByText(SCAN_UNSURE_NOTE)).toBeNull()
 })
 
 it('reports an unreadable photo and keeps the form usable', async () => {
@@ -453,7 +451,7 @@ it('says the text recognition could not be loaded (not "try another photo") when
   recognizeLabel.mockResolvedValue(stack([['x']]))
   parseLabel.mockReturnValue({ vintage: { value: 2021, sure: true } })
   await user.upload(container.querySelector<HTMLInputElement>('input[type="file"]')!, photo)
-  expect(await screen.findByText(UNSURE_NOTE)).toBeInTheDocument()
+  expect(await screen.findByText(SCAN_UNSURE_NOTE)).toBeInTheDocument()
   expect(screen.queryByText(SCAN_LOAD_ERROR)).toBeNull()
 })
 
@@ -480,7 +478,7 @@ it('ignores a scan that finishes after the wine was added: the next, empty form 
   expect(screen.getByRole('textbox', { name: 'Jahrgang' })).toHaveValue('')
   expect(screen.getByRole('textbox', { name: 'Rebsorte' })).toHaveValue('')
   expect(screen.queryByText(/bitte prüfen/)).toBeNull()
-  expect(screen.queryByText(UNSURE_NOTE)).toBeNull()
+  expect(screen.queryByText(SCAN_UNSURE_NOTE)).toBeNull()
 })
 
 it('lets a second scan replace what the first scan wrote with its own sure values, but never typed or edited text', async () => {

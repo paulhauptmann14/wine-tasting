@@ -4,7 +4,6 @@ import {
   applyVariant,
   decodeLabelImage,
   fitSize,
-  invert,
   renderVariant,
   stretchContrast,
   toGrayscale,
@@ -46,12 +45,6 @@ describe('stretchContrast', () => {
   })
 })
 
-describe('invert', () => {
-  it('flips the values', () => {
-    expect(Array.from(invert(new Uint8ClampedArray([0, 100, 255])))).toEqual([255, 155, 0])
-  })
-})
-
 describe('adaptiveThreshold', () => {
   // 40 x 40 gradient background (30 -> 200 left to right) with a dark text bar in the middle
   const width = 40
@@ -74,27 +67,20 @@ describe('adaptiveThreshold', () => {
       }
     }
   })
-
-  it('turns light text black with lightText', () => {
-    const light = gray.map((v) => 255 - v)
-    const out = adaptiveThreshold(light, width, height, 15, 0.9, true)
-    expect(out[20 * width + 20]).toBe(0)
-    expect(out[5 * width + 20]).toBe(255)
-  })
 })
 
 describe('applyVariant', () => {
   const rgba = new Uint8ClampedArray([200, 200, 200, 255, 100, 100, 100, 255, 100, 100, 100, 255, 200, 200, 200, 255])
 
   it('returns one byte per pixel for every variant', () => {
-    for (const variant of ['gray', 'stretch', 'adaptive', 'adaptiveLight', 'inverted'] as const) {
+    for (const variant of ['gray', 'adaptive'] as const) {
       expect(applyVariant(rgba, 2, 2, variant)).toHaveLength(4)
     }
   })
 
-  it('gray keeps the luma, inverted flips the stretched image', () => {
+  it('gray keeps the luma, adaptive turns the darker pixels black', () => {
     expect(Array.from(applyVariant(rgba, 2, 2, 'gray'))).toEqual([200, 100, 100, 200])
-    expect(Array.from(applyVariant(rgba, 2, 2, 'inverted'))).toEqual([0, 255, 255, 0])
+    expect(Array.from(applyVariant(rgba, 2, 2, 'adaptive'))).toEqual([255, 0, 0, 255])
   })
 })
 
@@ -162,11 +148,11 @@ describe('decodeLabelImage / renderVariant', () => {
     const image = { data, width: 2, height: 2 }
 
     renderVariant(image, 'gray')
-    renderVariant(image, 'inverted')
+    renderVariant(image, 'adaptive')
 
     expect(Array.from(data)).toEqual(original)
     const written = contexts.map((c) => c.putImageData.mock.calls[0][0].data as Uint8ClampedArray)
     expect(Array.from(written[0].slice(0, 4))).toEqual([200, 200, 200, 255])
-    expect(Array.from(written[1].slice(0, 4))).toEqual([0, 0, 0, 255])
+    expect(Array.from(written[1].slice(0, 8))).toEqual([255, 255, 255, 255, 0, 0, 0, 255])
   })
 })

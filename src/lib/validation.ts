@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { ActionState } from '@/lib/action-state'
+import { LIMITS } from '@/lib/limits'
 import { normalizeCode } from '@/lib/tasting/code'
 import { parseAlcoholText } from '@/lib/tasting/alcohol'
 import { PRESET_KEYS } from '@/lib/tasting/presets'
@@ -21,13 +22,13 @@ const tastingName = z
   .string()
   .trim()
   .min(1, 'Wie soll dein Tasting heißen?')
-  .max(60, 'Maximal 60 Zeichen.')
+  .max(LIMITS.tastingName, `Maximal ${LIMITS.tastingName} Zeichen.`)
 
 /** Free text under the tasting name. CRLF counts as one character, like a textarea's maxLength; blank lines squeezed. */
 const tastingDescription = z
   .string()
   .transform((v) => v.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim())
-  .pipe(z.string().max(300, 'Maximal 300 Zeichen.'))
+  .pipe(z.string().max(LIMITS.tastingDescription, `Maximal ${LIMITS.tastingDescription} Zeichen.`))
   .transform((v) => (v === '' ? null : v))
 
 export const createTastingSchema = z.object({
@@ -35,7 +36,7 @@ export const createTastingSchema = z.object({
   description: tastingDescription,
   blindTasting: z.boolean(),
   preset: z.enum(PRESET_KEYS, { error: 'Bitte wähle ein Bewertungssystem.' }),
-  pin: z.string().regex(/^\d{4,12}$/, 'Die PIN besteht aus 4 bis 12 Ziffern.'),
+  pin: z.string().regex(new RegExp(`^\\d{4,${LIMITS.pin}}$`), `Die PIN besteht aus 4 bis ${LIMITS.pin} Ziffern.`),
 })
 
 export const settingsSchema = z.object({
@@ -44,7 +45,11 @@ export const settingsSchema = z.object({
 })
 
 export const joinSchema = z.object({
-  name: z.string().trim().min(1, 'Bitte gib deinen Namen ein.').max(40, 'Maximal 40 Zeichen.'),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Bitte gib deinen Namen ein.')
+    .max(LIMITS.guestName, `Maximal ${LIMITS.guestName} Zeichen.`),
 })
 
 export const adminLoginSchema = z.object({
@@ -72,8 +77,12 @@ const optionalChoice = <const T extends readonly [string, ...string[]]>(keys: T,
 const ALCOHOL_ERROR = 'Alkohol zwischen 0 und 25 % vol, z. B. 13,5.'
 
 export const wineSchema = z.object({
-  name: z.string().trim().min(1, 'Bitte gib einen Namen ein.').max(80, 'Maximal 80 Zeichen.'),
-  winery: optionalText(80),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Bitte gib einen Namen ein.')
+    .max(LIMITS.wineName, `Maximal ${LIMITS.wineName} Zeichen.`),
+  winery: optionalText(LIMITS.winery),
   vintage: z
     .string()
     .trim()
@@ -86,7 +95,7 @@ export const wineSchema = z.object({
         .max(2100, 'Jahrgang zwischen 1900 und 2100.')
         .nullable(),
     ),
-  grapeVariety: optionalText(60),
+  grapeVariety: optionalText(LIMITS.grapeVariety),
   sweetness: optionalChoice(SWEETNESS_KEYS, 'Bitte wähle eine Geschmacksrichtung aus der Liste.'),
   // Required for new input only: the column stays nullable, wines from before this rule have no type
   wineType: z
@@ -94,7 +103,7 @@ export const wineSchema = z.object({
     .min(1, 'Bitte wähle die Weinart.')
     .pipe(z.enum(WINE_TYPE_KEYS, { error: 'Bitte wähle eine Weinart aus der Liste.' })),
   // Free text such as "Süß & fruchtig" – the sweetness level stays its own field
-  description: optionalText(200),
+  description: optionalText(LIMITS.wineDescription),
   alcohol: z
     .string()
     .trim()
@@ -104,7 +113,11 @@ export const wineSchema = z.object({
 export type WineInput = z.output<typeof wineSchema>
 
 export const criterionNameSchema = z.object({
-  name: z.string().trim().min(1, 'Bitte gib einen Namen ein.').max(40, 'Maximal 40 Zeichen.'),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Bitte gib einen Namen ein.')
+    .max(LIMITS.criterionName, `Maximal ${LIMITS.criterionName} Zeichen.`),
 })
 
 /** Bound arguments of server actions come from the client – always validate. */
@@ -149,12 +162,12 @@ export function parseRatingForm(fd: FormData, criteria: RatingCriterionScale[]):
   }
 
   const notes = formValue(fd, 'notes').trim()
-  if (notes.length > 1000) fieldErrors.notes = ['Maximal 1000 Zeichen.']
+  if (notes.length > LIMITS.ratingNotes) fieldErrors.notes = [`Maximal ${LIMITS.ratingNotes} Zeichen.`]
 
   if (Object.keys(fieldErrors).length > 0) {
     const messages = []
     if (missing.length > 0) messages.push(missingStarsMessage(missing))
-    if (fieldErrors.notes) messages.push('Die Notiz ist zu lang. Maximal 1000 Zeichen.')
+    if (fieldErrors.notes) messages.push(`Die Notiz ist zu lang. Maximal ${LIMITS.ratingNotes} Zeichen.`)
     return { ok: false, fieldErrors, message: messages.join(' ') }
   }
   return { ok: true, values, notes: notes === '' ? null : notes }

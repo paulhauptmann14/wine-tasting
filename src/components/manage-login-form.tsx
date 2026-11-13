@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRevealErrors } from '@/components/use-reveal-errors'
+import { ADMIN_SESSION_DAYS } from '@/lib/auth/session-lifetimes'
+import { LIMITS } from '@/lib/limits'
 
 export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
   const [state, action, pending] = useActionState(manageLoginAction, undefined)
@@ -39,7 +41,7 @@ export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
           type="password"
           inputMode="numeric"
           autoComplete="current-password"
-          maxLength={12}
+          maxLength={LIMITS.pin}
           autoFocus={!!defaultCode}
           aria-invalid={!!errors.pin}
           aria-describedby={describedBy('pin', errors.pin, 'pin-hint')}
@@ -48,7 +50,7 @@ export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
         <FieldError fieldId="pin" errors={errors.pin} />
         <p id="pin-hint" className="mt-1.5 text-sm text-muted-foreground">
           PIN vergessen? Sie lässt sich nicht zurücksetzen. Auf dem Gerät, auf dem du das Tasting erstellt hast,
-          bleibst du 7 Tage ohne PIN angemeldet.
+          bleibst du {ADMIN_SESSION_DAYS} Tage ohne PIN angemeldet.
         </p>
       </div>
       {state?.message && (
@@ -57,7 +59,7 @@ export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
         </p>
       )}
       <BottomBar>
-        <Button type="submit" size="lg" className="h-14 w-full text-base lg:w-auto lg:px-10" disabled={pending}>
+        <Button type="submit" size="main" disabled={pending}>
           Weiter
         </Button>
       </BottomBar>

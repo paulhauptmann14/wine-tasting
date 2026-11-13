@@ -2,9 +2,9 @@
 
 import { useId, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { ConfirmSubmit } from '@/components/admin/confirm-submit'
+import { CopyLinkButton } from '@/components/admin/copy-link-button'
 import { marginNote, textLink, textLinkFocus } from '@/components/styles'
 import { Button } from '@/components/ui/button'
-import { useCopy } from '@/components/use-copy'
 import { cn } from '@/lib/utils'
 
 type RejoinLinkProps = {
@@ -28,7 +28,6 @@ const subscribeNever = () => () => {}
 export function RejoinLink({ name, tastingName, url, lockAction, children }: RejoinLinkProps) {
   const panelId = useId()
   const [open, setOpen] = useState(false)
-  const [copied, copy] = useCopy()
   const share = useSyncExternalStore(subscribeNever, canShare, () => false)
   // After "Link sperren" the page revalidates and hands in a new url – say so
   const [shownUrl, setShownUrl] = useState(url)
@@ -76,9 +75,7 @@ export function RejoinLink({ name, tastingName, url, lockAction, children }: Rej
               Teilen
             </Button>
           )}
-          <Button type="button" variant="secondary" size="lg" className="h-12" onClick={() => copy(url)}>
-            <span aria-live="polite">{copied ? 'Link kopiert' : 'Link kopieren'}</span>
-          </Button>
+          <CopyLinkButton url={url} />
           <ConfirmSubmit
             action={lockAction}
             trigger="Link sperren"

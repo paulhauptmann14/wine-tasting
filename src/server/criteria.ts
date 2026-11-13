@@ -1,16 +1,14 @@
-import { and, asc, count, eq, max } from 'drizzle-orm'
+import { asc, count, eq, max } from 'drizzle-orm'
 import type { Db } from '@/db/types'
 import { participants, ratingCriteria, ratings, tastings } from '@/db/schema'
 import { moveInOrder } from '@/lib/tasting/order'
 import { PRESETS, type PresetKey } from '@/lib/tasting/presets'
 import { canEditStructure } from '@/lib/tasting/rules'
 import type { Direction } from '@/lib/validation'
+import { scoped } from './scoped'
 import { StructureLockedError, assertStructureEditable } from './structure'
 
 export type Criterion = typeof ratingCriteria.$inferSelect
-
-const scoped = (tastingId: string, criterionId: string) =>
-  and(eq(ratingCriteria.id, criterionId), eq(ratingCriteria.tastingId, tastingId))
 
 export async function listCriteria(db: Db, tastingId: string): Promise<Criterion[]> {
   return db
@@ -85,7 +83,7 @@ export async function addCriterion(db: Db, tastingId: string, name: string): Pro
 }
 
 export async function renameCriterion(db: Db, tastingId: string, criterionId: string, name: string) {
-  await db.update(ratingCriteria).set({ name }).where(scoped(tastingId, criterionId))
+  await db.update(ratingCriteria).set({ name }).where(scoped(ratingCriteria, tastingId, criterionId))
 }
 
 async function renumber(tx: Db, orderedIds: string[]) {
@@ -105,7 +103,7 @@ export async function deleteCriterion(
     if (!ids.includes(criterionId)) return { ok: true } as const
     if (ids.length === 1) return { ok: false, reason: 'Mindestens ein Kriterium wird gebraucht.' } as const
     // rating_value rows go away via ON DELETE CASCADE
-    await tx.delete(ratingCriteria).where(scoped(tastingId, criterionId))
+    await tx.delete(ratingCriteria).where(scoped(ratingCriteria, tastingId, criterionId))
     await renumber(tx, ids.filter((id) => id !== criterionId))
     return { ok: true } as const
   })

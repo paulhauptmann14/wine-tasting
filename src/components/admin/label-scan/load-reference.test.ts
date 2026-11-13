@@ -36,6 +36,11 @@ describe('loadReference', () => {
     expect(a.sites).toEqual([])
     expect(a.wineries).toEqual(['Weingut A'])
     await loadReference()
-    expect(fetchMock).toHaveBeenCalledTimes(6)
+    // The failed file is fetched again; the winery list loaded fine and stays cached in its shared loader
+    const calls = (url: string) => fetchMock.mock.calls.filter(([u]) => u === url).length
+    expect(calls('/data/sites.json')).toBe(2)
+    expect(calls('/data/appellations.json')).toBe(2)
+    expect(calls('/data/wineries.json')).toBe(1)
+    expect(fetchMock).toHaveBeenCalledTimes(5)
   })
 })

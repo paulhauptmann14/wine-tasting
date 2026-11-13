@@ -1,15 +1,11 @@
-import {
-  EMPTY_REFERENCE_DATA,
-  parseAppellations,
-  parseSites,
-  parseWineries,
-  type ReferenceData,
-} from '@/lib/label/reference-data'
+import { EMPTY_REFERENCE_DATA, parseAppellations, parseSites, type ReferenceData } from '@/lib/label/reference-data'
+import { fetchWineries, resetWineryCache } from '@/lib/wineries/load'
 
 /**
  * Client loader for the reference lists in `public/data` (winery names, EU appellations, vineyard
- * sites). The three files are fetched in parallel once and cached in module scope. A failed file
- * only means an empty list (fewer suggestions) and is retried on the next call.
+ * sites). The three files are fetched in parallel once and cached in module scope; the winery list
+ * comes from the loader the winery field uses too. A failed file only means an empty list (fewer
+ * suggestions) and is retried on the next call.
  */
 
 let cache: Promise<ReferenceData> | null = null
@@ -22,12 +18,12 @@ async function fetchJson(url: string): Promise<unknown> {
 
 export function loadReference(): Promise<ReferenceData> {
   cache ??= Promise.allSettled([
-    fetchJson('/data/wineries.json'),
+    fetchWineries(),
     fetchJson('/data/appellations.json'),
     fetchJson('/data/sites.json'),
   ]).then(([w, a, s]) => {
     const data: ReferenceData = {
-      wineries: w.status === 'fulfilled' ? parseWineries(w.value) : EMPTY_REFERENCE_DATA.wineries,
+      wineries: w.status === 'fulfilled' ? w.value : EMPTY_REFERENCE_DATA.wineries,
       appellations: a.status === 'fulfilled' ? parseAppellations(a.value) : EMPTY_REFERENCE_DATA.appellations,
       sites: s.status === 'fulfilled' ? parseSites(s.value) : EMPTY_REFERENCE_DATA.sites,
     }
@@ -41,4 +37,5 @@ export function loadReference(): Promise<ReferenceData> {
 /** For tests. */
 export function resetReferenceCache() {
   cache = null
+  resetWineryCache()
 }

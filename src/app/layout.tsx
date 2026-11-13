@@ -12,7 +12,8 @@ import './globals.css'
 const newsreader = Newsreader({ subsets: ['latin'], axes: ['opsz'], style: ['normal'], variable: '--font-newsreader' })
 
 export const metadata: Metadata = {
-  title: 'Wine Tasting',
+  // Pages in child segments only name themselves: "Datenschutz" becomes "Datenschutz · Wine Tasting"
+  title: { template: '%s · Wine Tasting', default: 'Wine Tasting' },
   description: 'Weine gemeinsam verkosten, bewerten und auflösen.',
 }
 

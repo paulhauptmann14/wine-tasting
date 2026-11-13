@@ -1,3 +1,4 @@
+import { LIMITS } from '@/lib/limits'
 import { readableCase } from './readable-case'
 import type { LabelSuggestion } from './types'
 
@@ -10,12 +11,12 @@ export type LabelLine = {
 }
 
 export const MAX_LINES = 5
-// Same limit as the name and winery fields (src/lib/validation.ts)
-const MAX_LENGTH = 80
+// A line goes into the name or the winery field
+const MAX_LENGTH = Math.min(LIMITS.wineName, LIMITS.winery)
 
 const tidy = (text: string) => readableCase(text).slice(0, MAX_LENGTH).trim()
 /** Case- and space-insensitive identity of a line. */
-export const lineKey = (text: string) => text.toLocaleLowerCase().replace(/\s+/g, '')
+const lineKey = (text: string) => text.toLocaleLowerCase().replace(/\s+/g, '')
 
 /**
  * The lines the parser could not place: producers from the winery list first, then name

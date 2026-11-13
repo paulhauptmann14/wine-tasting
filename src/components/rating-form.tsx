@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useRevealErrors } from '@/components/use-reveal-errors'
 import type { FormAction } from '@/lib/action-state'
+import { LIMITS } from '@/lib/limits'
 import { cn } from '@/lib/utils'
 
 type Criterion = { id: string; name: string; scaleMin: number; scaleMax: number }
@@ -62,7 +63,7 @@ export function RatingForm({ action, criteria, initialValues, initialNotes, isLa
           name="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          maxLength={1000}
+          maxLength={LIMITS.ratingNotes}
           rows={3}
           aria-describedby="notes-hint"
           placeholder="Fruchtig, etwas Säure, grüner Apfel …"
@@ -86,7 +87,7 @@ export function RatingForm({ action, criteria, initialValues, initialNotes, isLa
       )}
 
       <BottomBar>
-        <Button type="submit" size="lg" className="h-14 w-full text-base lg:w-auto lg:px-10" disabled={pending}>
+        <Button type="submit" size="main" disabled={pending}>
           {pending ? 'Speichert …' : isLast ? 'Speichern & fertig' : 'Speichern & weiter'}
         </Button>
       </BottomBar>

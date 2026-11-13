@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { LegalPage } from '@/components/legal-page'
 import { OPERATOR } from '@/lib/legal'
 
-export const metadata: Metadata = { title: 'Impressum · Wine Tasting' }
+export const metadata: Metadata = { title: 'Impressum' }
 
 export default function ImpressumPage() {
   return (

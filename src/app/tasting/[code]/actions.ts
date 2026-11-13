@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { db } from '@/db/client'
 import { getCurrentParticipant, setParticipantCookie } from '@/lib/auth/participant-session'
 import type { ActionState } from '@/lib/action-state'
+import { LIMITS } from '@/lib/limits'
 import { requireTasting } from '@/lib/data'
 import { getSessionSecret } from '@/lib/env'
 import { canJoin, canRate } from '@/lib/tasting/rules'
@@ -14,6 +15,8 @@ import { listCriteria } from '@/server/criteria'
 import { joinTasting, rejoinTasting } from '@/server/participants'
 import { saveGuestRating, type GuestRatingResult } from '@/server/ratings'
 import { getWineById } from '@/server/wines'
+
+const refresh = (code: string) => revalidatePath(`/tasting/${code}`, 'layout')
 
 export async function joinAction(code: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const tasting = await requireTasting(code)
@@ -25,12 +28,12 @@ export async function joinAction(code: string, _prev: ActionState, formData: For
 
   const { token, expiresAt } = await joinTasting(db, tasting.id, parsed.data.name)
   await setParticipantCookie(tasting.code, token, expiresAt)
-  revalidatePath(`/tasting/${tasting.code}`, 'layout')
+  refresh(tasting.code)
   redirect(`/tasting/${tasting.code}`)
 }
 
 // Bound from the client – only a length check here, rejoinTasting() checks shape and signature
-const rejoinLinkSchema = z.string().max(100)
+const rejoinLinkSchema = z.string().max(LIMITS.rejoinLink)
 
 /**
  * "Als Anna weitermachen": a new session for the guest of the rejoin link the host sent.
@@ -45,7 +48,7 @@ export async function rejoinAction(code: string, link: unknown): Promise<ActionS
   if (!rejoined) return { message: 'Dieser Link gilt nicht mehr. Frag den Gastgeber nach einem neuen.' }
 
   await setParticipantCookie(tasting.code, rejoined.token, rejoined.expiresAt)
-  revalidatePath(`/tasting/${tasting.code}`, 'layout')
+  refresh(tasting.code)
   redirect(`/tasting/${tasting.code}`)
 }
 
@@ -119,7 +122,7 @@ export async function saveRatingAction(
     notes: parsed.notes,
   })
   if (!saved.ok) return ratingRefused(tasting.code, saved.reason, shown.data)
-  revalidatePath(`/tasting/${tasting.code}`, 'layout')
+  refresh(tasting.code)
 
   // Next wine in the current order (counted in the saving transaction)
   redirect(

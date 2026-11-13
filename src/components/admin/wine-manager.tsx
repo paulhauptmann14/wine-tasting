@@ -26,6 +26,7 @@ import type { FormAction } from '@/lib/action-state'
 import { PREFILL_FIELDS, planPrefill, type PrefillField, type PrefillOption, type PrefillPlan } from '@/lib/label/prefill'
 import type { LabelLine } from '@/lib/label/lines'
 import type { LabelSuggestion } from '@/lib/label/types'
+import { LIMITS } from '@/lib/limits'
 import { alcoholInput } from '@/lib/tasting/alcohol'
 import { wineDetails, type WineLike } from '@/lib/tasting/display'
 import {
@@ -61,6 +62,58 @@ function ScanExtras({ id, label, scan }: { id: string; label: string; scan: Fiel
       <ScanMarkNote id={`${id}-scan`} label={label} marked={scan.marked} onConfirm={scan.confirm} />
       <ScanSuggestions label={label} options={scan.options} onPick={scan.pick} />
     </>
+  )
+}
+
+/** Text input with label, error and scan extras; every id derives from `${formId}-${name}`. */
+function ScanTextField({
+  formId,
+  name,
+  label,
+  defaultValue,
+  errors,
+  scan,
+  required,
+  maxLength,
+  inputMode,
+  placeholder,
+  className,
+}: {
+  formId: string
+  name: PrefillField
+  label: string
+  defaultValue?: string | number
+  errors?: string[]
+  scan: FieldScan
+  required?: boolean
+  maxLength: number
+  inputMode?: 'numeric'
+  placeholder?: string
+  className?: string
+}) {
+  const id = `${formId}-${name}`
+  return (
+    <div className={className}>
+      <Label htmlFor={id}>
+        {label}
+        {required && <RequiredMark />}
+      </Label>
+      <Input
+        id={id}
+        name={name}
+        inputMode={inputMode}
+        defaultValue={defaultValue}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        required={required}
+        aria-required={required ? 'true' : undefined}
+        aria-invalid={!!errors}
+        aria-describedby={describedBy(id, errors, scan.marked && `${id}-scan`)}
+        className={cn('mt-2 h-12', scanMarkClass(scan.marked))}
+      />
+      <FieldError fieldId={id} errors={errors} />
+      <ScanExtras id={id} label={label} scan={scan} />
+    </div>
   )
 }
 
@@ -334,25 +387,17 @@ function WineForm({
         </div>
       )}
       <RequiredLegend className="text-sm text-muted-foreground sm:col-span-2" />
-      <div className="sm:col-span-2">
-        <Label htmlFor={`${id}-name`}>
-          Name
-          <RequiredMark />
-        </Label>
-        <Input
-          id={`${id}-name`}
-          name="name"
-          defaultValue={values?.name ?? initial?.name}
-          maxLength={80}
-          required
-          aria-required="true"
-          aria-invalid={!!errors.name}
-          aria-describedby={describedBy(`${id}-name`, errors.name, scanNoteId('name'))}
-          className={cn('mt-2 h-12', scanMarkClass(!!marked.name))}
-        />
-        <FieldError fieldId={`${id}-name`} errors={errors.name} />
-        <ScanExtras id={`${id}-name`} label="Name" scan={fieldScan('name')} />
-      </div>
+      <ScanTextField
+        formId={id}
+        name="name"
+        label="Name"
+        defaultValue={values?.name ?? initial?.name}
+        errors={errors.name}
+        scan={fieldScan('name')}
+        required
+        maxLength={LIMITS.wineName}
+        className="sm:col-span-2"
+      />
       <LabelLines lines={lines} assigned={assigned} notice={lineNotice} noticeFor={noticeFor} onAssign={assignLine} className="sm:col-span-2" />
       <ChoiceField
         id={`${id}-wine-type`}
@@ -371,7 +416,7 @@ function WineForm({
           id={`${id}-winery`}
           name="winery"
           defaultValue={values?.winery ?? initial?.winery ?? ''}
-          maxLength={80}
+          maxLength={LIMITS.winery}
           aria-invalid={!!errors.winery}
           aria-describedby={describedBy(`${id}-winery`, errors.winery, scanNoteId('winery'))}
           className={cn('mt-2 h-12', scanMarkClass(!!marked.winery))}
@@ -386,21 +431,16 @@ function WineForm({
           , Wikidata
         </p>
       </div>
-      <div>
-        <Label htmlFor={`${id}-vintage`}>Jahrgang</Label>
-        <Input
-          id={`${id}-vintage`}
-          name="vintage"
-          inputMode="numeric"
-          defaultValue={values?.vintage ?? initial?.vintage ?? ''}
-          maxLength={4}
-          aria-invalid={!!errors.vintage}
-          aria-describedby={describedBy(`${id}-vintage`, errors.vintage, scanNoteId('vintage'))}
-          className={cn('mt-2 h-12', scanMarkClass(!!marked.vintage))}
-        />
-        <FieldError fieldId={`${id}-vintage`} errors={errors.vintage} />
-        <ScanExtras id={`${id}-vintage`} label="Jahrgang" scan={fieldScan('vintage')} />
-      </div>
+      <ScanTextField
+        formId={id}
+        name="vintage"
+        label="Jahrgang"
+        inputMode="numeric"
+        defaultValue={values?.vintage ?? initial?.vintage ?? ''}
+        errors={errors.vintage}
+        scan={fieldScan('vintage')}
+        maxLength={LIMITS.vintageInput}
+      />
       <div>
         <Label htmlFor={`${id}-alcohol`}>
           Alkohol<span className="sr-only"> in % vol</span>
@@ -412,7 +452,7 @@ function WineForm({
             inputMode="decimal"
             autoComplete="off"
             defaultValue={values?.alcohol ?? alcoholInput(initial?.alcohol)}
-            maxLength={10}
+            maxLength={LIMITS.alcoholInput}
             placeholder="13,5"
             aria-invalid={!!errors.alcohol}
             aria-describedby={describedBy(`${id}-alcohol`, errors.alcohol, scanNoteId('alcohol'))}
@@ -425,20 +465,15 @@ function WineForm({
         <FieldError fieldId={`${id}-alcohol`} errors={errors.alcohol} />
         <ScanExtras id={`${id}-alcohol`} label="Alkohol" scan={fieldScan('alcohol')} />
       </div>
-      <div>
-        <Label htmlFor={`${id}-grape`}>Rebsorte</Label>
-        <Input
-          id={`${id}-grape`}
-          name="grapeVariety"
-          defaultValue={values?.grapeVariety ?? initial?.grapeVariety ?? ''}
-          maxLength={60}
-          aria-invalid={!!errors.grapeVariety}
-          aria-describedby={describedBy(`${id}-grape`, errors.grapeVariety, scanNoteId('grapeVariety'))}
-          className={cn('mt-2 h-12', scanMarkClass(!!marked.grapeVariety))}
-        />
-        <FieldError fieldId={`${id}-grape`} errors={errors.grapeVariety} />
-        <ScanExtras id={`${id}-grapeVariety`} label="Rebsorte" scan={fieldScan('grapeVariety')} />
-      </div>
+      <ScanTextField
+        formId={id}
+        name="grapeVariety"
+        label="Rebsorte"
+        defaultValue={values?.grapeVariety ?? initial?.grapeVariety ?? ''}
+        errors={errors.grapeVariety}
+        scan={fieldScan('grapeVariety')}
+        maxLength={LIMITS.grapeVariety}
+      />
       <ChoiceField
         id={`${id}-sweetness`}
         name="sweetness"
@@ -449,21 +484,17 @@ function WineForm({
         errors={errors.sweetness}
         scan={fieldScan('sweetness')}
       />
-      <div className="sm:col-span-2">
-        <Label htmlFor={`${id}-description`}>Beschreibung</Label>
-        <Input
-          id={`${id}-description`}
-          name="description"
-          defaultValue={values?.description ?? initial?.description ?? ''}
-          maxLength={200}
-          placeholder="z. B. fruchtig, Noten von Kirsche"
-          aria-invalid={!!errors.description}
-          aria-describedby={describedBy(`${id}-description`, errors.description, scanNoteId('description'))}
-          className={cn('mt-2 h-12', scanMarkClass(!!marked.description))}
-        />
-        <FieldError fieldId={`${id}-description`} errors={errors.description} />
-        <ScanExtras id={`${id}-description`} label="Beschreibung" scan={fieldScan('description')} />
-      </div>
+      <ScanTextField
+        formId={id}
+        name="description"
+        label="Beschreibung"
+        placeholder="z. B. fruchtig, Noten von Kirsche"
+        defaultValue={values?.description ?? initial?.description ?? ''}
+        errors={errors.description}
+        scan={fieldScan('description')}
+        maxLength={LIMITS.wineDescription}
+        className="sm:col-span-2"
+      />
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" size="lg" className="h-12" disabled={pending}>
           {submitLabel}

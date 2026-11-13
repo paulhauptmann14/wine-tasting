@@ -2,22 +2,8 @@
 
 import { useId, useMemo, useState, type ComponentProps } from 'react'
 import { Input } from '@/components/ui/input'
+import { loadWineries } from '@/lib/wineries/load'
 import { searchWineries } from '@/lib/wineries/match'
-
-let loading: Promise<string[]> | null = null
-
-/** The self-hosted winery list, fetched once per page load. Failure is silent (free text still works). */
-export function loadWineries(): Promise<string[]> {
-  loading ??= fetch('/data/wineries.json')
-    .then((res) => (res.ok ? (res.json() as Promise<unknown>) : []))
-    .then((data) => (Array.isArray(data) ? data.filter((n): n is string => typeof n === 'string') : []))
-    .catch(() => [])
-    .then((list) => {
-      if (list.length === 0) loading = null
-      return list
-    })
-  return loading
-}
 
 type Props = Omit<ComponentProps<typeof Input>, 'list' | 'onChange' | 'value' | 'defaultValue'> & {
   defaultValue?: string

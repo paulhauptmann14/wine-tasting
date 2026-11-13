@@ -71,7 +71,7 @@ export async function setStatusAction(code: string, _prev: ActionState, fd: Form
   const parsed = statusSchema.safeParse(fd.get('to'))
   if (!parsed.success) return { message: 'Unbekannter Status.' }
   const result = await setTastingStatus(db, tasting.id, parsed.data)
-  if (!result.ok) return { message: result.reason, values: { nonce: String(Date.now()) } }
+  if (!result.ok) return { message: result.reason }
   refresh(tasting.code)
   return { ok: true }
 }

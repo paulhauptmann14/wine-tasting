@@ -1,3 +1,4 @@
+import { MIN_CONFIDENCE } from '@/lib/label/confidence'
 import type { OcrLine } from '@/lib/label/types'
 import { decodeLabelImage, renderVariant, type PreprocessVariant } from './preprocess'
 
@@ -44,7 +45,7 @@ type OcrPass = { variant: PreprocessVariant; psm: string }
  */
 export const OCR_SETTINGS: { longSide: number; minConfidence: number; maxPassStartMs: number; passes: OcrPass[] } = {
   longSide: 2000,
-  minConfidence: 30,
+  minConfidence: MIN_CONFIDENCE,
   // Busy backgrounds make sparse-text mode very slow (up to 14 s measured): after that much time
   // the remaining passes are skipped and the lines found so far are returned
   maxPassStartMs: 8000,
@@ -228,7 +229,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
   })
 }
 
-export async function recognizeCanvas(worker: Worker, image: HTMLCanvasElement, psm: string): Promise<OcrLine[]> {
+async function recognizeCanvas(worker: Worker, image: HTMLCanvasElement, psm: string): Promise<OcrLine[]> {
   // The typed parameter list is incomplete: tesseract accepts any variable (values are strings)
   await worker.setParameters({
     tessedit_pageseg_mode: psm,

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRevealErrors } from '@/components/use-reveal-errors'
 import type { FormAction } from '@/lib/action-state'
+import { LIMITS } from '@/lib/limits'
 
 export function JoinForm({ action }: { action: FormAction }) {
   const [state, formAction, pending] = useActionState(action, undefined)
@@ -24,14 +25,14 @@ export function JoinForm({ action }: { action: FormAction }) {
         defaultValue={state?.values?.name}
         autoComplete="given-name"
         autoFocus
-        maxLength={40}
+        maxLength={LIMITS.guestName}
         aria-invalid={!!state?.fieldErrors?.name}
         aria-describedby={describedBy('name', state?.fieldErrors?.name)}
         className="mt-2 h-14 border-foreground/40 bg-card text-lg lg:max-w-md"
       />
       <FieldError fieldId="name" errors={state?.fieldErrors?.name} />
       <BottomBar>
-        <Button type="submit" size="lg" className="h-14 w-full text-base lg:w-auto lg:px-10" disabled={pending}>
+        <Button type="submit" size="main" disabled={pending}>
           Beitreten
         </Button>
       </BottomBar>

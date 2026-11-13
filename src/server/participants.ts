@@ -4,22 +4,25 @@ import { participants, ratingValues, ratings, sessions, wines } from '@/db/schem
 import { parseRejoinToken, verifyRejoinToken } from '@/lib/auth/rejoin-token'
 import { generateSessionToken, hashToken } from '@/lib/auth/tokens'
 import { ratingState, type RingState } from '@/lib/tasting/progress'
+import { GUEST_SESSION_DAYS } from '@/lib/auth/session-lifetimes'
 import { countCriteria } from './criteria'
+import { scoped } from './scoped'
 
-const SESSION_TTL_DAYS = 30
-
-function newSession(now: Date) {
-  return { token: generateSessionToken(), expiresAt: new Date(now.getTime() + SESSION_TTL_DAYS * 86_400_000) }
+/** A new guest session: the row stores only the token's hash, the token itself goes into the cookie. */
+async function createSession(db: Db, participantId: string, now: Date) {
+  const token = generateSessionToken()
+  const expiresAt = new Date(now.getTime() + GUEST_SESSION_DAYS * 86_400_000)
+  await db.insert(sessions).values({ participantId, tokenHash: hashToken(token), expiresAt })
+  return { token, expiresAt }
 }
 
 export async function joinTasting(db: Db, tastingId: string, name: string, now: Date = new Date()) {
-  const { token, expiresAt } = newSession(now)
   return db.transaction(async (tx) => {
     const [participant] = await tx
       .insert(participants)
       .values({ tastingId, name, createdAt: now })
       .returning({ id: participants.id, name: participants.name })
-    await tx.insert(sessions).values({ participantId: participant.id, tokenHash: hashToken(token), expiresAt })
+    const { token, expiresAt } = await createSession(tx, participant.id, now)
     return { participant, token, expiresAt }
   })
 }
@@ -36,7 +39,7 @@ export async function findRejoinParticipant(
   const [row] = await db
     .select({ id: participants.id, name: participants.name, rejoinVersion: participants.rejoinVersion })
     .from(participants)
-    .where(and(eq(participants.id, parsed.participantId), eq(participants.tastingId, tastingId)))
+    .where(scoped(participants, tastingId, parsed.participantId))
   if (!row || !verifyRejoinToken(parsed, row.rejoinVersion, secret)) return null
   return { id: row.id, name: row.name }
 }
@@ -45,8 +48,7 @@ export async function findRejoinParticipant(
 export async function rejoinTasting(db: Db, tastingId: string, link: string, secret: string, now: Date = new Date()) {
   const participant = await findRejoinParticipant(db, tastingId, link, secret)
   if (!participant) return null
-  const { token, expiresAt } = newSession(now)
-  await db.insert(sessions).values({ participantId: participant.id, tokenHash: hashToken(token), expiresAt })
+  const { token, expiresAt } = await createSession(db, participant.id, now)
   return { participant, token, expiresAt }
 }
 
@@ -55,7 +57,7 @@ export async function lockRejoinLink(db: Db, tastingId: string, participantId: s
   const updated = await db
     .update(participants)
     .set({ rejoinVersion: sql`${participants.rejoinVersion} + 1` })
-    .where(and(eq(participants.id, participantId), eq(participants.tastingId, tastingId)))
+    .where(scoped(participants, tastingId, participantId))
     .returning({ id: participants.id })
   return updated.length > 0
 }
@@ -89,7 +91,7 @@ export async function countParticipants(db: Db, tastingId: string): Promise<numb
 export async function removeParticipant(db: Db, tastingId: string, participantId: string): Promise<boolean> {
   const removed = await db
     .delete(participants)
-    .where(and(eq(participants.id, participantId), eq(participants.tastingId, tastingId)))
+    .where(scoped(participants, tastingId, participantId))
     .returning({ id: participants.id })
   return removed.length > 0
 }

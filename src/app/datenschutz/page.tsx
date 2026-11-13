@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { LegalPage } from '@/components/legal-page'
+import { ADMIN_SESSION_DAYS, GUEST_SESSION_DAYS } from '@/lib/auth/session-lifetimes'
 import { OPERATOR, PRIVACY_POLICY_DATE } from '@/lib/legal'
 import { RETENTION_DAYS } from '@/lib/tasting/retention'
 
-export const metadata: Metadata = { title: 'Datenschutz · Wine Tasting' }
+export const metadata: Metadata = { title: 'Datenschutz' }
 
 export default function DatenschutzPage() {
   return (
@@ -44,20 +45,24 @@ export default function DatenschutzPage() {
           Weinen, Gästen, Bewertungen und Notizen.
         </li>
         <li>Der Gastgeber kann das Tasting oder einzelne Gäste jederzeit vorher löschen.</li>
-        <li>Die Anmeldung auf deinem Gerät läuft für Gäste nach 30 Tagen ab, für die Verwaltung nach 7 Tagen.</li>
+        <li>
+          Die Anmeldung auf deinem Gerät läuft für Gäste nach {GUEST_SESSION_DAYS} Tagen ab, für die Verwaltung nach{' '}
+          {ADMIN_SESSION_DAYS} Tagen.
+        </li>
       </ul>
 
       <h2>Cookies</h2>
       <p>
         Es werden nur technisch notwendige Cookies gesetzt (§ 25 Abs. 2 Nr. 2 TDDDG), dafür ist keine Einwilligung
-        nötig. Es gibt keine Werbe- oder Tracking-Cookies.
+        nötig – auch nicht für die private Kopie des Ergebnisbilds, die dein Browser nach dem Ende eines Tastings im
+        Cache behält, damit du es schneller teilen kannst. Es gibt keine Werbe- oder Tracking-Cookies.
       </p>
       <ul>
         <li>
-          <code>wt_p_…</code> – hält dich als Gast in einem Tasting angemeldet (30 Tage).
+          <code>wt_p_…</code> – hält dich als Gast in einem Tasting angemeldet ({GUEST_SESSION_DAYS} Tage).
         </li>
         <li>
-          <code>wt_a_…</code> – hält dich nach Eingabe der PIN in der Verwaltung angemeldet (7 Tage).
+          <code>wt_a_…</code> – hält dich nach Eingabe der PIN in der Verwaltung angemeldet ({ADMIN_SESSION_DAYS} Tage).
         </li>
         <li>
           <code>wt_theme</code> – merkt sich, ob du das helle oder dunkle Design gewählt hast (1 Jahr).

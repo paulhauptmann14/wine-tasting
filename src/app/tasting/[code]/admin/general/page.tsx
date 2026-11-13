@@ -1,31 +1,18 @@
 import { DeleteTasting } from '@/components/admin/delete-tasting'
 import { SettingsForm } from '@/components/admin/settings-form'
-import { StatusControl } from '@/components/admin/status-control'
-import { AutoRefresh } from '@/components/auto-refresh'
+import { HostStatusControl } from '@/components/admin/host-status-control'
 import { marginNote } from '@/components/styles'
-import { db } from '@/db/client'
 import { getAdminTasting } from '@/lib/data'
 import { formatDate } from '@/lib/format-date'
-import { countUnfinished } from '@/lib/tasting/host-hints'
 import { RETENTION_DAYS, deletionDate } from '@/lib/tasting/retention'
 import { canEditStructure } from '@/lib/tasting/rules'
-import { listParticipantProgress } from '@/server/participants'
 
 export default async function GeneralPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
   const tasting = await getAdminTasting(code)
-  const openGuests =
-    tasting.status === 'active' ? countUnfinished(await listParticipantProgress(db, tasting.id)) : 0
   return (
     <div className="grid max-w-xl gap-10">
-      {/* Keeps the number of unfinished guests in the finish dialog current */}
-      {tasting.status === 'active' && <AutoRefresh />}
-      <StatusControl
-        code={tasting.code}
-        status={tasting.status}
-        blindTasting={tasting.blindTasting}
-        openGuests={openGuests}
-      />
+      <HostStatusControl tasting={tasting} />
       <SettingsForm
         code={tasting.code}
         name={tasting.name}

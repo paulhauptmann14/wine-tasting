@@ -21,8 +21,7 @@ export function RejoinForm({ action, name }: { action: FormAction; name: string 
       <BottomBar>
         <Button
           type="submit"
-          size="lg"
-          className="h-14 w-full text-base lg:w-auto lg:px-10"
+          size="main"
           disabled={pending}
           aria-busy={pending}
         >

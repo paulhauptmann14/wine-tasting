@@ -29,20 +29,11 @@ export function fold(text: string): Folded {
 
 export const foldText = (text: string) => fold(text).folded
 
-/** Slice of the original text that a match in the folded text came from. */
-export function originalSlice(text: string, { map }: Folded, start: number, end: number): string {
-  return text.slice(map[start], map[end])
-}
-
-const letters = (text: string) => text.match(/\p{L}/gu)?.length ?? 0
-
-export function letterCount(text: string): number {
-  return letters(text)
-}
+export const letterCount = (text: string) => text.match(/\p{L}/gu)?.length ?? 0
 
 /** True when most letters are capitals – those lines get Title Case. */
 export function isMostlyUpper(text: string): boolean {
-  const all = letters(text)
+  const all = letterCount(text)
   if (all < 2) return false
   const upper = text.match(/\p{Lu}/gu)?.length ?? 0
   return upper / all >= 0.7
@@ -68,8 +59,8 @@ export function cleanLine(text: string): string {
   const stray = (t: string | undefined) =>
     t !== undefined &&
     t !== '&' &&
-    ((letters(t) <= 2 && !/\d/.test(t) && !EDGE_WORDS.has(t.toLowerCase())) || /^\d{1,2}$/.test(t))
-  if (tokens.some((t) => letters(t) >= 3)) {
+    ((letterCount(t) <= 2 && !/\d/.test(t) && !EDGE_WORDS.has(t.toLowerCase())) || /^\d{1,2}$/.test(t))
+  if (tokens.some((t) => letterCount(t) >= 3)) {
     while (stray(tokens[0])) tokens.shift()
     while (stray(tokens[tokens.length - 1])) tokens.pop()
   }
@@ -91,7 +82,11 @@ const KEEP_UPPER = new Set(['DOC', 'DOCG', 'IGT', 'IGP', 'AOC', 'AOP', 'VDP', 'G
 
 const capitalize = (w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
 
-/** Title Case for ALL-CAPS label text; keeps "&", apostrophes, hyphens and wine acronyms. */
+/**
+ * Title Case for ALL-CAPS label text; keeps "&", apostrophes, hyphens and wine acronyms.
+ * readable-case.ts has a second Title Case with other word lists for the "Auf dem Etikett gefunden"
+ * lines; merging them changes how names are written ("La" / "la"), so that needs a decision of its own.
+ */
 export function titleCase(text: string, continued = false): string {
   let first = !continued
   return text.replace(/[\p{L}\p{N}']+/gu, (word) => {

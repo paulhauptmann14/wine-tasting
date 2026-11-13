@@ -33,7 +33,7 @@ export function normalize(text: string): string {
 }
 
 // ä/ö/ü fold to a/o/u after NFKD; also accept the German ae/oe/ue spelling.
-const fold = (t: string) => t.replace(/ae/g, 'a').replace(/oe/g, 'o').replace(/ue/g, 'u')
+const foldUmlautSpelling = (t: string) => t.replace(/ae/g, 'a').replace(/oe/g, 'o').replace(/ue/g, 'u')
 
 function tokens(text: string): string[] {
   return normalize(text).split(' ').filter(Boolean)
@@ -45,9 +45,13 @@ function coreTokens(text: string): string[] {
 
 /** A word with its umlaut folding, worked out once. */
 type Token = { text: string; folded: string }
-const token = (text: string): Token => ({ text, folded: fold(text) })
+const token = (text: string): Token => ({ text, folded: foldUmlautSpelling(text) })
 
-/** Levenshtein distance; any distance above `limit` comes back as more than `limit`, not exact. */
+/**
+ * Levenshtein distance; any distance above `limit` comes back as more than `limit`, not exact.
+ * label/match-reference.ts has the same algorithm as `editDistance`. Kept apart on purpose: sharing
+ * one function with the label parser's calls made matchWinery about 15 % slower (measured).
+ */
 function distance(a: string, b: string, limit: number): number {
   if (a === b) return 0
   if (Math.abs(a.length - b.length) > limit) return limit + 1

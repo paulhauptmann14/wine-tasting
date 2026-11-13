@@ -1,6 +1,7 @@
 // OCR reads many labels in capitals ("CAMP DEL GAL"). The form shows and writes them in a readable
 // case instead: Title Case, small connecting words lower ("Camp del Gal", "Château d'Yquem").
 // Text that already has lower case letters is taken as written.
+// The parser's own Title Case is titleCase() in normalize.ts (other word lists, see there).
 
 /** Connecting words that stay lower case inside a name (never at its start). */
 const SMALL_WORDS = new Set([

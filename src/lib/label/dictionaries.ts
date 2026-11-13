@@ -470,7 +470,7 @@ export const BOTTLER_PREFIXES: string[] = [
 ]
 
 /** Bottling notes in the small print; the producer's name and address follow them. Folded text. */
-export const BOTTLING_NOTE = /mise? en bouteille|bouteille|(^| )mise? [ei]n b[o0]|imbottigl|embotellad|bottled|abgefullt|abfuller|abfullung|erzeuger/
+const BOTTLING_NOTE = /mise? en bouteille|bouteille|(^| )mise? [ei]n b[o0]|imbottigl|embotellad|bottled|abgefullt|abfuller|abfullung|erzeuger/
 
 /** Bottling or producer notes: grape names after them are the producer's name or town ("Weingut Kerner"). */
 export const PRODUCER_NOTE = new RegExp(`${BOTTLING_NOTE.source}|produced by|produit par|prodotto da|elaborado por|hergestellt (von|durch|bei)`)
@@ -503,6 +503,12 @@ export const LEGAL_PATTERNS: RegExp[] = [
   /\ba\.? ?p\.? ?-? ?nr|\bapnr|prufungsnummer|\blot\b|\blotto\b/,
   CONTACT_NOTE,
 ]
+
+/**
+ * Folded abbreviations of protected origins (DOC, AOP, DO, PDO …). Shared by the parser's
+ * designation words and the appellation lookup's companion words; each adds its own extras.
+ */
+export const ORIGIN_ABBREVIATIONS = ['doc', 'docg', 'igt', 'igp', 'aoc', 'aop', 'do', 'dop', 'doca', 'pdo', 'pgi', 'dac']
 
 /** Appellation tokens removed from a name line ("Chianti Classico DOCG" → "Chianti Classico"). Case-sensitive. */
 export const APPELLATION_TOKENS = /(^|[^\p{L}])(D\.?O\.?C\.?G\.?|D\.?O\.?C\.?a?\.?|D\.?O\.?P\.?|I\.?G\.?T\.?|I\.?G\.?P\.?|A\.?O\.?C\.?|A\.?O\.?P\.?|D\.?O\.?|VDP|QbA)(?=$|[^\p{L}])/gu

@@ -3,12 +3,12 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getSessionSecret } from '@/lib/env'
 import { signAdminToken, verifyAdminToken } from './admin-token'
+import { ADMIN_SESSION_DAYS } from './session-lifetimes'
 
-const ADMIN_TTL_DAYS = 7
 const cookieName = (code: string) => `wt_a_${code}`
 
 export async function setAdminCookie(code: string, tastingId: string): Promise<void> {
-  const expiresAt = new Date(Date.now() + ADMIN_TTL_DAYS * 86_400_000)
+  const expiresAt = new Date(Date.now() + ADMIN_SESSION_DAYS * 86_400_000)
   const store = await cookies()
   store.set(cookieName(code), signAdminToken(tastingId, expiresAt, getSessionSecret()), {
     httpOnly: true,

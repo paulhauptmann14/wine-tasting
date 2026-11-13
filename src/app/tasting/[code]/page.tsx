@@ -7,11 +7,11 @@ import { TastingCode } from '@/components/tasting-code'
 import { StatusControl } from '@/components/admin/status-control'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { BottomBar } from '@/components/bottom-bar'
-import { CornerStain } from '@/components/corner-stain'
 import { JoinForm } from '@/components/join-form'
 import { PageShell } from '@/components/page-shell'
 import { TastingDescription } from '@/components/tasting-description'
 import { marginNote, textLink } from '@/components/styles'
+import { IntroNote, TastingIntro } from '@/components/tasting-intro'
 import { TastingSplit } from '@/components/tasting-split'
 import { buttonVariants } from '@/components/ui/button'
 import { WineList } from '@/components/wine-list'
@@ -19,35 +19,30 @@ import { db } from '@/db/client'
 import { isAdmin } from '@/lib/auth/admin-session'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { requireTasting } from '@/lib/data'
+import { parsePosition } from '@/lib/search-params'
+import { countDone } from '@/lib/tasting/progress'
 import { cn } from '@/lib/utils'
 import { getWineListItems } from '@/server/participant-view'
 
 type Props = { params: Promise<{ code: string }>; searchParams: Promise<{ saved?: string }> }
 
-const mainAction = cn(buttonVariants({ size: 'lg' }), 'h-14 text-base lg:px-8')
+// Main button, with a little less side padding on laptops than the standard size
+const mainAction = cn(buttonVariants({ size: 'main' }), 'lg:px-8')
 
-/** Large title with a greeting above it, on the corner stain – the start of every pre-tasting view. */
+/** Large tasting name with a greeting above it – the start of every pre-tasting view. */
 function Intro({
   kicker,
-  name,
-  description,
+  tasting,
   children,
 }: {
   kicker: string
-  name: string
-  description: string | null
+  tasting: { name: string; description: string | null }
   children?: ReactNode
 }) {
   return (
-    <div className="relative">
-      <CornerStain seed={name.length} />
-      <p className="relative pt-28 text-sm text-muted-foreground lg:pt-16">{kicker}</p>
-      <h1 className="relative mt-1 font-display text-4xl md:text-5xl leading-[1.08] font-medium tracking-tight lg:text-6xl lg:leading-[1.02]">
-        {name}
-      </h1>
-      <TastingDescription text={description} className="relative mt-3" />
+    <TastingIntro kicker={kicker} title={tasting.name} seed={tasting.name.length} description={tasting.description}>
       {children}
-    </div>
+    </TastingIntro>
   )
 }
 
@@ -72,7 +67,7 @@ export default async function TastingPage({ params, searchParams }: Props) {
   if (!participant) {
     return (
       <PageShell>
-        <Intro kicker="Du bist eingeladen zu" name={tasting.name} description={tasting.description}>
+        <Intro kicker="Du bist eingeladen zu" tasting={tasting}>
           <JoinForm action={joinAction.bind(null, tasting.code)} />
         </Intro>
         <CodeRow code={tasting.code} />
@@ -84,10 +79,8 @@ export default async function TastingPage({ params, searchParams }: Props) {
     // The host rates along – only they can start, so don't make them wait
     return (
       <PageShell>
-        <Intro kicker={`Hallo ${participant.name}`} name={tasting.name} description={tasting.description}>
-          <p className="relative mt-4 max-w-[34ch] text-muted-foreground">
-            Du bist Gastgeber. Starte das Tasting, sobald alle da sind.
-          </p>
+        <Intro kicker={`Hallo ${participant.name}`} tasting={tasting}>
+          <IntroNote>Du bist Gastgeber. Starte das Tasting, sobald alle da sind.</IntroNote>
         </Intro>
         <div className="mt-8">
           <StatusControl code={tasting.code} status={tasting.status} />
@@ -101,10 +94,8 @@ export default async function TastingPage({ params, searchParams }: Props) {
     return (
       <PageShell>
         <AutoRefresh />
-        <Intro kicker={`Hallo ${participant.name}`} name={tasting.name} description={tasting.description}>
-          <p className="relative mt-4 max-w-[34ch] text-muted-foreground">
-            Du bist dabei. Sobald der Gastgeber startet, erscheinen hier die Weine.
-          </p>
+        <Intro kicker={`Hallo ${participant.name}`} tasting={tasting}>
+          <IntroNote>Du bist dabei. Sobald der Gastgeber startet, erscheinen hier die Weine.</IntroNote>
         </Intro>
         <CodeRow code={tasting.code} />
       </PageShell>
@@ -112,8 +103,8 @@ export default async function TastingPage({ params, searchParams }: Props) {
   }
 
   const items = await getWineListItems(db, tasting, participant.id)
-  const savedPosition = saved && Number.isInteger(Number(saved)) && Number(saved) >= 1 ? Number(saved) : undefined
-  const doneCount = items.filter((i) => i.state === 'done').length
+  const savedPosition = parsePosition(saved)
+  const doneCount = countDone(items)
   const next = items.find((i) => i.state !== 'done')
   const allRated = items.length > 0 && doneCount === items.length
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanLine, displayCase, fold, foldText, isMostlyUpper, originalSlice, titleCase } from './normalize'
+import { cleanLine, displayCase, fold, foldText, isMostlyUpper, titleCase } from './normalize'
 
 describe('fold', () => {
   it('lowercases, strips accents and expands ß', () => {
@@ -8,11 +8,13 @@ describe('fold', () => {
 
   it('maps folded positions back to the original text', () => {
     const text = 'Großes Gewächs'
-    const f = fold(text)
-    const start = f.folded.indexOf('gewachs')
-    expect(originalSlice(text, f, start, start + 'gewachs'.length)).toBe('Gewächs')
-    const s = f.folded.indexOf('grosses')
-    expect(originalSlice(text, f, s, s + 'grosses'.length)).toBe('Großes')
+    const { folded, map } = fold(text)
+    // How parse-label cuts a match out of the original line
+    const original = (start: number, end: number) => text.slice(map[start], map[end])
+    const start = folded.indexOf('gewachs')
+    expect(original(start, start + 'gewachs'.length)).toBe('Gewächs')
+    const s = folded.indexOf('grosses')
+    expect(original(s, s + 'grosses'.length)).toBe('Großes')
   })
 })
 
