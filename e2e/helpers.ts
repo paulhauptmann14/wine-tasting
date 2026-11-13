@@ -1,18 +1,4 @@
-import { expect, type Browser, type Page, type TestInfo } from '@playwright/test'
-
-/** Separate browser context per guest, using the current project's device (phone/tablet/laptop). */
-export async function newGuest(browser: Browser, testInfo: TestInfo): Promise<Page> {
-  const u = testInfo.project.use
-  const context = await browser.newContext({
-    baseURL: u.baseURL,
-    viewport: u.viewport,
-    userAgent: u.userAgent,
-    deviceScaleFactor: u.deviceScaleFactor,
-    isMobile: u.isMobile,
-    hasTouch: u.hasTouch,
-  })
-  return context.newPage()
-}
+import { expect, type Page } from '@playwright/test'
 
 /** The tasting code from the current URL (/tasting/<code>/…). */
 export function tastingCode(page: Page): string {
@@ -40,9 +26,27 @@ export async function addWines(page: Page, names: string[]) {
   }
 }
 
+/** Starts the tasting from the admin area and waits until it runs – guests joining earlier land on the waiting page. */
 export async function startTasting(page: Page) {
   await page.getByRole('link', { name: 'Allgemein', exact: true }).click()
   await page.getByRole('button', { name: 'Tasting starten' }).click()
+  // "Tasting beenden" or, when blind, "Tasting beenden & auflösen"
+  await expect(page.getByRole('button', { name: /^Tasting beenden/ })).toBeVisible()
+}
+
+/** Resolves once the server action that the next click triggers has answered (its POST carries a Next-Action header). */
+export function serverActionDone(page: Page) {
+  return page.waitForResponse((r) => r.request().method() === 'POST' && 'next-action' in r.request().headers())
+}
+
+/** Sets the same number of stars in every criterion row of the open wine page. */
+export async function rateAll(page: Page, stars: number) {
+  const groups = page.getByRole('radiogroup')
+  // count() does not wait – without this, a page still loading would get no stars at all
+  await expect(groups.first()).toBeVisible()
+  for (let g = 0; g < (await groups.count()); g++) {
+    await groups.nth(g).getByRole('radio', { name: `${stars} von 5 Sternen` }).click()
+  }
 }
 
 /** Joins a running tasting as a guest. */
@@ -59,10 +63,7 @@ export async function rateWines(page: Page, scores: number[], notes: string[] = 
   await page.getByRole('link', { name: /Wein #1/ }).first().click()
   for (const [i, stars] of scores.entries()) {
     await expect(page.getByRole('heading', { name: `Wein #${i + 1}` })).toBeVisible()
-    const groups = page.getByRole('radiogroup')
-    for (let g = 0; g < (await groups.count()); g++) {
-      await groups.nth(g).getByRole('radio', { name: `${stars} von 5 Sternen` }).click()
-    }
+    await rateAll(page, stars)
     if (notes[i]) await page.getByLabel('Was schmeckst du?').fill(notes[i])
     const isLast = i === scores.length - 1
     await page.getByRole('button', { name: isLast ? 'Speichern & fertig' : 'Speichern & weiter' }).click()

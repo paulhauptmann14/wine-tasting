@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test'
-import { addWines, createTasting, joinAs, newGuest, startTasting } from './helpers'
+import { expect, test } from './fixtures'
+import { addWines, createTasting, joinAs, startTasting } from './helpers'
 
 test('PIN ist beim Erstellen sichtbar, danach sagt „Teilen“, was als Nächstes kommt', async ({ page }) => {
   await page.goto('/new')
@@ -32,13 +32,13 @@ test('alle Admin-Tabs sind bei 375 px sichtbar, ohne seitlich zu scrollen', asyn
   expect(overflow).toBeLessThanOrEqual(0)
 })
 
-test('„Zurück in Vorbereitung“ fragt nach und Beenden nennt offene Gäste', async ({ page, browser }, testInfo) => {
+test('„Zurück in Vorbereitung“ fragt nach und Beenden nennt offene Gäste', async ({ page, newGuest }) => {
   const code = await createTasting(page, 'E2E Anhalten')
   await addWines(page, ['Riesling'])
   await startTasting(page)
 
   // A guest joins but hasn't rated yet
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await joinAs(guest, code, 'Anna')
   await page.reload()
 

@@ -1,20 +1,12 @@
-import { expect, test, type Page } from '@playwright/test'
-import { addWines, createTasting, joinAs, newGuest, startTasting } from './helpers'
+import { expect, test } from './fixtures'
+import { addWines, createTasting, joinAs, rateAll, startTasting } from './helpers'
 
-/** Sets the same number of stars in every criterion row of the open wine page. */
-async function rateAll(page: Page, stars: number) {
-  const groups = page.getByRole('radiogroup')
-  for (let g = 0; g < (await groups.count()); g++) {
-    await groups.nth(g).getByRole('radio', { name: `${stars} von 5 Sternen` }).click()
-  }
-}
-
-test('Gäste sehen nach dem Speichern, dass es geklappt hat, und was danach kommt', async ({ page, browser }, testInfo) => {
+test('Gäste sehen nach dem Speichern, dass es geklappt hat, und was danach kommt', async ({ page, newGuest }) => {
   const code = await createTasting(page, 'E2E Gespeichert')
   await addWines(page, ['Riesling', 'Silvaner'])
   await startTasting(page)
 
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await joinAs(guest, code, 'Anna')
   await guest.goto(`/tasting/${code}/wine/1`)
   await expect(guest.getByText('0 / 2 bewertet')).toBeVisible()
@@ -31,12 +23,12 @@ test('Gäste sehen nach dem Speichern, dass es geklappt hat, und was danach komm
   await expect(guest.getByText('Alles bewertet. Das Ergebnis steht fest, wenn der Gastgeber beendet.')).toBeVisible()
 })
 
-test('Fehlende Sterne werden benannt, markiert und angesteuert', async ({ page, browser }, testInfo) => {
+test('Fehlende Sterne werden benannt, markiert und angesteuert', async ({ page, newGuest }) => {
   const code = await createTasting(page, 'E2E Fehlt')
   await addWines(page, ['Riesling'])
   await startTasting(page)
 
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await joinAs(guest, code, 'Anna')
   await guest.goto(`/tasting/${code}/wine/1`)
 
@@ -51,12 +43,12 @@ test('Fehlende Sterne werden benannt, markiert und angesteuert', async ({ page, 
   await expect(groups.nth(1).getByRole('radio').first()).toBeFocused()
 })
 
-test('Ungespeicherte Sterne: erst der Hinweis, beim zweiten Tippen geht es weiter', async ({ page, browser }, testInfo) => {
+test('Ungespeicherte Sterne: erst der Hinweis, beim zweiten Tippen geht es weiter', async ({ page, newGuest }) => {
   const code = await createTasting(page, 'E2E Ringleiste')
   await addWines(page, ['Riesling', 'Silvaner'])
   await startTasting(page)
 
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await joinAs(guest, code, 'Anna')
   await guest.goto(`/tasting/${code}/wine/1`)
   await guest.getByRole('radio', { name: '4 von 5 Sternen' }).first().click()
@@ -73,12 +65,12 @@ test('Ungespeicherte Sterne: erst der Hinweis, beim zweiten Tippen geht es weite
   await expect(guest.getByRole('heading', { name: 'Silvaner' })).toBeVisible()
 })
 
-test('Gast, der mitten im Bewerten vom Ende überrascht wird, bekommt eine Erklärung', async ({ page, browser }, testInfo) => {
+test('Gast, der mitten im Bewerten vom Ende überrascht wird, bekommt eine Erklärung', async ({ page, newGuest }) => {
   const code = await createTasting(page, 'E2E Ende')
   await addWines(page, ['Riesling'])
   await startTasting(page)
 
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await joinAs(guest, code, 'Anna')
   await guest.goto(`/tasting/${code}/wine/1`)
   await rateAll(guest, 4)

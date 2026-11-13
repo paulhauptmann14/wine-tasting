@@ -1,5 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
-import { addWines, createTasting, joinAs, newGuest, startTasting } from './helpers'
+import type { Page } from '@playwright/test'
+import { expect, test } from './fixtures'
+import { addWines, createTasting, joinAs, rateAll, startTasting } from './helpers'
 
 /** Opens the host's "Rückkehr-Link" panel for a guest and returns the link as a path (port-independent). */
 async function readRejoinLink(host: Page, name: string): Promise<string> {
@@ -12,20 +13,17 @@ async function readRejoinLink(host: Page, name: string): Promise<string> {
 
 test('Rückkehr-Link: Gast kommt auf neuem Gerät zurück, Sperren macht den alten Link ungültig', async ({
   page,
-  browser,
-}, testInfo) => {
+  newGuest,
+}) => {
   const code = await createTasting(page, 'E2E Rückkehr')
   await addWines(page, ['Riesling', 'Silvaner'])
   await startTasting(page)
 
   // Anna joins on her phone and rates wine #1
-  const anna = await newGuest(browser, testInfo)
+  const anna = await newGuest()
   await joinAs(anna, code, 'Anna')
   await anna.goto(`/tasting/${code}/wine/1`)
-  const groups = anna.getByRole('radiogroup')
-  for (let g = 0; g < (await groups.count()); g++) {
-    await groups.nth(g).getByRole('radio', { name: '4 von 5 Sternen' }).click()
-  }
+  await rateAll(anna, 4)
   await anna.getByRole('button', { name: 'Speichern & weiter' }).click()
   await expect(anna.getByRole('status').filter({ hasText: 'Wein #1 gespeichert.' })).toBeVisible()
 
@@ -34,7 +32,7 @@ test('Rückkehr-Link: Gast kommt auf neuem Gerät zurück, Sperren macht den alt
   const link = await readRejoinLink(page, 'Anna')
 
   // A new device: opening the link only asks, it does not sign in
-  const newPhone = await newGuest(browser, testInfo)
+  const newPhone = await newGuest()
   await newPhone.goto(link)
   await expect(newPhone.getByText('Willkommen zurück')).toBeVisible()
   await expect(newPhone.getByText(/Du machst als\s*Anna\s*weiter/)).toBeVisible()
@@ -60,7 +58,7 @@ test('Rückkehr-Link: Gast kommt auf neuem Gerät zurück, Sperren macht den alt
   const newLink = await readRejoinLink(page, 'Anna')
   expect(newLink).not.toBe(link)
 
-  const stranger = await newGuest(browser, testInfo)
+  const stranger = await newGuest()
   await stranger.goto(link)
   await expect(stranger.getByRole('heading', { name: 'Dieser Link gilt nicht mehr.' })).toBeVisible()
   await expect(stranger.getByText('Anna')).toHaveCount(0)
@@ -69,7 +67,7 @@ test('Rückkehr-Link: Gast kommt auf neuem Gerät zurück, Sperren macht den alt
   await newPhone.reload()
   await expect(newPhone.getByText('1 von 2 bewertet')).toBeVisible()
 
-  const tablet = await newGuest(browser, testInfo)
+  const tablet = await newGuest()
   await tablet.goto(newLink)
   await tablet.getByRole('button', { name: 'Als Anna weitermachen' }).click()
   await expect(tablet.getByText('1 von 2 bewertet')).toBeVisible()

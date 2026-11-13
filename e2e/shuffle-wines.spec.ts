@@ -1,5 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
-import { addWines, createTasting, joinAs, newGuest, startTasting } from './helpers'
+import type { Page } from '@playwright/test'
+import { expect, test } from './fixtures'
+import { addWines, createTasting, joinAs, rateAll, startTasting } from './helpers'
 
 const WINES = ['Riesling', 'Silvaner', 'Merlot', 'Syrah']
 
@@ -30,20 +31,16 @@ test('Reihenfolge mischen in der Vorbereitung ändert die Reihenfolge und behäl
   expect(after.map(([, name]) => name).sort()).toEqual([...WINES].sort())
 })
 
-test('Mischen während des Tastings lässt bewertete Weine auf ihrer Nummer', async ({ page, browser }, testInfo) => {
+test('Mischen während des Tastings lässt bewertete Weine auf ihrer Nummer', async ({ page, newGuest }) => {
   const code = await createTasting(page, 'E2E Mischen läuft')
   await addWines(page, WINES)
   await startTasting(page)
-  await expect(page.getByRole('button', { name: 'Tasting beenden', exact: true })).toBeVisible()
 
   // A guest rates wine #1 (open tasting: the guest page shows the name)
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await joinAs(guest, code, 'Anna')
   await guest.goto(`/tasting/${code}/wine/1`)
-  const groups = guest.getByRole('radiogroup')
-  for (let g = 0; g < (await groups.count()); g++) {
-    await groups.nth(g).getByRole('radio', { name: '4 von 5 Sternen' }).click()
-  }
+  await rateAll(guest, 4)
   await guest.getByRole('button', { name: 'Speichern & weiter' }).click()
   await expect(guest).toHaveURL(/\/wine\/2/)
 

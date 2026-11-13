@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test'
-import { newGuest, tastingCode } from './helpers'
+import { expect, test } from './fixtures'
+import { serverActionDone, tastingCode } from './helpers'
 
-test('Beschreibung steht unter dem Namen, lässt sich ändern und wieder leeren', async ({ page, browser }, testInfo) => {
+test('Beschreibung steht unter dem Namen, lässt sich ändern und wieder leeren', async ({ page, newGuest }) => {
   await page.goto('/new')
   await page.getByLabel('Name der Verkostung').fill('E2E Beschreibung')
   await page.getByLabel('Beschreibung').fill('Rieslinge von der Mosel.\nBring gern Brot mit.')
@@ -12,7 +12,7 @@ test('Beschreibung steht unter dem Namen, lässt sich ändern und wieder leeren'
   await expect(page.getByText('Rieslinge von der Mosel.')).toBeVisible()
 
   // The invitation shows it with its line break
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await guest.goto(`/tasting/${code}`)
   const note = guest.getByText(/Rieslinge von der Mosel\./)
   await expect(note).toHaveText('Rieslinge von der Mosel.\nBring gern Brot mit.', { useInnerText: true })
@@ -21,16 +21,21 @@ test('Beschreibung steht unter dem Namen, lässt sich ändern und wieder leeren'
   const field = page.getByLabel('Beschreibung')
   await expect(field).toHaveValue('Rieslinge von der Mosel.\nBring gern Brot mit.')
   await field.fill('Thema: Mosel')
+  let saved = serverActionDone(page)
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+  await saved
   await expect(page.getByText('Gespeichert.', { exact: true })).toBeVisible()
   await guest.reload()
   await expect(guest.getByText('Thema: Mosel')).toBeVisible()
 
   // Empty → nothing is rendered under the name
+  // The message from the first save is still there – wait for this save's answer before reloading
   await field.fill('')
+  saved = serverActionDone(page)
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+  await saved
+  await expect(page.getByText('Gespeichert.', { exact: true })).toBeVisible()
   await expect(page.getByText('Thema: Mosel')).toHaveCount(0)
   await guest.reload()
   await expect(guest.getByText('Thema: Mosel')).toHaveCount(0)
-  await guest.context().close()
 })

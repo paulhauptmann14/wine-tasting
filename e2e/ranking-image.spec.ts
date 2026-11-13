@@ -1,24 +1,21 @@
-import { expect, test } from '@playwright/test'
-import { addWines, createTasting, joinAs, newGuest, startTasting } from './helpers'
+import { expect, test } from './fixtures'
+import { addWines, createTasting, joinAs, rateAll, startTasting } from './helpers'
 
 // Phones share the image, browsers without file sharing download it
 const SHARE_OR_DOWNLOAD = /^(Ergebnis als Bild teilen|Bild herunterladen)$/
 
-test('Endergebnis lässt sich erst nach dem Ende als Bild teilen', async ({ page, browser }, testInfo) => {
+test('Endergebnis lässt sich erst nach dem Ende als Bild teilen', async ({ page, newGuest }, testInfo) => {
   const code = await createTasting(page, 'E2E Bildabend')
   const imageUrl = `/tasting/${code}/results/image`
   await addWines(page, ['Riesling'])
   await startTasting(page)
 
   // One guest rates the wine
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await joinAs(guest, code, 'Anna')
   await expect(guest.getByText('0 von 1 bewertet')).toBeVisible()
   await guest.goto(`/tasting/${code}/wine/1`)
-  const groups = guest.getByRole('radiogroup')
-  for (let g = 0; g < (await groups.count()); g++) {
-    await groups.nth(g).getByRole('radio', { name: '4 von 5 Sternen' }).click()
-  }
+  await rateAll(guest, 4)
   await guest.getByRole('button', { name: 'Speichern & fertig' }).click()
   await expect(guest.getByText('1 von 1 bewertet')).toBeVisible()
 

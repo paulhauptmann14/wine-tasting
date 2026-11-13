@@ -1,7 +1,8 @@
-import { expect, test, type Page } from '@playwright/test'
-import { addWines, createTasting, joinAs, newGuest, rateWines, startTasting, tastingCode } from './helpers'
+import type { Page } from '@playwright/test'
+import { expect, test } from './fixtures'
+import { addWines, createTasting, joinAs, rateWines, startTasting, tastingCode } from './helpers'
 
-test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, testInfo) => {
+test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, newGuest }) => {
   // Host creates the tasting and turns blind tasting on (off by default)
   await page.goto('/')
   await page.getByRole('link', { name: 'Tasting erstellen' }).click()
@@ -16,7 +17,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   const code = tastingCode(page)
 
   // Table view on its own device: only the code, no joining
-  const table = await newGuest(browser, testInfo)
+  const table = await newGuest()
   await table.goto(`/tasting/${code}/table`)
   await expect(table.getByText('Scanne den Code und mach mit.')).toBeVisible()
   await expect(table.getByRole('img', { name: /QR-Code/ })).toBeVisible()
@@ -49,7 +50,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(page.getByRole('link', { name: 'Für Gastgeber' })).toBeVisible()
 
   // Two guests rate blind – the admin area asks them for the PIN
-  const anna = await newGuest(browser, testInfo)
+  const anna = await newGuest()
   await joinAs(anna, code, 'Anna')
   await expect(anna.getByText('Riesling')).toHaveCount(0)
   await expect(anna.getByText('trocken')).toHaveCount(0)
@@ -62,7 +63,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await anna.goto(`/tasting/${code}`)
   await rateWines(anna, [5, 3], ['Pfirsich, sehr frisch'])
 
-  const ben = await newGuest(browser, testInfo)
+  const ben = await newGuest()
   await joinAs(ben, code, 'Ben')
   await rateWines(ben, [4, 2])
 
@@ -81,6 +82,20 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(table.getByText(/Mineralisch/)).toHaveCount(0)
   await expect(table.getByText('Anna')).toHaveCount(0)
   await expect(anna.getByText('Pfirsich, sehr frisch')).toHaveCount(0)
+
+  // getByText skips <script>, where the RSC payload lives – a wine object handed to a client
+  // component would slip past the checks above. So check the raw HTML, too.
+  const withheld = /Riesling|Spätburgunder|Loosen|Mineralisch/
+  for (const path of ['', '/wine/1', '/wine/2', '/results', '/table']) {
+    const res = await anna.request.get(`/tasting/${code}${path}`)
+    // No redirect to the invitation: Anna's session reached the page itself
+    expect(res.ok() && new URL(res.url()).pathname, path).toBe(`/tasting/${code}${path}`)
+    const html = await res.text()
+    // Names only the withheld word on failure instead of printing the whole page
+    expect(html.match(withheld)?.[0], `/tasting/${code}${path}`).toBeUndefined()
+  }
+  // Control: the host's results carry the names, so the check would see a leak
+  expect(await (await page.request.get(`/tasting/${code}/results`)).text()).toMatch(withheld)
 
   // Host goes from the guest view back to the admin area and finishes → names appear for Anna
   await page.getByRole('link', { name: 'Für Gastgeber' }).click()
@@ -112,7 +127,7 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, browser }, t
   await expect(anna.getByText('Endergebnis')).toBeVisible()
 })
 
-test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ page, browser }, testInfo) => {
+test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ page, newGuest }) => {
   await createTasting(page, 'E2E Geheim')
 
   // Record a real client navigation by the host (RSC request with router state)
@@ -130,17 +145,17 @@ test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ pag
   // Control: with the admin cookie the response contains the wine – so the test can detect a leak
   expect(await replay(page)).toContain('Geheimwein')
   // A guest without the admin cookie only gets the login redirect, no wine data
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   expect(await replay(guest)).not.toContain('Geheimwein')
 })
 
-test('Gastgeber kommt vom Gäste-Gerät mit der PIN in die Verwaltung', async ({ page, browser }, testInfo) => {
+test('Gastgeber kommt vom Gäste-Gerät mit der PIN in die Verwaltung', async ({ page, newGuest }) => {
   const code = await createTasting(page, 'E2E Zweitgerät')
   await addWines(page, ['Riesling'])
   await startTasting(page)
 
   // The guest phone is in the middle of the tasting and knows the PIN
-  const phone = await newGuest(browser, testInfo)
+  const phone = await newGuest()
   await joinAs(phone, code, 'Paul')
   await phone.getByRole('link', { name: 'Für Gastgeber' }).click()
   await phone.waitForURL(/\/manage\?code=/)
@@ -165,12 +180,12 @@ async function swipe(page: Page, fromX: number, toX: number) {
   await target.dispatchEvent('pointerup', { ...init, clientX: toX })
 }
 
-test('Gäste wischen zwischen den Weinen, ungespeicherte Sterne halten sie auf', async ({ page, browser }, testInfo) => {
+test('Gäste wischen zwischen den Weinen, ungespeicherte Sterne halten sie auf', async ({ page, newGuest }) => {
   const code = await createTasting(page, 'E2E Wischen')
   await addWines(page, ['Riesling', 'Silvaner'])
   await startTasting(page)
 
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await joinAs(guest, code, 'Anna')
   await guest.goto(`/tasting/${code}/wine/1`)
   await expect(guest.getByRole('heading', { name: 'Riesling' })).toBeVisible()
@@ -191,11 +206,11 @@ test('Gäste wischen zwischen den Weinen, ungespeicherte Sterne halten sie auf',
   expect(guest.url()).toMatch(new RegExp(`/tasting/${code}/wine/1`))
 })
 
-test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, browser }, testInfo) => {
+test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, newGuest }) => {
   const code = await createTasting(page, 'E2E Aufräumen')
   await addWines(page, ['Silvaner'])
 
-  const guest = await newGuest(browser, testInfo)
+  const guest = await newGuest()
   await guest.goto(`/tasting/${code}`)
   await guest.getByLabel('Wie heißt du?').fill('Doppelt')
   await guest.getByRole('button', { name: 'Beitreten' }).click()

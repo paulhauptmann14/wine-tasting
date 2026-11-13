@@ -43,7 +43,6 @@ test('Bewertungssystem lässt sich in der Vorbereitung wechseln, danach nicht me
   // Once the tasting runs, the system is shown but can't be changed
   await addWines(page, ['Riesling'])
   await startTasting(page)
-  await expect(page.getByRole('button', { name: /Tasting beenden/ })).toBeVisible()
   await page.getByRole('link', { name: 'Bewertung', exact: true }).click()
   await expect(page.getByText('Bewertungssystem:')).toBeVisible()
   await expect(page.getByText('100-Punkte-Schema', { exact: true })).toBeVisible()
