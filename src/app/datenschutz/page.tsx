@@ -85,7 +85,7 @@ export default function DatenschutzPage() {
       <h2>Reichweitenmessung</h2>
       <p>
         Um zu sehen, welche Seiten genutzt werden, verwende ich Vercel Web Analytics. Es setzt keine Cookies und bildet
-        keine Profile. Pro Seitenaufruf werden die Seite (ohne Tasting-Code), Zeitpunkt, vorherige Seite, ungefährer
+        keine Profile. Pro Seitenaufruf werden die Seite (ohne Tasting-Code und Rückkehr-Link), Zeitpunkt, vorherige Seite, ungefährer
         Standort (Land und Region), Betriebssystem, Browser und Gerätetyp erfasst. Besuche werden über einen Hash aus der
         Anfrage gezählt, der nach 24 Stunden verworfen wird; ausgewertet werden nur zusammengefasste Zahlen.
         Rechtsgrundlage ist mein berechtigtes Interesse, die App zu verbessern (Art. 6 Abs. 1 lit. f DSGVO). Du kannst

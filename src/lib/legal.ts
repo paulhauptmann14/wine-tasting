@@ -7,4 +7,4 @@ export const OPERATOR = {
 } as const
 
 /** Date of the current privacy policy – update together with its text. */
-export const PRIVACY_POLICY_DATE = '12. November 2026'
+export const PRIVACY_POLICY_DATE = '13. November 2026'

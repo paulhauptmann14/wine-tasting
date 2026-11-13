@@ -2,14 +2,16 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { z } from 'zod'
 import { db } from '@/db/client'
 import { getCurrentParticipant, setParticipantCookie } from '@/lib/auth/participant-session'
 import type { ActionState } from '@/lib/action-state'
 import { requireTasting } from '@/lib/data'
+import { getSessionSecret } from '@/lib/env'
 import { canJoin, canRate } from '@/lib/tasting/rules'
 import { formValue, idSchema, invalid, joinSchema, parseRatingForm, positionSchema } from '@/lib/validation'
 import { listCriteria } from '@/server/criteria'
-import { joinTasting } from '@/server/participants'
+import { joinTasting, rejoinTasting } from '@/server/participants'
 import { saveRating } from '@/server/ratings'
 import { countWines, getWineById } from '@/server/wines'
 
@@ -23,6 +25,26 @@ export async function joinAction(code: string, _prev: ActionState, formData: For
 
   const { token, expiresAt } = await joinTasting(db, tasting.id, parsed.data.name)
   await setParticipantCookie(tasting.code, token, expiresAt)
+  revalidatePath(`/tasting/${tasting.code}`, 'layout')
+  redirect(`/tasting/${tasting.code}`)
+}
+
+// Bound from the client – only a length check here, rejoinTasting() checks shape and signature
+const rejoinLinkSchema = z.string().max(100)
+
+/**
+ * "Als Anna weitermachen": a new session for the guest of the rejoin link the host sent.
+ * The form has no fields – useActionState's (prev, formData) are simply not taken.
+ */
+export async function rejoinAction(code: string, link: unknown): Promise<ActionState> {
+  const tasting = await requireTasting(code)
+  if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results`)
+
+  const parsed = rejoinLinkSchema.safeParse(link)
+  const rejoined = parsed.success ? await rejoinTasting(db, tasting.id, parsed.data, getSessionSecret()) : null
+  if (!rejoined) return { message: 'Dieser Link gilt nicht mehr. Frag den Gastgeber nach einem neuen.' }
+
+  await setParticipantCookie(tasting.code, rejoined.token, rejoined.expiresAt)
   revalidatePath(`/tasting/${tasting.code}`, 'layout')
   redirect(`/tasting/${tasting.code}`)
 }

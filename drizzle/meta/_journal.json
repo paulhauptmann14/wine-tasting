@@ -71,6 +71,13 @@
       "when": 1794514545583,
       "tag": "0009_wine_alcohol",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794516044009,
+      "tag": "0010_participant_rejoin_version",
+      "breakpoints": true
     }
   ]
 }

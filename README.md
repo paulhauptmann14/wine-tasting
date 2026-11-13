@@ -30,6 +30,7 @@ Der Gastgeber erstellt ein Tasting, trägt die Weine ein und zeigt einen QR-Code
 - **Ergebnisse** live mit Podest, Durchschnitt je Kriterium und – nach dem Ende – den Notizen aller Gäste ohne Namen
 - **Ergebnis als Bild** zum Teilen, z. B. in WhatsApp – mit Podest und allen Plätzen
 - **Tisch-Ansicht** für iPad oder Fernseher: QR-Code zum Beitreten, Fortschritt, am Ende das Podest
+- **Rückkehr-Link:** Neues Handy oder Cookies gelöscht? Der Gastgeber schickt dem Gast unter „Teilnehmer“ einen persönlichen Link, damit macht er auf jedem Gerät mit seinen Bewertungen weiter – bis zum Ende des Tastings; „Link sperren“ macht ihn ungültig
 - **Verwaltung** mit PIN, auch vom Handy eines Gastes aus
 - **Hell und dunkel**, folgt dem System oder per Schalter
 

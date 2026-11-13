@@ -1,0 +1,1 @@
+ALTER TABLE "participant" ADD COLUMN "rejoin_version" integer DEFAULT 0 NOT NULL;

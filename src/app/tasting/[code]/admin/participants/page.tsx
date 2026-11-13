@@ -1,16 +1,20 @@
 import { Trash2 } from 'lucide-react'
 import { ConfirmSubmit } from '@/components/admin/confirm-submit'
+import { RejoinLink } from '@/components/admin/rejoin-link'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { GlassRing } from '@/components/glass-ring'
 import { marginNote } from '@/components/styles'
 import { iconButtonClass } from '@/components/ui/button'
 import { db } from '@/db/client'
+import { signRejoinToken } from '@/lib/auth/rejoin-token'
+import { getJoinUrl } from '@/lib/base-url'
 import { getAdminTasting } from '@/lib/data'
+import { getSessionSecret } from '@/lib/env'
 import { duplicateNameHint, findDuplicateNames, isDuplicateName } from '@/lib/tasting/host-hints'
 import { RING_STATE_TEXT, type RingState } from '@/lib/tasting/progress'
 import { cn } from '@/lib/utils'
 import { listParticipantProgress } from '@/server/participants'
-import { removeParticipantAction } from '../actions'
+import { lockRejoinLinkAction, removeParticipantAction } from '../actions'
 
 const LEGEND: { state: RingState; text: string }[] = [
   { state: 'done', text: 'bewertet' },
@@ -34,6 +38,9 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
   // Same name twice: usually a guest on a new device (the session cookie is per browser)
   const duplicates = findDuplicateNames(people.map((p) => p.name))
   const firstDuplicate = duplicates.values().next().value
+  // Rejoin links work until the end – a finished tasting has nothing left to rejoin
+  const joinUrl = tasting.status === 'finished' ? null : await getJoinUrl(tasting.code)
+  const secret = joinUrl ? getSessionSecret() : null
   return (
     <>
       {tasting.status !== 'finished' && <AutoRefresh />}
@@ -50,7 +57,8 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
       <ul className="grid grid-cols-1 border-t border-border">
         {people.map((p) => (
           <li key={p.id} className="border-b border-border py-2">
-            <div className="flex items-center gap-3">
+            {/* flex-wrap: the rings and then the rejoin panel each take a line of their own */}
+            <div className="flex flex-wrap items-center gap-x-3">
               <span className="flex min-w-0 flex-1 items-baseline gap-2">
                 <span className="truncate font-medium">{p.name}</span>
                 {isDuplicateName(duplicates, p.name) && (
@@ -60,29 +68,50 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
               <span className="shrink-0 font-mono text-sm text-muted-foreground">
                 {p.doneCount} / {p.wines.length}
               </span>
-              <ConfirmSubmit
-                action={removeParticipantAction.bind(null, tasting.code, p.id)}
-                trigger={<Trash2 className="size-5" />}
-                triggerLabel={`${p.name} entfernen`}
-                triggerClassName={cn(iconButtonClass, 'shrink-0')}
-                title={`${p.name} entfernen?`}
-                description="Die Bewertungen dieser Person werden gelöscht und zählen nicht mehr im Ergebnis. Sie kann danach neu beitreten."
-                confirmLabel="Entfernen"
-              />
+              {/* Without a link (finished tasting) the row is just the rest */}
+              {joinUrl && secret ? (
+                <RejoinLink
+                  name={p.name}
+                  tastingName={tasting.name}
+                  url={`${joinUrl}/rejoin/${signRejoinToken(p.id, p.rejoinVersion, secret)}`}
+                  lockAction={lockRejoinLinkAction.bind(null, tasting.code, p.id)}
+                >
+                  <RowRest code={tasting.code} person={p} />
+                </RejoinLink>
+              ) : (
+                <RowRest code={tasting.code} person={p} />
+              )}
             </div>
-            {/* One small ring per wine: who is still missing where? */}
-            <ol aria-label={`Fortschritt von ${p.name}`} className="-mt-1 flex flex-wrap gap-1 pb-1">
-              {p.wines.map((state, i) => (
-                <li key={i}>
-                  <GlassRing seed={i + 1} state={state} size={28} label={`Wein #${i + 1}: ${RING_STATE_TEXT[state]}`}>
-                    <span className="text-[10px] font-medium">{i + 1}</span>
-                  </GlassRing>
-                </li>
-              ))}
-            </ol>
           </li>
         ))}
       </ul>
+    </>
+  )
+}
+
+/** Delete button and progress rings of a guest's row. */
+function RowRest({ code, person: p }: { code: string; person: { id: string; name: string; wines: RingState[] } }) {
+  return (
+    <>
+      <ConfirmSubmit
+        action={removeParticipantAction.bind(null, code, p.id)}
+        trigger={<Trash2 className="size-5" />}
+        triggerLabel={`${p.name} entfernen`}
+        triggerClassName={cn(iconButtonClass, 'shrink-0')}
+        title={`${p.name} entfernen?`}
+        description="Die Bewertungen dieser Person werden gelöscht und zählen nicht mehr im Ergebnis. Sie kann danach neu beitreten."
+        confirmLabel="Entfernen"
+      />
+      {/* One small ring per wine: who is still missing where? */}
+      <ol aria-label={`Fortschritt von ${p.name}`} className="-mt-1 flex basis-full flex-wrap gap-1 pb-1">
+        {p.wines.map((state, i) => (
+          <li key={i}>
+            <GlassRing seed={i + 1} state={state} size={28} label={`Wein #${i + 1}: ${RING_STATE_TEXT[state]}`}>
+              <span className="text-[10px] font-medium">{i + 1}</span>
+            </GlassRing>
+          </li>
+        ))}
+      </ol>
     </>
   )
 }

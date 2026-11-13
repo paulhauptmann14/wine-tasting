@@ -1,9 +1,11 @@
 import { beforeEach, expect, it, vi } from 'vitest'
-import { getCurrentParticipant } from '@/lib/auth/participant-session'
+import { revalidatePath } from 'next/cache'
+import { getCurrentParticipant, setParticipantCookie } from '@/lib/auth/participant-session'
 import { requireTasting } from '@/lib/data'
+import { rejoinTasting } from '@/server/participants'
 import { saveRating } from '@/server/ratings'
 import { getWineById } from '@/server/wines'
-import { saveRatingAction } from './actions'
+import { rejoinAction, saveRatingAction } from './actions'
 
 // Like the real ones, redirect() and notFound() end the action
 vi.mock('next/navigation', () => ({
@@ -19,6 +21,8 @@ vi.mock('@/db/client', () => ({ db: {} }))
 vi.mock('@/lib/data', () => ({ requireTasting: vi.fn() }))
 vi.mock('@/lib/auth/participant-session', () => ({ getCurrentParticipant: vi.fn(), setParticipantCookie: vi.fn() }))
 vi.mock('@/server/criteria', () => ({ listCriteria: vi.fn(async () => [{ id: 'c1', name: 'Geschmack', scaleMin: 1, scaleMax: 5 }]) }))
+vi.mock('@/lib/env', () => ({ getSessionSecret: () => 'secret' }))
+vi.mock('@/server/participants', () => ({ joinTasting: vi.fn(), rejoinTasting: vi.fn() }))
 vi.mock('@/server/ratings', () => ({ saveRating: vi.fn() }))
 vi.mock('@/server/wines', () => ({ getWineById: vi.fn(), countWines: vi.fn(async () => 2) }))
 
@@ -93,4 +97,33 @@ it('refuses wines of other tastings and malformed ids', async () => {
   expect(await save('not-a-uuid')).toEqual({ message: 'Diesen Wein gibt es nicht mehr.' })
   expect(getWineById).toHaveBeenCalledTimes(1)
   expect(saveRating).not.toHaveBeenCalled()
+})
+
+const LINK = `${WINE_ID}.abcdefghijklmnopqrstuv`
+const rejoin = (link: unknown = LINK) => rejoinAction('8gxbw5', link)
+const EXPIRES = new Date('2026-12-01T00:00:00Z')
+
+it('signs this device in as the guest of the rejoin link', async () => {
+  vi.mocked(rejoinTasting).mockResolvedValue({ participant: { id: 'p1', name: 'Anna' }, token: 'tok', expiresAt: EXPIRES })
+  await expect(rejoin()).rejects.toThrow('redirect:/tasting/8GXBW5')
+  expect(rejoinTasting).toHaveBeenCalledWith({}, 't1', LINK, 'secret')
+  expect(setParticipantCookie).toHaveBeenCalledWith('8GXBW5', 'tok', EXPIRES)
+  expect(revalidatePath).toHaveBeenCalledWith('/tasting/8GXBW5', 'layout')
+})
+
+it('refuses locked, foreign or tampered rejoin links without signing in', async () => {
+  vi.mocked(rejoinTasting).mockResolvedValue(null)
+  const message = { message: 'Dieser Link gilt nicht mehr. Frag den Gastgeber nach einem neuen.' }
+  expect(await rejoin()).toEqual(message)
+  // Bound arguments come from the client: anything but a short string never reaches the service
+  for (const bad of [null, 42, { id: 'p1' }, 'x'.repeat(101)]) expect(await rejoin(bad)).toEqual(message)
+  expect(rejoinTasting).toHaveBeenCalledTimes(1)
+  expect(setParticipantCookie).not.toHaveBeenCalled()
+})
+
+it('sends rejoining guests of a finished tasting to the results', async () => {
+  vi.mocked(requireTasting).mockResolvedValue(tasting('finished') as never)
+  await expect(rejoin()).rejects.toThrow('redirect:/tasting/8GXBW5/results')
+  expect(rejoinTasting).not.toHaveBeenCalled()
+  expect(setParticipantCookie).not.toHaveBeenCalled()
 })

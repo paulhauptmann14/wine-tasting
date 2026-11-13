@@ -24,7 +24,7 @@ import {
 import { PRESET_KEYS } from '@/lib/tasting/presets'
 import { addCriterion, applyPreset, deleteCriterion, moveCriterion, renameCriterion } from '@/server/criteria'
 import { StructureLockedError } from '@/server/structure'
-import { removeParticipant } from '@/server/participants'
+import { lockRejoinLink, removeParticipant } from '@/server/participants'
 import { deleteTasting, updateTastingDetails, setBlindTasting, setTastingStatus } from '@/server/tastings'
 import { addWine, deleteWine, moveWine, shuffleWines, updateWine } from '@/server/wines'
 
@@ -209,6 +209,15 @@ export async function removeParticipantAction(code: string, participantId: strin
   const tasting = await getAdminTasting(code)
   if (!idSchema.safeParse(participantId).success) return
   await removeParticipant(db, tasting.id, participantId)
+  refresh(tasting.code)
+}
+
+/** "Link sperren": the guest's older rejoin links stop working, the page then shows a new one. */
+export async function lockRejoinLinkAction(code: string, participantId: unknown): Promise<void> {
+  const tasting = await getAdminTasting(code)
+  const id = idSchema.safeParse(participantId)
+  if (!id.success) return
+  await lockRejoinLink(db, tasting.id, id.data)
   refresh(tasting.code)
 }
 

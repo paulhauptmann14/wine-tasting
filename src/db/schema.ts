@@ -69,6 +69,8 @@ export const participants = pgTable('participant', {
     .references(() => tastings.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   createdAt: timestamptz('created_at').notNull().defaultNow(),
+  /** Part of the rejoin link's signature; raising it ("Link sperren") invalidates older links */
+  rejoinVersion: integer('rejoin_version').notNull().default(0),
 }).enableRLS()
 
 export const sessions = pgTable('session', {

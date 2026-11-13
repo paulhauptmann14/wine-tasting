@@ -18,5 +18,5 @@ keywords = ["postgres"]
   regexes = ['''@(?:localhost|127\.0\.0\.1|db)[:/]''']
 
 [[allowlists]]
-description = "Made-up signing key used only in tests"
-paths = ['''(?:^|/)src/lib/auth/admin-token\.test\.ts$''']
+description = "Made-up signing key used only in tests (exactly this value, so real keys in tests are still caught)"
+regexes = ['''^test-secret-that-is-long-enough-1234567890$''']
