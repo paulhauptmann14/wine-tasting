@@ -28,20 +28,32 @@ export type Results = {
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
 const EPSILON = 1e-9
 
+/** Weighted 1–5 score per person for every complete rating (a value for each current criterion). */
+export function completePersonScores(
+  input: Pick<ResultsInput, 'criteria' | 'ratings'>,
+): { participantId: string; wineId: string; score: number; values: Record<string, number> }[] {
+  const { criteria } = input
+  const totalWeight = criteria.reduce((sum, c) => sum + c.weight, 0)
+  // Weighted per person, so heavier criteria (e.g. taste) count more – equal weights give the plain mean
+  return input.ratings
+    .filter((r) => criteria.length > 0 && criteria.every((c) => Number.isFinite(r.values[c.id])))
+    .map((r) => ({
+      participantId: r.participantId,
+      wineId: r.wineId,
+      values: r.values,
+      score: criteria.reduce((sum, c) => sum + r.values[c.id] * c.weight, 0) / totalWeight,
+    }))
+}
+
 export function computeResults(input: ResultsInput): Results {
   const criteria = [...input.criteria].sort((a, b) => a.position - b.position)
   const criterionIds = criteria.map((c) => c.id)
-  const totalWeight = criteria.reduce((sum, c) => sum + c.weight, 0)
-  // Weighted per person, so heavier criteria (e.g. taste) count more – equal weights give the plain mean
-  const personScore = (values: Record<string, number>) =>
-    criteria.reduce((sum, c) => sum + values[c.id] * c.weight, 0) / totalWeight
-  const complete = input.ratings.filter(
-    (r) => criterionIds.length > 0 && criterionIds.every((id) => Number.isFinite(r.values[id])),
-  )
+  // The shared completeness rule lives in completePersonScores; averages derive from the same rows
+  const complete = completePersonScores({ criteria, ratings: input.ratings })
 
   const perWine: WineResult[] = input.wines.map((w) => {
     const rs = complete.filter((r) => r.wineId === w.id)
-    const personScores = rs.map((r) => personScore(r.values))
+    const personScores = rs.map((x) => x.score)
     return {
       wineId: w.id,
       position: w.position,

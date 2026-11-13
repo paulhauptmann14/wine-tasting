@@ -55,7 +55,7 @@ export default async function ResultsPage({ params, searchParams }: Props) {
           <ShareResultsImage code={tasting.code} title={tasting.name} />
         </BottomBar>
       )}
-      <ResultsSection tasting={tasting} isAdmin={admin} />
+      <ResultsSection tasting={tasting} isAdmin={admin} reviewFor={participant?.id ?? null} />
     </PageShell>
   )
 }

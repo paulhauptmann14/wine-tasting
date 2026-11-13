@@ -1,9 +1,11 @@
 import { GlassRing } from '@/components/glass-ring'
+import { ResultsReview } from '@/components/results-review'
 import { ScoringExplainer } from '@/components/scoring-explainer'
 import { wineDetails } from '@/lib/tasting/display'
 import type { TastingStatus } from '@/lib/tasting/rules'
 import { SCALES, type Scale } from '@/lib/tasting/presets'
 import { formatScaled, formatScore, type Results, type WineResult } from '@/lib/tasting/results'
+import type { Review } from '@/lib/tasting/review'
 import { cn } from '@/lib/utils'
 
 /** "Platz 2", and "Platz 2 · gleichauf" when another wine shares the rank */
@@ -111,11 +113,13 @@ export function ResultsView({
   status,
   scale,
   notes,
+  review,
 }: {
   results: Results
   status: TastingStatus
   scale: Scale
   notes?: Record<string, string[]>
+  review?: Review | null
 }) {
   const revealed = status === 'finished'
   const ranked = results.wines.filter((w) => w.rank !== null)
@@ -194,6 +198,8 @@ export function ResultsView({
           ))}
         </ol>
       )}
+
+      {review && <ResultsReview review={review} scale={scale} />}
 
       {notes && <WineNotes wines={byPosition} notes={notes} />}
 

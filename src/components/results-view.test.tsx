@@ -2,6 +2,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import type { Results, WineResult } from '@/lib/tasting/results'
+import type { Review } from '@/lib/tasting/review'
 import { ResultsView } from './results-view'
 
 const wine = (position: number, score: number | null, rank: number | null): WineResult => ({
@@ -61,4 +62,25 @@ it('shows the description under the details of a revealed wine, and nothing for 
   expect(within(podium).getByText('süß')).toBeInTheDocument()
   expect(within(podium).getByText('Süß & fruchtig')).toBeInTheDocument()
   expect(within(podium).getAllByText(/fruchtig/)).toHaveLength(1)
+})
+
+it('renders the review between ranking and notes', () => {
+  const review: Review = {
+    personal: { rows: [{ position: 1, name: 'Wein 1', mine: 5, others: null }], favorite: { name: 'Wein 1', groupRank: 1 }, above: null, below: null },
+    controversial: null,
+    consensus: null,
+  }
+  const wines = [wine(1, 5, 1), wine(2, 4.5, 2), wine(3, 4, 3), wine(4, 3, 4)]
+  render(<ResultsView results={results(wines)} status="finished" scale="five" notes={{ w1: ['Pfirsich'] }} review={review} />)
+  const list = screen.getByRole('list', { name: 'Weitere Plätze' })
+  const summary = screen.getByText('Dein Rückblick')
+  const heading = screen.getByRole('heading', { name: 'Notizen' })
+  const before = (a: Node, b: Node) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+  expect(before(list, summary)).toBe(true)
+  expect(before(summary, heading)).toBe(true)
+})
+
+it('shows no review summary without a review', () => {
+  view([wine(1, 5, 1), wine(2, 4, 2)])
+  expect(screen.queryByText(/Rückblick/)).not.toBeInTheDocument()
 })

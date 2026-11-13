@@ -41,18 +41,28 @@ export async function loadResultsInput(db: Db, tastingId: string): Promise<Omit<
 
 /**
  * Results as this viewer may see them: the server decides about names – guests only see
- * blind wines once the tasting is finished.
+ * blind wines once the tasting is finished. Also returns the input for callers that derive more from it.
+ * `input` holds unredacted names and must never be rendered – use `results` for display.
  */
+export async function loadResultsWithInput(
+  db: Db,
+  tasting: Pick<Tasting, 'id' | 'status' | 'blindTasting'>,
+  isAdmin: boolean,
+): Promise<{ input: Omit<ResultsInput, 'revealNames'>; results: Results }> {
+  const input = await loadResultsInput(db, tasting.id)
+  const results = computeResults({
+    ...input,
+    revealNames: canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin }),
+  })
+  return { input, results }
+}
+
 export async function loadResults(
   db: Db,
   tasting: Pick<Tasting, 'id' | 'status' | 'blindTasting'>,
   isAdmin: boolean,
 ): Promise<Results> {
-  const input = await loadResultsInput(db, tasting.id)
-  return computeResults({
-    ...input,
-    revealNames: canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin }),
-  })
+  return (await loadResultsWithInput(db, tasting, isAdmin)).results
 }
 
 /**

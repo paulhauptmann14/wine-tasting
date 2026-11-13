@@ -82,6 +82,8 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, newGuest }) 
   await expect(table.getByText(/Mineralisch/)).toHaveCount(0)
   await expect(table.getByText('Anna')).toHaveCount(0)
   await expect(anna.getByText('Pfirsich, sehr frisch')).toHaveCount(0)
+  // The review only exists once the tasting is finished
+  await expect(anna.getByText('Dein Rückblick')).toHaveCount(0)
 
   // getByText skips <script>, where the RSC payload lives – a wine object handed to a client
   // component would slip past the checks above. So check the raw HTML, too.
@@ -115,6 +117,10 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, newGuest }) 
   await page.getByRole('button', { name: 'Beenden & auflösen' }).click()
   await expect(page.getByText('Beendet', { exact: true }).first()).toBeVisible()
   await expect(anna.getByText('Riesling').first()).toBeVisible({ timeout: 12_000 })
+  // The review ships no per-guest data: neither participant IDs nor the viewer's ID in the raw HTML
+  const finishedHtml = await (await anna.request.get(`/tasting/${code}/results`)).text()
+  expect(finishedHtml).not.toContain('participantId')
+  expect(finishedHtml).not.toContain('viewerId')
   await expect(anna.getByText('Weingut Dr. Loosen · Weißwein · 2022 · trocken').first()).toBeVisible()
   await expect(anna.getByText('Mineralisch & spritzig').first()).toBeVisible()
   // The table view reveals the podium on its own
@@ -125,6 +131,19 @@ test('kompletter Tasting-Abend mit Blindverkostung', async ({ page, newGuest }) 
   await expect(notes.getByText('„Pfirsich, sehr frisch“')).toBeVisible()
   await expect(notes.getByText('Anna')).toHaveCount(0)
   await expect(anna.getByText('Endergebnis')).toBeVisible()
+  // The review is folded: only the summary shows, a tap opens and closes it
+  const review = anna.getByText('Dein Rückblick')
+  await expect(review).toBeVisible()
+  await expect(anna.getByText('Dein Favorit:')).not.toBeVisible()
+  await review.click()
+  await expect(anna.getByText('Dein Favorit:')).toBeVisible()
+  await expect(anna.getByRole('row').filter({ hasText: 'Riesling' })).toBeVisible()
+  await review.click()
+  await expect(anna.getByText('Dein Favorit:')).not.toBeVisible()
+  // The host's results page in the admin area has no review
+  await page.goto(`/tasting/${code}/admin/results`)
+  await expect(page.getByRole('region', { name: 'Notizen' })).toBeVisible()
+  await expect(page.getByText('Rückblick')).toHaveCount(0)
 })
 
 test('Gäste kommen auch per RSC-Anfrage nicht an die Admin-Daten', async ({ page, newGuest }) => {
