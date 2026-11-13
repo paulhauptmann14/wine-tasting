@@ -6,7 +6,7 @@ import type { CSSProperties } from 'react'
 import { APP_ICON_COLORS, svgDataUri } from '@/lib/app-icon'
 import { glassMarkSvg } from '@/lib/glass-mark'
 import { ringPath } from '@/lib/ring-path'
-import type { RankingCard, RankingCardLayout, RankingCardWine } from '@/lib/tasting/ranking-card'
+import { PODIUM_ROWS, type RankingCard, type RankingCardLayout, type RankingCardWine } from '@/lib/tasting/ranking-card'
 
 const RANKING_IMAGE_SIZE = { width: 1080, height: 1350 } as const
 
@@ -113,6 +113,7 @@ function Identity({ wine, nameSize, detailSize }: { wine: RankingCardWine; nameS
   )
 }
 
+// Podium wines are always rated, so rank is set
 function Place({ rank, size }: { rank: number; size: number }) {
   return <div style={{ fontSize: size, fontWeight: 500, color: COLORS.wine, marginBottom: 4 }}>{`Platz ${rank}`}</div>
 }
@@ -147,7 +148,7 @@ function Podium({ card }: { card: RankingCard }) {
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <ScoreRing wine={winner} size={s.winnerRing} card={card} />
         <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 36, flex: 1, minWidth: 0 }}>
-          <Place rank={winner.rank} size={s.winnerPlace} />
+          <Place rank={winner.rank!} size={s.winnerPlace} />
           <Identity wine={winner} nameSize={s.winnerName} detailSize={24} />
         </div>
       </div>
@@ -175,7 +176,7 @@ function Podium({ card }: { card: RankingCard }) {
                   minWidth: 0,
                 }}
               >
-                <Place rank={wine.rank} size={stacked ? 24 : 22} />
+                <Place rank={wine.rank!} size={stacked ? 24 : 22} />
                 <Identity wine={wine} nameSize={s.runnerName} detailSize={s.runnerDetail} />
               </div>
             </div>
@@ -186,13 +187,25 @@ function Podium({ card }: { card: RankingCard }) {
   )
 }
 
+/** Height of an image-1 row when a podium with runners-up shares the sheet with one row more than usual */
+const TIGHT_ROW_HEIGHT = 56
+
+/**
+ * Two rated wines leave a third podium place to the rows: eight rows below winner and runner-up.
+ * They get the height of seven, otherwise a two-line title runs into the date.
+ */
+export function rowHeight(card: RankingCard): number {
+  const tight = card.kind === 'podium' && card.podium.length >= 2 && card.rest.length > PODIUM_ROWS
+  return tight ? TIGHT_ROW_HEIGHT : SIZES[card.layout].rowHeight
+}
+
 function Rows({ card }: { card: RankingCard }) {
-  const { rowHeight } = SIZES[card.layout]
+  const height = rowHeight(card)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginTop: 44, borderTop: `1px solid ${COLORS.border}` }}>
       {card.rest.map((wine) => (
-        <div key={wine.wineId} style={{ display: 'flex', alignItems: 'center', height: rowHeight, borderBottom: `1px solid ${COLORS.border}` }}>
-          <div style={{ width: 52, fontSize: 24, color: COLORS.mutedForeground }}>{String(wine.rank)}</div>
+        <div key={wine.wineId} style={{ display: 'flex', alignItems: 'center', height, borderBottom: `1px solid ${COLORS.border}` }}>
+          <div style={{ width: 52, fontSize: 24, color: COLORS.mutedForeground }}>{wine.rank === null ? '' : String(wine.rank)}</div>
           <div style={{ display: 'flex', alignItems: 'baseline', flex: 1, minWidth: 0, overflow: 'hidden' }}>
             <div style={{ fontFamily: SERIF, fontSize: 29, whiteSpace: 'nowrap' }}>{wine.name}</div>
             {wine.details && <Muted text={wine.details} fontSize={22} style={{ marginLeft: 16 }} />}
@@ -204,7 +217,11 @@ function Rows({ card }: { card: RankingCard }) {
   )
 }
 
+/** Follow-up images carry a smaller title – the ranking is what they are about */
+const FOLLOW_TITLE_SCALE = 0.7
+
 function Card({ card }: { card: RankingCard }) {
+  const follow = card.kind === 'rows'
   return (
     <div
       style={{
@@ -231,7 +248,7 @@ function Card({ card }: { card: RankingCard }) {
         style={{
           display: 'block',
           fontFamily: SERIF,
-          fontSize: card.title.length > 30 ? 60 : 72,
+          fontSize: Math.round((card.title.length > 30 ? 60 : 72) * (follow ? FOLLOW_TITLE_SCALE : 1)),
           lineHeight: 1.08,
           letterSpacing: -1.5,
           marginTop: 28,
@@ -242,13 +259,15 @@ function Card({ card }: { card: RankingCard }) {
       >
         {card.title}
       </div>
-      <div style={{ display: 'flex', fontSize: 26, color: COLORS.mutedForeground, marginTop: 14 }}>{card.date}</div>
+      <div style={{ display: 'flex', fontSize: 26, color: COLORS.mutedForeground, marginTop: 14 }}>
+        {follow ? card.rangeLabel : card.date}
+      </div>
 
       {/* Like a filled-in sheet: the ranking follows the title, spare room collects above the footer.
           The top gap gives way first when ten wines need the whole page. */}
       <div style={{ display: 'flex', flexShrink: 1, flexBasis: 64, minHeight: 16 }} />
       <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        {card.podium.length === 0 ? (
+        {follow ? null : card.podium.length === 0 ? (
           <div style={{ display: 'flex', paddingLeft: 20, borderLeft: `3px solid ${COLORS.wine}`, fontSize: 32, color: COLORS.mutedForeground }}>
             Keine Bewertungen abgegeben.
           </div>
@@ -256,9 +275,6 @@ function Card({ card }: { card: RankingCard }) {
           <Podium card={card} />
         )}
         {card.rest.length > 0 && <Rows card={card} />}
-        {card.hiddenCount > 0 && (
-          <div style={{ display: 'flex', fontSize: 22, color: COLORS.mutedForeground, marginTop: 14 }}>{`+ ${card.hiddenCount} weitere`}</div>
-        )}
       </div>
       <div style={{ display: 'flex', flex: 1, minHeight: 24 }} />
 

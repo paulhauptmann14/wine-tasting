@@ -6,6 +6,7 @@ import { AutoRefresh } from '@/components/auto-refresh'
 import { BottomBar } from '@/components/bottom-bar'
 import { PageShell } from '@/components/page-shell'
 import { TastingDescription } from '@/components/tasting-description'
+import { ResultImageLinks } from '@/components/result-image-links'
 import { ResultsSection } from '@/components/results-section'
 import { ShareResultsImage } from '@/components/share-results-image'
 import { StatusPill } from '@/components/status-pill'
@@ -13,6 +14,9 @@ import { backLink, marginNote } from '@/components/styles'
 import { isAdmin } from '@/lib/auth/admin-session'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { requireTasting } from '@/lib/data'
+import { rankingImageCount } from '@/lib/tasting/ranking-card'
+import { db } from '@/db/client'
+import { countWines } from '@/server/wines'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Ergebnisse' }
@@ -24,7 +28,12 @@ export default async function ResultsPage({ params, searchParams }: Props) {
   const { ended } = await searchParams
   const tasting = await requireTasting(code, '/results')
 
-  const [admin, participant] = await Promise.all([isAdmin(tasting), getCurrentParticipant(tasting)])
+  const [admin, participant, wineCount] = await Promise.all([
+    isAdmin(tasting),
+    getCurrentParticipant(tasting),
+    tasting.status === 'finished' ? countWines(db, tasting.id) : 0,
+  ])
+  const imageCount = rankingImageCount(wineCount)
 
   return (
     <PageShell width="wide">
@@ -54,9 +63,13 @@ export default async function ResultsPage({ params, searchParams }: Props) {
       )}
       {/* Sharing the final ranking is the main action once finished: fixed bar on phones, below the title from lg */}
       {tasting.status === 'finished' && (
-        <BottomBar>
-          <ShareResultsImage code={tasting.code} title={tasting.name} />
-        </BottomBar>
+        <>
+          <BottomBar>
+            <ShareResultsImage code={tasting.code} title={tasting.name} imageCount={imageCount} />
+          </BottomBar>
+          {/* Several images: their links stay out of the bar – below the title on phones, under the button from lg */}
+          <ResultImageLinks code={tasting.code} imageCount={imageCount} className="mt-4 lg:mt-2" />
+        </>
       )}
       <ResultsSection tasting={tasting} isAdmin={admin} reviewFor={participant?.id ?? null} />
     </PageShell>

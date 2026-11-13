@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { db } from '@/db/client'
 import { getTasting } from '@/lib/data'
 import { rankingImage } from './ranking-image'
-import { rankingCard, rankingImageFilename, type RankingCard } from '@/lib/tasting/ranking-card'
+import { rankingCards, rankingImageFilename, type RankingCard } from '@/lib/tasting/ranking-card'
 import { countParticipants } from '@/server/participants'
 import { loadResults } from '@/server/results-data'
 
@@ -27,8 +27,8 @@ function matches(ifNoneMatch: string | null, etag: string): boolean {
 
 // Rendering costs ~300 ms of CPU (much more on a Raspberry Pi), and every guest's results page
 // loads the image the moment the tasting ends: one render per image, shared by all requests.
-// Only a few recent images – an older tasting simply renders again.
-const MAX_RENDERS = 8
+// Only a few recent images (a tasting has up to a few) – an older tasting simply renders again.
+const MAX_RENDERS = 16
 const renders = new Map<string, Promise<ArrayBuffer>>()
 
 function render(etag: string, card: RankingCard): Promise<ArrayBuffer> {
@@ -57,13 +57,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
     return new Response('Nicht gefunden', { status: 404, headers: NO_STORE })
   }
 
+  // ?bild=n picks the image of a long ranking; none means image 1. Anything else is unknown
+  const requested = new URL(request.url).searchParams.get('bild') ?? '1'
+  if (!/^[1-9]\d{0,2}$/.test(requested)) return new Response('Nicht gefunden', { status: 404, headers: NO_STORE })
+  const page = Number(requested)
+
+  // Whether the number is too large depends on the ranking
   const [results, guestCount] = await Promise.all([loadResults(db, tasting, false), countParticipants(db, tasting.id)])
-  const card = rankingCard(results, tasting.scale, {
+  const cards = rankingCards(results, tasting.scale, {
     tastingName: tasting.name,
     guestCount,
     date: tasting.createdAt,
   })
-  const filename = rankingImageFilename(tasting.name)
+  const card = cards[page - 1]
+  if (!card) return new Response('Nicht gefunden', { status: 404, headers: NO_STORE })
+  const filename = rankingImageFilename(tasting.name, card.page, card.pageCount)
   const etag = etagFor(card, filename)
   if (matches(request.headers.get('if-none-match'), etag)) {
     return new Response(null, { status: 304, headers: { ...REVALIDATE, ETag: etag } })

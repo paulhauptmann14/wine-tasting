@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import { Download, Share } from 'lucide-react'
 import { textLink, textLinkFocus } from '@/components/styles'
 import { Button } from '@/components/ui/button'
+import { rankingImageUrl } from '@/lib/tasting/ranking-card'
 import { cn } from '@/lib/utils'
 
 const FALLBACK_NAME = 'wine-tasting-ergebnis.png'
@@ -46,8 +47,9 @@ function download(file: File) {
   document.body.append(link)
   link.click()
   link.remove()
-  // Give the browser a moment to start the download before the URL goes away
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  // Several downloads at once: Chrome may first ask "Mehrere Dateien herunterladen?" and only start
+  // the queued ones after the answer – the URL has to outlive that, not just the click
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
 /** Phones can hand a PNG to the share sheet; most laptop browsers can't. */
@@ -57,27 +59,28 @@ function canShareFiles() {
 const subscribeNever = () => () => {}
 
 /**
- * Main action on the finished results page: shares the ranking as a PNG via the share sheet
- * (phones), otherwise downloads it (laptops). "Bild öffnen" is the plain path to just look at it.
+ * Main action on the finished results page: shares the ranking as PNGs via the share sheet
+ * (phones), otherwise downloads them (laptops). With one image, "Bild öffnen" is the plain path to
+ * just look at it; several images get their links from <ResultImageLinks> outside the bar.
  */
-export function ShareResultsImage({ code, title }: { code: string; title: string }) {
-  const imageUrl = `/tasting/${code}/results/image`
+export function ShareResultsImage({ code, title, imageCount }: { code: string; title: string; imageCount: number }) {
+  const many = imageCount > 1
   const share = useSyncExternalStore(subscribeNever, canShareFiles, () => true)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState(false)
   // Loaded before the tap: share() needs a fresh tap, and rendering the image on demand
   // (slow on a Raspberry Pi) would use it up – Safari then refuses the share sheet.
   // Only where the share sheet takes files – a download works without a fresh tap.
-  const fileRef = useRef<Promise<File> | null>(null)
+  const fileRef = useRef<Promise<File[]> | null>(null)
 
   const prepare = useCallback(() => {
-    const file = loadFile(imageUrl)
+    const files = Promise.all(Array.from({ length: imageCount }, (_, i) => loadFile(rankingImageUrl(code, i + 1))))
     // A failed preload is retried on the tap
-    file.catch(() => {
-      if (fileRef.current === file) fileRef.current = null
+    files.catch(() => {
+      if (fileRef.current === files) fileRef.current = null
     })
-    fileRef.current = file
-  }, [imageUrl])
+    fileRef.current = files
+  }, [code, imageCount])
 
   useEffect(() => {
     if (!canShareFiles()) return
@@ -97,17 +100,17 @@ export function ShareResultsImage({ code, title }: { code: string; title: string
     setPending(true)
     setError(false)
     try {
-      const file = await fileRef.current!
-      if (navigator.canShare?.({ files: [file] })) {
+      const files = await fileRef.current!
+      if (navigator.canShare?.({ files })) {
         try {
-          await navigator.share({ files: [file], title })
+          await navigator.share({ files, title })
           return
         } catch (shareError) {
           if (isAbort(shareError)) return
           // e.g. NotAllowedError when the tap is too long ago – the download still gets the image out
         }
       }
-      download(file)
+      files.forEach(download)
     } catch {
       setError(true)
     } finally {
@@ -124,7 +127,8 @@ export function ShareResultsImage({ code, title }: { code: string; title: string
       <p aria-live="polite" className="text-sm lg:order-last lg:ml-4">
         {error && <span className="mb-2 block border-l-2 border-wine pl-3 lg:mb-0">{ERROR_TEXT}</span>}
       </p>
-      {/* One row on phones, so the bar stays low enough not to cover the footer links */}
+      {/* One row on phones, so the bar stays low enough not to cover the footer links – that's why
+          several images keep their links outside the bar */}
       <div className="flex items-center gap-4 lg:gap-0">
         <Button
           type="button"
@@ -135,11 +139,17 @@ export function ShareResultsImage({ code, title }: { code: string; title: string
           onClick={handleClick}
         >
           {share ? <Share className="size-5" aria-hidden /> : <Download className="size-5" aria-hidden />}
-          {pending ? 'Bild wird erstellt …' : share ? 'Ergebnis als Bild teilen' : 'Bild herunterladen'}
+          {pending
+            ? many ? 'Bilder werden erstellt …' : 'Bild wird erstellt …'
+            : share
+              ? many ? 'Ergebnis als Bilder teilen' : 'Ergebnis als Bild teilen'
+              : many ? 'Bilder herunterladen' : 'Bild herunterladen'}
         </Button>
-        <a href={imageUrl} target="_blank" rel="noopener" className={imageLink}>
-          Bild öffnen
-        </a>
+        {!many && (
+          <a href={rankingImageUrl(code, 1)} target="_blank" rel="noopener" className={imageLink}>
+            Bild öffnen
+          </a>
+        )}
       </div>
     </div>
   )

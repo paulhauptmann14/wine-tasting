@@ -35,8 +35,8 @@ afterEach(() => {
 
 const ERROR_TEXT = 'Das Bild ging nicht. Versuch es noch einmal.'
 
-function renderShare(name = 'Ergebnis als Bild teilen') {
-  render(<ShareResultsImage code="8GXBW5" title="Weinabend bei Paul" />)
+function renderShare(name = 'Ergebnis als Bild teilen', imageCount = 1) {
+  render(<ShareResultsImage code="8GXBW5" title="Weinabend bei Paul" imageCount={imageCount} />)
   return screen.getByRole('button', { name })
 }
 
@@ -212,4 +212,83 @@ it('offers a plain link to open the image', () => {
   const link = screen.getByRole('link', { name: 'Bild öffnen' })
   expect(link).toHaveAttribute('href', IMAGE_URL)
   expect(link).toHaveAttribute('target', '_blank')
+})
+
+function multiImageFetch(failOn?: string) {
+  return vi.fn(async (url: string) => {
+    if (failOn && url === failOn) return { ...imageResponse(), ok: false, status: 500 }
+    const n = new URL(url, 'http://x').searchParams.get('bild') ?? '1'
+    return imageResponse(`inline; filename="weinabend-ergebnis-${n}.png"`)
+  })
+}
+
+it('shares all images in one go', async () => {
+  const fetchMock = multiImageFetch()
+  vi.stubGlobal('fetch', fetchMock)
+  const share = vi.fn<(data: ShareData) => Promise<void>>(async () => {})
+  stubShare({ canShare: canShareFiles, share })
+
+  await userEvent.click(renderShare('Ergebnis als Bilder teilen', 3))
+
+  expect(share).toHaveBeenCalledTimes(1)
+  const data = share.mock.calls[0][0]
+  expect(data.title).toBe('Weinabend bei Paul')
+  expect(data.files!.map((file) => file.name)).toEqual(['weinabend-ergebnis-1.png', 'weinabend-ergebnis-2.png', 'weinabend-ergebnis-3.png'])
+  expect(fetchMock).toHaveBeenCalledWith(IMAGE_URL, expect.anything())
+  expect(fetchMock).toHaveBeenCalledWith(`${IMAGE_URL}?bild=2`, expect.anything())
+  expect(fetchMock).toHaveBeenCalledWith(`${IMAGE_URL}?bild=3`, expect.anything())
+})
+
+it('downloads every image without file sharing', async () => {
+  vi.stubGlobal('fetch', multiImageFetch())
+  const names: string[] = []
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    names.push(this.download)
+  })
+
+  await userEvent.click(renderShare('Bilder herunterladen', 3))
+
+  expect(names).toEqual(['weinabend-ergebnis-1.png', 'weinabend-ergebnis-2.png', 'weinabend-ergebnis-3.png'])
+})
+
+it('shows the error when one image fails', async () => {
+  vi.stubGlobal('fetch', multiImageFetch(`${IMAGE_URL}?bild=2`))
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+  await userEvent.click(renderShare('Bilder herunterladen', 3))
+
+  expect(await screen.findByText(ERROR_TEXT)).toBeInTheDocument()
+  // Nothing is handed out half-finished
+  expect(click).not.toHaveBeenCalled()
+})
+
+it('says images while they are created', async () => {
+  vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
+  const button = renderShare('Bilder herunterladen', 2)
+  await userEvent.click(button)
+  expect(button).toHaveAccessibleName('Bilder werden erstellt …')
+})
+
+it('leaves the links of several images to <ResultImageLinks>, so the bar holds only the button', () => {
+  vi.stubGlobal('fetch', multiImageFetch())
+  renderShare('Bilder herunterladen', 3)
+  expect(screen.queryAllByRole('link')).toHaveLength(0)
+})
+
+it('keeps the blob URL alive long enough for queued downloads', async () => {
+  vi.stubGlobal('fetch', multiImageFetch())
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  const button = renderShare('Bilder herunterladen', 3)
+  vi.useFakeTimers({ toFake: ['setTimeout'] })
+  try {
+    button.click()
+    await vi.waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(3))
+    // Chrome may ask "Mehrere Dateien herunterladen?" first and only then start the queued ones
+    vi.advanceTimersByTime(30_000)
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(30_000)
+    expect(revokeObjectURL).toHaveBeenCalledTimes(3)
+  } finally {
+    vi.useRealTimers()
+  }
 })

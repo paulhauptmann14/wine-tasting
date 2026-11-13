@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { getTasting } from '@/lib/data'
 import { rankingImage } from './ranking-image'
 import { GET } from './route'
+import { loadResults } from '@/server/results-data'
 
 vi.mock('@/db/client', () => ({ db: {} }))
 vi.mock('@/lib/data', () => ({ getTasting: vi.fn() }))
@@ -25,12 +26,35 @@ const tasting = (status: string, name = `Weinabend ${++names}`) => ({
   createdAt: new Date('2026-11-11T20:00:00Z'),
 })
 
-const request = (code = '8GXBW5', headers: HeadersInit = {}) =>
-  GET(new Request(`http://localhost/tasting/${code}/results/image`, { headers }), { params: Promise.resolve({ code }) })
+const request = (code = '8GXBW5', headers: HeadersInit = {}, query = '') =>
+  GET(new Request(`http://localhost/tasting/${code}/results/image${query}`, { headers }), { params: Promise.resolve({ code }) })
+
+/** Results with `count` rated wines, best first */
+const resultsOf = (count: number) => ({
+  criteria: [],
+  wines: Array.from({ length: count }, (_, i) => ({
+    wineId: `w${i + 1}`,
+    position: i + 1,
+    label: `Wein #${i + 1}`,
+    name: `Wein ${i + 1}`,
+    score: 5 - i * 0.1,
+    rank: i + 1,
+    ratingCount: 3,
+    criterionAverages: {},
+    winery: null,
+    wineType: null,
+    vintage: null,
+    alcohol: null,
+    grapeVariety: null,
+    sweetness: null,
+    description: null,
+  })),
+})
 
 beforeEach(() => {
   vi.mocked(getTasting).mockReset()
   vi.mocked(rankingImage).mockClear()
+  vi.mocked(loadResults).mockClear()
 })
 
 it.each([
@@ -115,3 +139,46 @@ it('tries again after a failed render', async () => {
   expect((await request()).status).toBe(200)
   expect(rankingImage).toHaveBeenCalledTimes(2)
 })
+
+it('serves image 2 with its own file name', async () => {
+  vi.mocked(getTasting).mockResolvedValue(tasting('finished', 'Weinabend bei Paul') as never)
+  vi.mocked(loadResults).mockResolvedValue(resultsOf(13) as never)
+  const first = await request('8GXBW5', {}, '?bild=1')
+  const second = await request('8GXBW5', {}, '?bild=2')
+  expect(second.status).toBe(200)
+  expect(second.headers.get('content-disposition')).toMatch(/-ergebnis-2\.png"$/)
+  expect(first.headers.get('content-disposition')).toMatch(/-ergebnis-1\.png"$/)
+  expect(second.headers.get('etag')).not.toBe(first.headers.get('etag'))
+  expect(vi.mocked(rankingImage).mock.calls[1][0]).toMatchObject({ kind: 'rows', page: 2, footer: expect.stringMatching(/^Bild 2 von 2 · /) })
+})
+
+it('keeps the old address for image 1', async () => {
+  vi.mocked(getTasting).mockResolvedValue(tasting('finished') as never)
+  vi.mocked(loadResults).mockResolvedValue(resultsOf(13) as never)
+  const plain = await request()
+  const first = await request('8GXBW5', {}, '?bild=1')
+  expect(plain.headers.get('etag')).toBe(first.headers.get('etag'))
+})
+
+it.each(['?bild=0', '?bild=01', '?bild=abc', '?bild=3', '?bild=', '?bild=1000'])(
+  'answers unknown images (%s) with 404 without rendering',
+  async (query) => {
+    vi.mocked(getTasting).mockResolvedValue(tasting('finished') as never)
+    vi.mocked(loadResults).mockResolvedValue(resultsOf(13) as never)
+    const res = await request('8GXBW5', {}, query)
+    expect(res.status).toBe(404)
+    expect(res.headers.get('cache-control')).toBe('private, no-store')
+    expect(rankingImage).not.toHaveBeenCalled()
+  },
+)
+
+it.each(['?bild=0', '?bild=01', '?bild=abc', '?bild=', '?bild=1000', '?bild=-1'])(
+  'answers a malformed image number (%s) before loading the results',
+  async (query) => {
+    vi.mocked(getTasting).mockResolvedValue(tasting('finished') as never)
+    const res = await request('8GXBW5', {}, query)
+    expect(res.status).toBe(404)
+    expect(res.headers.get('cache-control')).toBe('private, no-store')
+    expect(loadResults).not.toHaveBeenCalled()
+  },
+)

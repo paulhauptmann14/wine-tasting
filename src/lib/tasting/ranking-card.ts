@@ -3,9 +3,14 @@ import { wineDetails } from './display'
 import { SCALES, type Scale } from './presets'
 import { formatScaled, formatScore, type Results, type WineResult } from './results'
 
-/** Podium plus rows that still fit 1080 × 1350 legibly; the rest becomes "+ N weitere". */
-export const MAX_CARD_ROWS = 10
+/** Rows below the podium on image 1 */
+export const PODIUM_ROWS = 7
+/** Rows on a follow-up image */
+export const CONTINUATION_ROWS = 14
+/** Up to this many wines fit on one image (podium + PODIUM_ROWS) */
+const SINGLE_IMAGE_WINES = 10
 const PODIUM_SIZE = 3
+const UNRATED_SCORE = '–'
 const SEPARATOR = ' · '
 const MAX_TITLE = 48
 const MAX_SLUG = 60
@@ -27,31 +32,39 @@ const PODIUM_BUDGET: Record<RankingCardLayout, readonly [Budget, Budget]> = {
   roomy: [{ name: 38, detail: 48 }, { name: 26, detail: 22 }],
   compact: [{ name: 44, detail: 48 }, { name: 30, detail: 24 }],
 }
-const MAX_ROW_NAME = 38
+export const MAX_ROW_NAME = 38
 /** Rows share one line between name (serif, wider) and details (smaller sans) */
 const ROW_BUDGET = 66
 const NAME_TO_DETAIL_WIDTH = 1.25
 /** A word break further back than this is not worth it – cut inside the word instead */
 const MAX_BREAK_DISTANCE = 10
 
+export type RankingCardKind = 'podium' | 'rows'
+
 export type RankingCardWine = {
   wineId: string
   /** Seed for the glass ring – same as in the app */
   position: number
-  rank: number
+  /** null for wines nobody rated */
+  rank: number | null
   name: string
   details: string | null
   score: string
 }
 
 export type RankingCard = {
+  kind: RankingCardKind
   layout: RankingCardLayout
+  /** 1-based */
+  page: number
+  pageCount: number
   title: string
   date: string
+  /** Follow-ups: "Weine 11–18 von 25"; image 1: null */
+  rangeLabel: string | null
+  /** Empty on follow-ups */
   podium: RankingCardWine[]
   rest: RankingCardWine[]
-  /** Ranked wines that didn't fit on the image */
-  hiddenCount: number
   maxLabel: string
   /** Widest possible score ("20,0", "100") – every ring in an image uses the same size for it */
   maxScore: string
@@ -120,8 +133,7 @@ export function fitDetails(details: string | null, max: number): string | null {
   return kept.length > 0 ? kept.join(SEPARATOR) : null
 }
 
-function layoutFor(rankedCount: number): RankingCardLayout {
-  const rows = Math.min(rankedCount, MAX_CARD_ROWS) - PODIUM_SIZE
+function layoutFor(rows: number): RankingCardLayout {
   return rows <= 0 ? 'stacked' : rows <= 3 ? 'roomy' : 'compact'
 }
 
@@ -131,12 +143,52 @@ function cardDetails(details: string | null): string | null {
   return parts.length > 0 ? parts.join(SEPARATOR) : null
 }
 
-/** View model for the shareable result image – only ranked wines, capped to what fits. */
-export function rankingCard(results: Results, scale: Scale, meta: RankingCardMeta): RankingCard {
-  const ranked = results.wines.filter((w): w is WineResult & { rank: number } => w.rank !== null)
-  const layout = layoutFor(ranked.length)
-  const shown = ranked.slice(0, MAX_CARD_ROWS).map((w, i) => {
-    const budget = i < PODIUM_SIZE ? PODIUM_BUDGET[layout][i === 0 ? 0 : 1] : null
+/** Rows below the podium for a tasting with this many wines. */
+function rowCount(wineCount: number): number {
+  return Math.max(0, wineCount - PODIUM_SIZE)
+}
+
+/** Address of one share image – image 1 has no parameter, so a single image keeps its old address. */
+export function rankingImageUrl(code: string, page: number): string {
+  const base = `/tasting/${code}/results/image`
+  return page === 1 ? base : `${base}?bild=${page}`
+}
+
+/** How many share images a tasting with this many wines needs. */
+export function rankingImageCount(wineCount: number): number {
+  return imageCountFor(rowCount(wineCount), PODIUM_ROWS)
+}
+
+function imageCountFor(rows: number, firstCapacity: number): number {
+  if (rows <= firstCapacity) return 1
+  return 1 + Math.ceil((rows - firstCapacity) / CONTINUATION_ROWS)
+}
+
+/** Rows per image: image 1 takes up to `firstCapacity`, the rest is spread evenly, larger images first. */
+function splitRows(rows: number, imageCount: number, firstCapacity = PODIUM_ROWS): number[] {
+  const first = Math.min(firstCapacity, Math.ceil(rows / imageCount))
+  const rest = rows - first
+  const others = imageCount - 1
+  return [first, ...Array.from({ length: others }, (_, i) => Math.floor(rest / others) + (i < rest % others ? 1 : 0))]
+}
+
+/**
+ * View model for the shareable result images – all wines, rated ones by rank, then unrated ones by
+ * number. Image 1 has the podium, follow-ups only rows.
+ */
+export function rankingCards(results: Results, scale: Scale, meta: RankingCardMeta): RankingCard[] {
+  const list = results.wines
+  const podiumEntries = list.slice(0, PODIUM_SIZE)
+  // Unrated wines never stand on the podium – they lead the rows (they are all unrated from here on)
+  const podiumWines = podiumEntries.filter((w) => w.rank !== null)
+  const rows = [...podiumEntries.filter((w) => w.rank === null), ...list.slice(PODIUM_SIZE)]
+  // Image 1 holds SINGLE_IMAGE_WINES entries in total: unrated wines that left the podium take its places
+  const firstCapacity = SINGLE_IMAGE_WINES - podiumWines.length
+  const pageCount = imageCountFor(rows.length, firstCapacity)
+  const sizes = splitRows(rows.length, pageCount, firstCapacity)
+  const layout = layoutFor(sizes[0])
+
+  const toWine = (w: WineResult, budget: Budget | null): RankingCardWine => {
     const name = truncate(cardText(w.name ?? '') || w.label, budget?.name ?? MAX_ROW_NAME)
     // Rows share one line with the details
     const detailBudget = budget?.detail ?? Math.floor(ROW_BUDGET - Array.from(name).length * NAME_TO_DETAIL_WIDTH)
@@ -146,29 +198,48 @@ export function rankingCard(results: Results, scale: Scale, meta: RankingCardMet
       rank: w.rank,
       name,
       details: w.name ? fitDetails(cardDetails(wineDetails(w)), detailBudget) : null,
-      score: formatScaled(w.score, scale),
+      score: w.score === null ? UNRATED_SCORE : formatScaled(w.score, scale),
     }
-  })
+  }
+
   const { max } = SCALES[scale]
   const guests = meta.guestCount === 1 ? '1 Gast' : `${meta.guestCount} Gäste`
-  return {
-    layout,
-    title: truncate(cardText(meta.tastingName) || FALLBACK_TITLE, MAX_TITLE),
-    date: formatDate(meta.date),
-    podium: shown.slice(0, PODIUM_SIZE),
-    rest: shown.slice(PODIUM_SIZE),
-    hiddenCount: ranked.length - shown.length,
-    maxLabel: `von ${max}`,
-    maxScore: formatScore(max, scale),
-    // From the scale: the tasting doesn't keep its preset ("Einfach" also rates out of 5)
-    footer: `${max}-Punkte-Skala · ${guests}`,
-  }
+  const title = truncate(cardText(meta.tastingName) || FALLBACK_TITLE, MAX_TITLE)
+  const date = formatDate(meta.date)
+  // From the scale: the tasting doesn't keep its preset ("Einfach" also rates out of 5)
+  const scaleAndGuests = `${max}-Punkte-Skala · ${guests}`
+
+  let offset = 0
+  return sizes.map((size, i) => {
+    const page = i + 1
+    const pageRows = rows.slice(offset, offset + size)
+    const first = podiumWines.length + offset
+    offset += size
+    const isFirst = page === 1
+    return {
+      kind: isFirst ? 'podium' : 'rows',
+      layout: isFirst ? layout : 'compact',
+      page,
+      pageCount,
+      title,
+      date,
+      rangeLabel: isFirst ? null : `Weine ${first + 1}–${first + size} von ${list.length}`,
+      podium: isFirst ? podiumWines.map((w, j) => toWine(w, PODIUM_BUDGET[layout][j === 0 ? 0 : 1])) : [],
+      rest: pageRows.map((w) => toWine(w, null)),
+      maxLabel: `von ${max}`,
+      maxScore: formatScore(max, scale),
+      footer: pageCount > 1 ? `Bild ${page} von ${pageCount}${SEPARATOR}${scaleAndGuests}` : scaleAndGuests,
+    }
+  })
 }
 
 const UMLAUTS: Record<string, string> = { ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss', æ: 'ae', œ: 'oe', ø: 'o', ł: 'l', đ: 'd' }
 
-/** "Weinabend bei Paul" → "weinabend-bei-paul-ergebnis.png" – ASCII only, safe for any download header. */
-export function rankingImageFilename(tastingName: string): string {
+/**
+ * "Weinabend bei Paul" → "weinabend-bei-paul-ergebnis.png", with several images "…-ergebnis-2.png"
+ * – ASCII only, safe for any download header.
+ */
+export function rankingImageFilename(tastingName: string, page = 1, pageCount = 1): string {
   const slug = tastingName
     // Compose first: a decomposed "ü" (u + ¨) would otherwise lose its "e"
     .normalize('NFC')
@@ -180,5 +251,5 @@ export function rankingImageFilename(tastingName: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .slice(0, MAX_SLUG)
     .replace(/^-+|-+$/g, '')
-  return `${slug || 'wine-tasting'}-ergebnis.png`
+  return `${slug || 'wine-tasting'}-ergebnis${pageCount > 1 ? `-${page}` : ''}.png`
 }
