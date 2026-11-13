@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestDb } from '@/test/db'
 import { forceStatus, seedTasting, wineInput } from '@/test/factories'
+import { locksTastingRow } from '@/test/locks'
 import type { Db } from '@/db/types'
 import { ratings } from '@/db/schema'
 import { addCriterion, listCriteria } from './criteria'
 import { joinTasting } from './participants'
-import { getParticipantProgress, getRating, saveRating } from './ratings'
-import { addWine, getWineByPosition, moveWine } from './wines'
+import { getParticipantProgress, getRating, saveGuestRating, saveRating } from './ratings'
+import { addWine, deleteWine, getWineByPosition, moveWine } from './wines'
 
 let db: Db
 beforeEach(async () => {
@@ -59,4 +60,63 @@ it('keeps a rating with its wine when the host reorders during the tasting', asy
   expect((await getWineByPosition(db, t.id, 2))?.id).toBe(wine.id)
   expect(await getRating(db, participant.id, wine.id)).toMatchObject({ values: { [gesamt.id]: 5 }, notes: 'frisch' })
   expect(await getRating(db, participant.id, other.id)).toBeNull()
+})
+
+describe('saveGuestRating', () => {
+  const guestRating = async () => {
+    const { t, gesamt, wine, participant } = await setup()
+    const input = {
+      tastingId: t.id,
+      participantId: participant.id,
+      wineId: wine.id,
+      shownPosition: 1,
+      values: { [gesamt.id]: 4 },
+      notes: 'Pfirsich',
+    }
+    return { t, gesamt, wine, participant, input }
+  }
+
+  it('saves while the tasting runs and the wine still has the number the guest saw', async () => {
+    const { gesamt, wine, participant, input } = await guestRating()
+    expect(await saveGuestRating(db, input)).toEqual({ ok: true, position: 1 })
+    expect(await getRating(db, participant.id, wine.id)).toEqual({ notes: 'Pfirsich', values: { [gesamt.id]: 4 } })
+  })
+
+  it('stores nothing once the host paused or ended the tasting', async () => {
+    const { t, input } = await guestRating()
+    await forceStatus(db, t.id, 'setup')
+    expect(await saveGuestRating(db, input)).toEqual({ ok: false, reason: 'paused' })
+    await forceStatus(db, t.id, 'finished')
+    expect(await saveGuestRating(db, input)).toEqual({ ok: false, reason: 'finished' })
+    expect(await db.select().from(ratings)).toEqual([])
+  })
+
+  it('stores nothing when the wine got another number since the page was rendered', async () => {
+    const { t, wine, input } = await guestRating()
+    await addWine(db, t.id, wineInput('Silvaner'))
+    await moveWine(db, t.id, wine.id, 'down')
+    expect(await saveGuestRating(db, input)).toEqual({ ok: false, reason: 'moved' })
+    // Bound to the wine id: with the current number it lands on the same wine
+    expect(await saveGuestRating(db, { ...input, shownPosition: 2 })).toEqual({ ok: true, position: 2 })
+    expect((await db.select().from(ratings)).map((r) => r.wineId)).toEqual([wine.id])
+  })
+
+  it('stores nothing for deleted wines or wines of another tasting', async () => {
+    const { t, wine, input } = await guestRating()
+    const other = await seedTasting(db, { preset: 'simple', status: 'active' })
+    const foreign = await addWine(db, other.id, wineInput('Fremd'))
+    expect(await saveGuestRating(db, { ...input, wineId: foreign.id })).toEqual({ ok: false, reason: 'wine_gone' })
+    await forceStatus(db, t.id, 'setup')
+    await deleteWine(db, t.id, wine.id)
+    await forceStatus(db, t.id, 'active')
+    expect(await saveGuestRating(db, input)).toEqual({ ok: false, reason: 'wine_gone' })
+    expect(await db.select().from(ratings)).toEqual([])
+  })
+
+  it('checks under a lock on the tasting row, so a status change or reorder is waited for', async () => {
+    // PGlite can't interleave transactions (that is checked against real Postgres): make sure the
+    // transaction holds a lock on the tasting row, which setTastingStatus and the wine moves have to wait for.
+    const { t, input } = await guestRating()
+    expect(await locksTastingRow(db, t.id, (tx) => saveGuestRating(tx, input))).toBe(true)
+  })
 })

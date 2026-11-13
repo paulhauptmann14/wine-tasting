@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { deleteTastingAction } from '@/app/tasting/[code]/admin/actions'
-import { FieldError } from '@/components/field-error'
+import { describedBy, FieldError } from '@/components/field-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,9 +36,10 @@ export function DeleteTasting({ code }: { code: string }) {
               autoCapitalize="characters"
               maxLength={6}
               aria-invalid={!!state?.fieldErrors?.confirm}
+              aria-describedby={describedBy('delete-confirm', state?.fieldErrors?.confirm)}
               className="h-12 font-mono tracking-[0.3em] uppercase"
             />
-            <FieldError errors={state?.fieldErrors?.confirm} />
+            <FieldError fieldId="delete-confirm" errors={state?.fieldErrors?.confirm} />
           </div>
           <Button type="submit" variant="destructive" size="lg" className="h-12" disabled={!matches || pending}>
             Endgültig löschen

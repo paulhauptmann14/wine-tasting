@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { asc, eq } from 'drizzle-orm'
+import { verifyPin } from '@/lib/auth/pin'
 import { createTestDb } from '@/test/db'
 import { forceStatus } from '@/test/factories'
+import { locksTastingRow } from '@/test/locks'
 import type { Db } from '@/db/types'
 import { participants, ratingCriteria, sessions, tastings, wines } from '@/db/schema'
 import { PRESETS } from '@/lib/tasting/presets'
@@ -9,6 +11,7 @@ import { joinTasting } from './participants'
 import { StructureLockedError } from './structure'
 import {
   MAX_PIN_ATTEMPTS,
+  claimPinAttempt,
   createTasting,
   deleteTasting,
   getTastingByCode,
@@ -19,9 +22,16 @@ import {
   verifyAdminPin,
 } from './tastings'
 
+// The real check, wrapped so tests can count how many PINs were actually checked
+vi.mock('@/lib/auth/pin', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/auth/pin')>()
+  return { ...actual, verifyPin: vi.fn(actual.verifyPin) }
+})
+
 let db: Db
 beforeEach(async () => {
   db = await createTestDb()
+  vi.mocked(verifyPin).mockClear()
 })
 const input = { name: 'Weinabend', blindTasting: true, preset: 'hundred' as const, pin: '1234' }
 
@@ -105,6 +115,37 @@ describe('verifyAdminPin', () => {
     const wrong = results.filter((r) => !r.ok && r.reason === 'wrong_pin').length
     expect(wrong).toBeLessThan(MAX_PIN_ATTEMPTS)
     expect(await verifyAdminPin(db, t.code, '1234', minutesLater(1))).toMatchObject({ ok: false, reason: 'locked' })
+  })
+
+  it('checks at most MAX_PIN_ATTEMPTS pins per lock window, however many requests run in parallel', async () => {
+    const t = await createTasting(db, input)
+    const results = await Promise.all(
+      Array.from({ length: 40 }, () => verifyAdminPin(db, t.code, '0000', now)),
+    )
+    expect(vi.mocked(verifyPin)).toHaveBeenCalledTimes(MAX_PIN_ATTEMPTS)
+    expect(results.filter((r) => !r.ok && r.reason === 'wrong_pin')).toHaveLength(MAX_PIN_ATTEMPTS - 1)
+    // One burst is one lockout (10 minutes), not dozens that jump straight to a day
+    const [row] = await db.select().from(tastings).where(eq(tastings.id, t.id))
+    expect(row.pinLockCount).toBe(1)
+    expect(row.pinLockedUntil).toEqual(minutesLater(10))
+    expect(await verifyAdminPin(db, t.code, '1234', minutesLater(11))).toMatchObject({ ok: true })
+  })
+
+  it('lets the correct pin through as the last attempt and lifts the lock it set', async () => {
+    const t = await createTasting(db, input)
+    for (let i = 1; i < MAX_PIN_ATTEMPTS; i++) await verifyAdminPin(db, t.code, '0000', now)
+    expect(await verifyAdminPin(db, t.code, '1234', now)).toMatchObject({ ok: true })
+    const [row] = await db.select().from(tastings).where(eq(tastings.id, t.id))
+    expect(row).toMatchObject({ pinFailedAttempts: 0, pinLockedUntil: null, pinLockCount: 0 })
+  })
+
+  it('reads the counter under a row lock, so parallel requests on real Postgres queue up', async () => {
+    // PGlite runs transactions one after another, so the parallel tests above pass even without the
+    // lock (real Postgres was checked separately). This proves the lock itself; the locked-out path
+    // only reads, so the row keeps the lock holder in xmax.
+    const t = await createTasting(db, input)
+    await db.update(tastings).set({ pinLockedUntil: minutesLater(10) }).where(eq(tastings.id, t.id))
+    expect(await locksTastingRow(db, t.id, (tx) => claimPinAttempt(tx, t.id, now))).toBe(true)
   })
 })
 

@@ -161,6 +161,13 @@ describe('alcohol', () => {
     expect(parse([['Riesling', 40], ['13 5 % vol', 12]]).alcohol).toEqual({ value: 5, sure: false })
     expect(parse([['Riesling', 40], ['1 3,5 % vol', 12]]).alcohol).toEqual({ value: 3.5, sure: false })
     expect(parse([['Riesling', 40], ['13 , 5 % vol', 12]]).alcohol).toEqual({ value: 13.5, sure: true })
+    expect(parse([['Riesling', 40], ['2021 13 5 % vol', 12]]).alcohol).toEqual({ value: 5, sure: false })
+  })
+
+  it('is sure when the vintage or the volume stands before it', () => {
+    for (const text of ['2021 12,5% vol', 'Trocken 2021 12,5% vol', '750 ml 12,5% vol', '0,75 l 12,5 % vol']) {
+      expect(parse([['Riesling', 40], [text, 12]]).alcohol, text).toEqual({ value: 12.5, sure: true })
+    }
   })
 
   it('is not sure for an upper limit like "< 0,5 % vol"', () => {
@@ -592,6 +599,10 @@ describe('name', () => {
 
   it('never offers a founding note', () => {
     expect(parse([['CINZANO', 60], ['CASA FONDATA NEL 1757', 30]]).nameCandidates).toEqual(['Cinzano'])
+    // Every founding word the vintage knows counts here too
+    for (const note of ['Anno 1962', 'Fondé en 1890', "Dall'anno 1925", 'Seit 1856', 'Est. 1985', 'gegründet im Jahr 1971']) {
+      expect(parse([['CUVÉE LOUISE', 40], [note, 16, 92], ['2021', 20]]).nameCandidates, note).toEqual(['Cuvée Louise'])
+    }
   })
 
   it('skips appellation and legal lines even when they are big', () => {

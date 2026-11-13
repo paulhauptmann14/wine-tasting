@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/format-date'
 import { wineDetails } from './display'
 import { SCALES, type Scale } from './presets'
 import { formatScaled, formatScore, type Results, type WineResult } from './results'
@@ -100,8 +101,6 @@ function truncate(text: string, max: number): string {
   return chars.slice(0, end).join('').replace(/[\s\p{P}\p{S}]+$/u, '') + '…'
 }
 
-const dateFormat = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Berlin' })
-
 /**
  * Keeps as many leading parts of "Weingut Dr. Loosen · Weißwein · 2022" as fit into `max` characters.
  * A first part that is too long on its own (a long winery) is dropped, so it doesn't take the type
@@ -155,7 +154,7 @@ export function rankingCard(results: Results, scale: Scale, meta: RankingCardMet
   return {
     layout,
     title: truncate(cardText(meta.tastingName) || FALLBACK_TITLE, MAX_TITLE),
-    date: dateFormat.format(meta.date),
+    date: formatDate(meta.date),
     podium: shown.slice(0, PODIUM_SIZE),
     rest: shown.slice(PODIUM_SIZE),
     hiddenCount: ranked.length - shown.length,

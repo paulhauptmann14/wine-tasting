@@ -305,8 +305,10 @@ export function yearTokens(text: string): YearToken[] {
   return tokens
 }
 
-const FOUNDED_BEFORE =
-  /(?<![\p{L}])(seit|since|depuis|dal|dall|desde|est\.?|gegr\.?|gegrundet|founded|established|fondata|fondato|fonde|fondee|anno)\s*(im jahre?|en|in|nel)?\s*$/u
+// Founding words on folded text ("Seit", "Fondé en", "Anno", "dall'"): one list for the vintage
+// (FOUNDED_BEFORE) and for the name candidates (FOUNDED).
+const FOUNDING_WORDS = 'seit|since|depuis|dal|dall|desde|est|gegr|gegrundet|founded|established|fondata|fondato|fonde|fondee|anno'
+const FOUNDED_BEFORE = new RegExp(String.raw`(?<![\p{L}])(${FOUNDING_WORDS})\.?\s*(im jahre?|en|in|nel)?\s*$`, 'u')
 const VINTAGE_WORD = /(?<![\p{L}])(jahrgang|vintage|millesime|vendemmia|cosecha|anada|annata|colheita)(?![\p{L}])/u
 
 /**
@@ -404,9 +406,10 @@ const ALCOHOL_PATTERNS = [
   new RegExp(String.raw`\b(?:alc|alk|alcohol|alkohol|alkoholgehalt|alcool|alcol)\b\.?\s*:?\s*${ALCOHOL_NUMBER}\s?%`, 'giu'),
 ]
 
-// Before the number: a digit and a space ("13 5 % vol" – OCR may have lost the comma) or an upper
-// limit ("alkoholfrei < 0,5 % vol", "max. 0,5 %") – the value may be wrong, so only a suggestion.
-const ALCOHOL_DOUBTFUL_BEFORE = /(?:\d\s|(?:<|≤|\bunter|\bmax\.?|\bbis|\bweniger als|\bless than|\bunder)\s*)$/iu
+// Before the number: a one- or two-digit fragment and a space ("13 5 % vol", "1 3,5 % vol" – OCR
+// may have lost the comma) or an upper limit ("alkoholfrei < 0,5 % vol", "max. 0,5 %") – the value
+// may be wrong, so only a suggestion. A vintage or volume before it ("2021 12,5 % vol") is fine.
+const ALCOHOL_DOUBTFUL_BEFORE = /(?:(?<!\d)\d{1,2}\s|(?:<|≤|\bunter|\bmax\.?|\bbis|\bweniger als|\bless than|\bunder)\s*)$/iu
 
 /**
  * Alcohol by volume. Works on the raw OCR lines: the cleaned lines drop what is mostly digits.
@@ -1198,7 +1201,7 @@ function nameText(line: Line, continued = false, grapes?: GrapeIndex): string {
 }
 
 // "Casa fondata nel 1757", "Seit 1856", "Since 1902".
-const FOUNDED = /(?<![\p{L}])(seit|since|depuis|desde|dal|fondata|fondato|fondee|founded|established|est|gegrundet|gegr)(?![\p{L}])[^\d]{0,20}(1[5-9]|20)\d\d/u
+const FOUNDED = new RegExp(String.raw`(?<![\p{L}])(${FOUNDING_WORDS})(?![\p{L}])[^\d]{0,20}(1[5-9]|20)\d\d`, 'u')
 
 /** "WÜRTTEMBERG", "Rheinhessen · Deutschland", "SEIT": origin or filler, never the name. */
 function isOriginOrFiller(line: Line): boolean {

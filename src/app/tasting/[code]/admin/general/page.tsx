@@ -5,6 +5,7 @@ import { AutoRefresh } from '@/components/auto-refresh'
 import { marginNote } from '@/components/styles'
 import { db } from '@/db/client'
 import { getAdminTasting } from '@/lib/data'
+import { formatDate } from '@/lib/format-date'
 import { countUnfinished } from '@/lib/tasting/host-hints'
 import { RETENTION_DAYS, deletionDate } from '@/lib/tasting/retention'
 import { canEditStructure } from '@/lib/tasting/rules'
@@ -34,9 +35,8 @@ export default async function GeneralPage({ params }: { params: Promise<{ code: 
       />
       <div className="grid gap-3">
         <p className={marginNote}>
-          Wird am{' '}
-          {deletionDate(tasting.createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}{' '}
-          automatisch gelöscht – {RETENTION_DAYS} Tage nach dem Erstellen, mit allen Weinen, Gästen und Bewertungen.
+          Wird am {formatDate(deletionDate(tasting.createdAt))} automatisch gelöscht – {RETENTION_DAYS} Tage nach dem
+          Erstellen, mit allen Weinen, Gästen und Bewertungen.
         </p>
         <DeleteTasting code={tasting.code} />
       </div>

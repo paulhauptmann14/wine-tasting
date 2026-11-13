@@ -57,3 +57,12 @@ it('shows no confirmation when adding fails', async () => {
   expect(await screen.findByText('Bitte gib einen Namen ein.')).toBeInTheDocument()
   expect(screen.queryByText(/hinzugefügt\./)).toBeNull()
 })
+
+it('links the error text to the name field', async () => {
+  vi.mocked(addCriterionAction).mockResolvedValueOnce({ fieldErrors: { name: ['Bitte gib einen Namen ein.'] } })
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByRole('button', { name: 'Hinzufügen' }))
+  await screen.findByText('Bitte gib einen Namen ein.')
+  expect(screen.getByLabelText('Kriterium hinzufügen')).toHaveAccessibleDescription('Bitte gib einen Namen ein.')
+})

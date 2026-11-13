@@ -41,8 +41,8 @@ export async function countTastingRatings(db: Db, tastingId: string): Promise<nu
  * Switches the rating system: sets the scale and replaces ALL criteria with the preset's.
  * Setup only (StructureLockedError otherwise) and only while nobody has rated – replacing the
  * criteria would delete rating values via cascade. Check and change share one transaction
- * with the tasting row locked, so a concurrent status change is serialized. Known gap: rating
- * writes don't take that lock, so a rating that is still uncommitted while this runs is not seen.
+ * with the tasting row locked, so a concurrent status change or guest rating (saveGuestRating,
+ * FOR SHARE) is serialized with it.
  */
 export async function applyPreset(
   db: Db,

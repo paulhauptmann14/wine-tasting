@@ -215,7 +215,7 @@ test('Gastgeber entfernt Teilnehmer und löscht das Tasting', async ({ page, bro
   const blindSwitch = page.getByRole('switch', { name: 'Blindverkostung' })
   await expect(blindSwitch).not.toBeChecked()
   await blindSwitch.click()
-  await expect(page.getByText('Gespeichert.')).toBeVisible()
+  await expect(page.getByText('Gespeichert.', { exact: true })).toBeVisible()
   await page.reload()
   await expect(page.getByRole('switch', { name: 'Blindverkostung' })).toBeChecked()
 

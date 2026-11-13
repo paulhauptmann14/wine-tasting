@@ -155,8 +155,9 @@ export async function shuffleWines(
     if (!status) return { ok: false, reason: 'Tasting nicht gefunden.' } as const
     if (!canShuffleWines(status)) return { ok: false, reason: SHUFFLE_FINISHED_HINT } as const
 
-    // Lock the wine rows first: a rating being saved holds a key share lock on its wine (FK check),
-    // so it either finishes before we read the rated wines or waits until the shuffle is committed.
+    // Lock the wine rows first: a rating being saved (saveGuestRating) reads its wine FOR SHARE and holds
+    // a key share lock on it (FK check), so it either finishes before we read the rated wines or waits
+    // until the shuffle is committed – and then sees the new number and asks the guest to reload.
     const ids = await orderedIds(tx, tastingId, true)
     const rated = await ratedWineIds(tx, tastingId)
     const current = ids.map((id) => ({ id, rated: rated.has(id) }))

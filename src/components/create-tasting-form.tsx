@@ -3,7 +3,7 @@
 import { useActionState, useRef } from 'react'
 import { createTastingAction } from '@/app/new/actions'
 import { BottomBar } from '@/components/bottom-bar'
-import { FieldError } from '@/components/field-error'
+import { describedBy, FieldError } from '@/components/field-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,9 +39,10 @@ export function CreateTastingForm() {
           required
           aria-required="true"
           aria-invalid={!!errors.name}
+          aria-describedby={describedBy('name', errors.name)}
           className="mt-2 h-12 lg:bg-card text-base"
         />
-        <FieldError errors={errors.name} />
+        <FieldError fieldId="name" errors={errors.name} />
       </div>
 
       <div>
@@ -54,13 +55,13 @@ export function CreateTastingForm() {
           maxLength={300}
           rows={2}
           aria-invalid={!!errors.description}
-          aria-describedby="description-hint"
+          aria-describedby={describedBy('description', errors.description, 'description-hint')}
           className="mt-2 min-h-12 lg:bg-card text-base"
         />
         <p id="description-hint" className="mt-1.5 text-sm text-muted-foreground">
           Optional. Steht unter dem Namen, für alle mit dem Code sichtbar.
         </p>
-        <FieldError errors={errors.description} />
+        <FieldError fieldId="description" errors={errors.description} />
       </div>
 
       <div className="flex items-center justify-between gap-4">
@@ -71,6 +72,9 @@ export function CreateTastingForm() {
           </p>
         </div>
         <Switch
+          // Radix keeps its first checked state as the reset target, and React resets the form after
+          // every action: remount when the returned value changes, or a failed submit switches it off
+          key={state?.values?.blindTasting ?? 'init'}
           id="blindTasting"
           name="blindTasting"
           defaultChecked={state?.values?.blindTasting === 'on'}
@@ -103,7 +107,7 @@ export function CreateTastingForm() {
           required
           aria-required="true"
           aria-invalid={!!errors.pin}
-          aria-describedby="pin-hint"
+          aria-describedby={describedBy('pin', errors.pin, 'pin-hint')}
           className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.4em]"
         />
         <p id="pin-hint" className="mt-1.5 text-sm text-muted-foreground">
@@ -113,7 +117,7 @@ export function CreateTastingForm() {
         <p className="mt-1 text-sm text-muted-foreground">
           Nach {RETENTION_DAYS} Tagen wird das Tasting mit allen Bewertungen automatisch gelöscht.
         </p>
-        <FieldError errors={errors.pin} />
+        <FieldError fieldId="pin" errors={errors.pin} />
       </div>
 
       <BottomBar>

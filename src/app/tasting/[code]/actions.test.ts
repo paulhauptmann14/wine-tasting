@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentParticipant, setParticipantCookie } from '@/lib/auth/participant-session'
 import { requireTasting } from '@/lib/data'
 import { rejoinTasting } from '@/server/participants'
-import { saveRating } from '@/server/ratings'
+import { saveGuestRating } from '@/server/ratings'
 import { getWineById } from '@/server/wines'
 import { rejoinAction, saveRatingAction } from './actions'
 
@@ -23,8 +23,8 @@ vi.mock('@/lib/auth/participant-session', () => ({ getCurrentParticipant: vi.fn(
 vi.mock('@/server/criteria', () => ({ listCriteria: vi.fn(async () => [{ id: 'c1', name: 'Geschmack', scaleMin: 1, scaleMax: 5 }]) }))
 vi.mock('@/lib/env', () => ({ getSessionSecret: () => 'secret' }))
 vi.mock('@/server/participants', () => ({ joinTasting: vi.fn(), rejoinTasting: vi.fn() }))
-vi.mock('@/server/ratings', () => ({ saveRating: vi.fn() }))
-vi.mock('@/server/wines', () => ({ getWineById: vi.fn(), countWines: vi.fn(async () => 2) }))
+vi.mock('@/server/ratings', () => ({ saveGuestRating: vi.fn() }))
+vi.mock('@/server/wines', () => ({ countWines: vi.fn(async () => 2), getWineById: vi.fn() }))
 
 const WINE_ID = '11111111-1111-4111-8111-111111111111'
 const tasting = (status: string) => ({ id: 't1', code: '8GXBW5', status, blindTasting: false })
@@ -37,33 +37,49 @@ const form = () => {
 const save = (wineId = WINE_ID, shownPosition: unknown = 1) =>
   saveRatingAction('8GXBW5', wineId, shownPosition, undefined, form())
 
+const PAUSED = {
+  message: 'Der Gastgeber hat kurz angehalten. Deine Sterne stehen noch hier – speicher gleich nochmal.',
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(requireTasting).mockResolvedValue(tasting('active') as never)
   vi.mocked(getCurrentParticipant).mockResolvedValue({ id: 'p1', name: 'Anna' })
+  vi.mocked(saveGuestRating).mockResolvedValue({ ok: true, position: 1 })
   vi.mocked(getWineById).mockResolvedValue({ id: WINE_ID, position: 1 } as never)
 })
 
 it('saves and moves on to the next wine', async () => {
   await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5/wine/2?saved=1')
-  expect(saveRating).toHaveBeenCalledWith({}, { participantId: 'p1', wineId: WINE_ID, values: { c1: 4 }, notes: null })
+  expect(saveGuestRating).toHaveBeenCalledWith({}, {
+    tastingId: 't1',
+    participantId: 'p1',
+    wineId: WINE_ID,
+    shownPosition: 1,
+    values: { c1: 4 },
+    notes: null,
+  })
+})
+
+it('moves on from the number the wine has when saved', async () => {
+  vi.mocked(getWineById).mockResolvedValue({ id: WINE_ID, position: 2 } as never)
+  vi.mocked(saveGuestRating).mockResolvedValue({ ok: true, position: 2 })
+  await expect(save(WINE_ID, 2)).rejects.toThrow('redirect:/tasting/8GXBW5?saved=2')
 })
 
 it('sends visitors without a seat back to joining', async () => {
   vi.mocked(getCurrentParticipant).mockResolvedValue(null)
   await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5')
-  expect(saveRating).not.toHaveBeenCalled()
+  expect(saveGuestRating).not.toHaveBeenCalled()
 })
 
 it('keeps the guest calm when the host paused the tasting, and sends them to the results once it ended', async () => {
   vi.mocked(requireTasting).mockResolvedValue(tasting('setup') as never)
-  expect(await save()).toEqual({
-    message: 'Der Gastgeber hat kurz angehalten. Deine Sterne stehen noch hier – speicher gleich nochmal.',
-  })
+  expect(await save()).toEqual(PAUSED)
   vi.mocked(requireTasting).mockResolvedValue(tasting('finished') as never)
   // ?ended=1 lets the results page explain the jump
   await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5/results?ended=1')
-  expect(saveRating).not.toHaveBeenCalled()
+  expect(saveGuestRating).not.toHaveBeenCalled()
 })
 
 it('names the criteria without stars', async () => {
@@ -72,7 +88,16 @@ it('names the criteria without stars', async () => {
   const result = await saveRatingAction('8GXBW5', WINE_ID, 1, undefined, fd)
   expect(result?.message).toBe('Bei Geschmack fehlen noch Sterne.')
   expect(result?.fieldErrors).toHaveProperty('c_c1')
-  expect(saveRating).not.toHaveBeenCalled()
+  expect(saveGuestRating).not.toHaveBeenCalled()
+})
+
+it('gives the same answers when the status changed only while saving', async () => {
+  // The lookup still said 'active' – the transaction in saveGuestRating has the last word
+  vi.mocked(saveGuestRating).mockResolvedValueOnce({ ok: false, reason: 'paused' })
+  expect(await save()).toEqual(PAUSED)
+  vi.mocked(saveGuestRating).mockResolvedValueOnce({ ok: false, reason: 'finished' })
+  await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5/results?ended=1')
+  expect(revalidatePath).not.toHaveBeenCalled()
 })
 
 it('refuses when the wine got another number since the page was opened (shuffled or moved)', async () => {
@@ -81,22 +106,39 @@ it('refuses when the wine got another number since the page was opened (shuffled
   const result = await save(WINE_ID, 2)
   expect(result).toMatchObject({ reload: true })
   expect(result?.message).toMatch(/Reihenfolge.*geändert.*Wein #2/)
-  expect(saveRating).not.toHaveBeenCalled()
+  expect(saveGuestRating).not.toHaveBeenCalled()
+  // Moved only while saving: the transaction says so with the same answer
+  vi.mocked(getWineById).mockResolvedValue({ id: WINE_ID, position: 2 } as never)
+  vi.mocked(saveGuestRating).mockResolvedValue({ ok: false, reason: 'moved' })
+  expect(await save(WINE_ID, 2)).toMatchObject({ reload: true })
+  expect(revalidatePath).not.toHaveBeenCalled()
+})
+
+it('reports a moved or deleted wine before missing stars, so the guest does not fix stars in vain', async () => {
+  const fd = new FormData()
+  fd.set('c_c1', '')
+  vi.mocked(getWineById).mockResolvedValue({ id: WINE_ID, position: 3 } as never)
+  expect(await saveRatingAction('8GXBW5', WINE_ID, 1, undefined, fd)).toMatchObject({ reload: true })
+  vi.mocked(getWineById).mockResolvedValue(null)
+  expect(await saveRatingAction('8GXBW5', WINE_ID, 1, undefined, fd)).toEqual({ message: 'Diesen Wein gibt es nicht mehr.' })
 })
 
 it('treats a tampered position like a changed order', async () => {
   for (const bad of ['2', 0, 1.5, null]) {
     expect(await save(WINE_ID, bad)).toMatchObject({ reload: true })
   }
-  expect(saveRating).not.toHaveBeenCalled()
+  expect(saveGuestRating).not.toHaveBeenCalled()
 })
 
 it('refuses wines of other tastings and malformed ids', async () => {
   vi.mocked(getWineById).mockResolvedValue(null)
   expect(await save()).toEqual({ message: 'Diesen Wein gibt es nicht mehr.' })
   expect(await save('not-a-uuid')).toEqual({ message: 'Diesen Wein gibt es nicht mehr.' })
-  expect(getWineById).toHaveBeenCalledTimes(1)
-  expect(saveRating).not.toHaveBeenCalled()
+  // Deleted only while saving
+  vi.mocked(getWineById).mockResolvedValue({ id: WINE_ID, position: 1 } as never)
+  vi.mocked(saveGuestRating).mockResolvedValue({ ok: false, reason: 'wine_gone' })
+  expect(await save()).toEqual({ message: 'Diesen Wein gibt es nicht mehr.' })
+  expect(saveGuestRating).toHaveBeenCalledTimes(1)
 })
 
 const LINK = `${WINE_ID}.abcdefghijklmnopqrstuv`

@@ -90,7 +90,11 @@ export default async function WinePage({ params, searchParams }: Props) {
             </GlassRing>
             <div className="min-w-0">
               {!showName && <p className="text-sm text-muted-foreground">Blind verkostet</p>}
-              <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight md:text-4xl">{title}</h1>
+              <h1 className="font-display text-3xl leading-[1.1] font-medium tracking-tight md:text-4xl">
+                {/* The number is drawn in the ring only; blind wines already have it as their title */}
+                {showName && <span className="sr-only">Wein #{position}: </span>}
+                {title}
+              </h1>
               {subtitle && <p className="mt-1 text-muted-foreground">{subtitle}</p>}
               {description && <p className="mt-1 text-sm text-pretty break-words text-muted-foreground">{description}</p>}
             </div>

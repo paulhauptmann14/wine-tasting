@@ -4,8 +4,9 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 const shuffleWinesAction = vi.fn()
+const addWineAction = vi.fn()
 vi.mock('@/app/tasting/[code]/admin/actions', () => ({
-  addWineAction: vi.fn(),
+  addWineAction: { bind: () => (...args: unknown[]) => addWineAction(...args) },
   deleteWineAction: vi.fn(),
   moveWineAction: vi.fn(),
   updateWineAction: vi.fn(),
@@ -144,4 +145,27 @@ it('offers an optional description with an example, shows it in the list and pre
   const form = screen.getByRole('button', { name: 'Speichern' }).closest('form')!
   expect(within(form).getByRole('textbox', { name: 'Beschreibung' })).toHaveValue('Süß & fruchtig')
   expect(within(form).getByRole('combobox', { name: 'Geschmacksrichtung' })).toHaveValue('sweet')
+})
+
+it('links each error text to its field', async () => {
+  const fields = {
+    name: 'Name',
+    wineType: 'Weinart',
+    winery: 'Weingut',
+    vintage: 'Jahrgang',
+    alcohol: 'Alkohol in % vol',
+    grapeVariety: 'Rebsorte',
+    sweetness: 'Geschmacksrichtung',
+    description: 'Beschreibung',
+  }
+  addWineAction.mockResolvedValueOnce({
+    fieldErrors: Object.fromEntries(Object.keys(fields).map((key) => [key, [`Fehler bei ${key}`]])),
+  })
+  const user = userEvent.setup()
+  render(<WineManager code="ABC123" wines={[]} locked={false} status="setup" unratedCount={0} />)
+  await user.click(screen.getByRole('button', { name: 'Wein hinzufügen' }))
+  await screen.findByText('Fehler bei name')
+  for (const [key, label] of Object.entries(fields)) {
+    expect(screen.getByLabelText(label)).toHaveAccessibleDescription(`Fehler bei ${key}`)
+  }
 })

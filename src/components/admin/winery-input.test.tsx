@@ -48,3 +48,28 @@ it('follows a controlled value', () => {
   rerender(<WineryInput name="winery" value="Weingut Dr. Loosen" />)
   expect(screen.getByRole('combobox')).toHaveValue('Weingut Dr. Loosen')
 })
+
+it('suggests for the text that is actually in the field after a form reset or a scripted prefill', async () => {
+  const user = userEvent.setup()
+  const { container } = render(
+    <form>
+      <WineryInput name="winery" />
+      <button type="button">Anderes Feld</button>
+    </form>,
+  )
+  const input = screen.getByRole<HTMLInputElement>('combobox')
+  await user.type(input, 'loosen')
+  await waitFor(() => expect(options(container)).toContain('Weingut Dr. Loosen'))
+
+  // React resets the form after a successful action: the old suggestions must not come back
+  await user.click(screen.getByRole('button', { name: 'Anderes Feld' }))
+  input.form!.reset()
+  await user.click(input)
+  await waitFor(() => expect(options(container)).toEqual([]))
+
+  // The label scan writes element.value directly
+  await user.click(screen.getByRole('button', { name: 'Anderes Feld' }))
+  input.value = 'Egon Müller'
+  await user.click(input)
+  await waitFor(() => expect(options(container)).toEqual(['Weingut Egon Müller']))
+})

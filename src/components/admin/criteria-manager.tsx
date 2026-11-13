@@ -8,7 +8,7 @@ import {
   renameCriterionAction,
 } from '@/app/tasting/[code]/admin/actions'
 import { RowActions } from '@/components/admin/row-actions'
-import { FieldError } from '@/components/field-error'
+import { describedBy, FieldError } from '@/components/field-error'
 import { marginNote } from '@/components/styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -62,9 +62,10 @@ function NameForm({
           autoFocus={autoFocus}
           onChange={() => setDismissed(state)}
           aria-invalid={!!state?.fieldErrors?.name}
+          aria-describedby={describedBy(id, state?.fieldErrors?.name)}
           className="mt-2 h-12"
         />
-        <FieldError errors={state?.fieldErrors?.name} />
+        <FieldError fieldId={id} errors={state?.fieldErrors?.name} />
       </div>
       <Button type="submit" size="lg" className="mt-7 h-12" disabled={pending}>
         {submitLabel}

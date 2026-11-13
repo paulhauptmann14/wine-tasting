@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from 'react'
 import { updateBlindTastingAction, updateSettingsAction } from '@/app/tasting/[code]/admin/actions'
-import { FieldError } from '@/components/field-error'
+import { describedBy, FieldError } from '@/components/field-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -53,9 +53,10 @@ export function SettingsForm({
             defaultValue={state?.values?.name ?? name}
             maxLength={60}
             aria-invalid={!!state?.fieldErrors?.name}
+            aria-describedby={describedBy('settings-name', state?.fieldErrors?.name)}
             className="mt-2 h-12 text-base"
           />
-          <FieldError errors={state?.fieldErrors?.name} />
+          <FieldError fieldId="settings-name" errors={state?.fieldErrors?.name} />
         </div>
         <div>
           <Label htmlFor="settings-description">Beschreibung</Label>
@@ -67,23 +68,22 @@ export function SettingsForm({
             maxLength={300}
             rows={2}
             aria-invalid={!!state?.fieldErrors?.description}
-            aria-describedby="settings-description-hint"
+            aria-describedby={describedBy('settings-description', state?.fieldErrors?.description, 'settings-description-hint')}
             className="mt-2 min-h-12 text-base"
           />
           <p id="settings-description-hint" className="mt-1.5 text-sm text-muted-foreground">
             Optional. Steht unter dem Namen, für alle mit dem Code sichtbar.
           </p>
-          <FieldError errors={state?.fieldErrors?.description} />
+          <FieldError fieldId="settings-description" errors={state?.fieldErrors?.description} />
         </div>
         <div className="flex items-center gap-4">
           <Button type="submit" size="lg" variant="outline" className="h-12" disabled={pending}>
             Speichern
           </Button>
-          {state?.ok && (
-            <p aria-live="polite" className="text-sm text-muted-foreground">
-              {state.message}
-            </p>
-          )}
+          {/* Always rendered and emptied while saving, so a screen reader announces every save – also the second */}
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            {!pending && state?.ok ? state.message : ''}
+          </p>
         </div>
       </form>
 

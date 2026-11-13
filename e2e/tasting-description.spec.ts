@@ -22,7 +22,7 @@ test('Beschreibung steht unter dem Namen, lässt sich ändern und wieder leeren'
   await expect(field).toHaveValue('Rieslinge von der Mosel.\nBring gern Brot mit.')
   await field.fill('Thema: Mosel')
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
-  await expect(page.getByText('Gespeichert.')).toBeVisible()
+  await expect(page.getByText('Gespeichert.', { exact: true })).toBeVisible()
   await guest.reload()
   await expect(guest.getByText('Thema: Mosel')).toBeVisible()
 

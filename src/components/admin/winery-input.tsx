@@ -49,6 +49,8 @@ export function WineryInput({ defaultValue = '', value, onValueChange, onFocus, 
         autoComplete="off"
         onFocus={(e) => {
           onFocus?.(e)
+          // The form reset after an action and the label scan change the text without onChange
+          if (!controlled) setInner(e.currentTarget.value)
           void loadWineries().then(setList)
         }}
         onChange={(e) => {

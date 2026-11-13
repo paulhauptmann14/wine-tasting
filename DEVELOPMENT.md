@@ -83,7 +83,7 @@ e2e/                Playwright-Tests
 ## Sicherheit
 
 - Gäste-Sessions: zufälliges Token im HttpOnly-Cookie, in der Datenbank nur als SHA-256-Hash
-- Admin-PIN: mit scrypt gehasht; nach 5 Fehlversuchen gesperrt – erst 10 Minuten, jede weitere Sperre doppelt so lang (höchstens 24 Stunden), zurückgesetzt nach erfolgreichem Login (`src/lib/auth/pin-lockout.ts`)
+- Admin-PIN: mit scrypt gehasht; nach 5 Fehlversuchen gesperrt – erst 10 Minuten, jede weitere Sperre doppelt so lang (höchstens 24 Stunden), zurückgesetzt nach erfolgreichem Login (`src/lib/auth/pin-lockout.ts`). Der Versuch wird vor der Prüfung unter Zeilensperre gezählt, auch parallele Anfragen bekommen also höchstens 5 Prüfungen pro Sperrfenster.
 - Admin-Cookie: HMAC-signiert, 7 Tage gültig, nur für ein Tasting
 - Blindverkostung: Weinnamen werden serverseitig zurückgehalten, nicht nur in der Oberfläche versteckt
 - Row Level Security auf allen Tabellen (ohne Policies) – schützt vor Zugriffen über eine öffentliche Datenbank-API wie die von Supabase

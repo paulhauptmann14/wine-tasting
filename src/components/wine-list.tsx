@@ -6,6 +6,15 @@ import type { WineListItem } from '@/server/participant-view'
 
 type ListProps = { items: WineListItem[]; currentPosition?: number; savedPosition?: number }
 
+/**
+ * The number in the glass ring is hidden from screen readers, but it is the glass on the table:
+ * name it in front of a wine name. Blind titles already are "Wein #n".
+ */
+function numberPrefix(item: WineListItem): string {
+  const number = `Wein #${item.position}`
+  return item.title === number ? '' : `${number}: `
+}
+
 export function WineList({ items, currentPosition, savedPosition }: ListProps) {
   return (
     <ol className="grid grid-cols-1 border-t border-border">
@@ -25,7 +34,10 @@ export function WineList({ items, currentPosition, savedPosition }: ListProps) {
               <span className="font-display text-lg font-medium">{item.position}</span>
             </GlassRing>
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-display text-[17px] font-medium">{item.title}</span>
+              <span className="block truncate font-display text-[17px] font-medium">
+                {numberPrefix(item) && <span className="sr-only">{numberPrefix(item)}</span>}
+                {item.title}
+              </span>
               {item.subtitle && <span className="block truncate text-sm text-muted-foreground">{item.subtitle}</span>}
               {item.description && <span className="block truncate text-sm text-muted-foreground">{item.description}</span>}
             </span>
@@ -53,7 +65,7 @@ export function WineRingStrip({ items, currentPosition, savedPosition }: ListPro
           key={item.position}
           href={item.href}
           aria-current={item.position === currentPosition ? 'page' : undefined}
-          aria-label={`${item.title}, ${RING_STATE_TEXT[item.state]}`}
+          aria-label={`${numberPrefix(item)}${item.title}, ${RING_STATE_TEXT[item.state]}`}
           className="grid size-12 shrink-0 place-items-center rounded-full outline-none transition-transform duration-100 ease-out active:scale-90 focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-card"
         >
           <GlassRing

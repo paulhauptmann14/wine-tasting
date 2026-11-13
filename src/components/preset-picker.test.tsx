@@ -39,3 +39,10 @@ it('keeps the scoring explanation open by default', () => {
   expect(container.querySelector('details')).toBeNull()
   expect(screen.getByText('So wird gerechnet')).toBeInTheDocument()
 })
+
+it('links its error text to the group', () => {
+  render(<PresetPicker legend="Bewertungssystem" errors={['Bitte wähl ein Bewertungssystem.']} />)
+  expect(screen.getByRole('group', { name: 'Bewertungssystem' })).toHaveAccessibleDescription(
+    'Bitte wähl ein Bewertungssystem.',
+  )
+})

@@ -14,7 +14,7 @@ import { LabelLines, fieldFilledNotice, type LineField } from '@/components/admi
 import { ScanMarkNote, ScanSuggestions, scanMarkClass, scanSummary } from '@/components/admin/label-scan/scan-fields'
 import { RowActions } from '@/components/admin/row-actions'
 import { WineryInput } from '@/components/admin/winery-input'
-import { FieldError } from '@/components/field-error'
+import { describedBy, FieldError } from '@/components/field-error'
 import { GlassRing } from '@/components/glass-ring'
 import { InfoPopover } from '@/components/info-popover'
 import { RequiredLegend, RequiredMark } from '@/components/required-mark'
@@ -102,7 +102,7 @@ function ChoiceField<K extends string>({
         required={required}
         aria-required={required ? 'true' : undefined}
         aria-invalid={!!errors}
-        aria-describedby={scan.marked ? `${id}-scan` : undefined}
+        aria-describedby={describedBy(id, errors, scan.marked && `${id}-scan`)}
         className={cn(
           'mt-2 h-12 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm dark:bg-input/30',
           scanMarkClass(scan.marked),
@@ -115,7 +115,7 @@ function ChoiceField<K extends string>({
           </option>
         ))}
       </select>
-      <FieldError errors={errors} />
+      <FieldError fieldId={id} errors={errors} />
       <ScanExtras id={id} label={label} scan={scan} />
     </div>
   )
@@ -295,7 +295,7 @@ function WineForm({
 
   const markedCount = PREFILL_FIELDS.filter((name) => marked[name]).length
   const optionCount = PREFILL_FIELDS.filter((name) => options[name]?.length).length
-  const describedBy = (name: PrefillField) => (marked[name] ? `${id}-${name}-scan` : undefined)
+  const scanNoteId = (name: PrefillField) => marked[name] && `${id}-${name}-scan`
 
   useEffect(() => {
     if (state?.ok) onDone?.()
@@ -347,10 +347,10 @@ function WineForm({
           required
           aria-required="true"
           aria-invalid={!!errors.name}
-          aria-describedby={describedBy('name')}
+          aria-describedby={describedBy(`${id}-name`, errors.name, scanNoteId('name'))}
           className={cn('mt-2 h-12', scanMarkClass(!!marked.name))}
         />
-        <FieldError errors={errors.name} />
+        <FieldError fieldId={`${id}-name`} errors={errors.name} />
         <ScanExtras id={`${id}-name`} label="Name" scan={fieldScan('name')} />
       </div>
       <LabelLines lines={lines} assigned={assigned} notice={lineNotice} noticeFor={noticeFor} onAssign={assignLine} className="sm:col-span-2" />
@@ -373,10 +373,10 @@ function WineForm({
           defaultValue={values?.winery ?? initial?.winery ?? ''}
           maxLength={80}
           aria-invalid={!!errors.winery}
-          aria-describedby={describedBy('winery')}
+          aria-describedby={describedBy(`${id}-winery`, errors.winery, scanNoteId('winery'))}
           className={cn('mt-2 h-12', scanMarkClass(!!marked.winery))}
         />
-        <FieldError errors={errors.winery} />
+        <FieldError fieldId={`${id}-winery`} errors={errors.winery} />
         <ScanExtras id={`${id}-winery`} label="Weingut" scan={fieldScan('winery')} />
         <p className="mt-1.5 text-xs text-muted-foreground">
           Vorschläge: ©{' '}
@@ -395,10 +395,10 @@ function WineForm({
           defaultValue={values?.vintage ?? initial?.vintage ?? ''}
           maxLength={4}
           aria-invalid={!!errors.vintage}
-          aria-describedby={describedBy('vintage')}
+          aria-describedby={describedBy(`${id}-vintage`, errors.vintage, scanNoteId('vintage'))}
           className={cn('mt-2 h-12', scanMarkClass(!!marked.vintage))}
         />
-        <FieldError errors={errors.vintage} />
+        <FieldError fieldId={`${id}-vintage`} errors={errors.vintage} />
         <ScanExtras id={`${id}-vintage`} label="Jahrgang" scan={fieldScan('vintage')} />
       </div>
       <div>
@@ -415,14 +415,14 @@ function WineForm({
             maxLength={10}
             placeholder="13,5"
             aria-invalid={!!errors.alcohol}
-            aria-describedby={describedBy('alcohol')}
+            aria-describedby={describedBy(`${id}-alcohol`, errors.alcohol, scanNoteId('alcohol'))}
             className={cn('h-12 pr-16', scanMarkClass(!!marked.alcohol))}
           />
           <span aria-hidden className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-base text-muted-foreground md:text-sm">
             % vol
           </span>
         </div>
-        <FieldError errors={errors.alcohol} />
+        <FieldError fieldId={`${id}-alcohol`} errors={errors.alcohol} />
         <ScanExtras id={`${id}-alcohol`} label="Alkohol" scan={fieldScan('alcohol')} />
       </div>
       <div>
@@ -433,10 +433,10 @@ function WineForm({
           defaultValue={values?.grapeVariety ?? initial?.grapeVariety ?? ''}
           maxLength={60}
           aria-invalid={!!errors.grapeVariety}
-          aria-describedby={describedBy('grapeVariety')}
+          aria-describedby={describedBy(`${id}-grape`, errors.grapeVariety, scanNoteId('grapeVariety'))}
           className={cn('mt-2 h-12', scanMarkClass(!!marked.grapeVariety))}
         />
-        <FieldError errors={errors.grapeVariety} />
+        <FieldError fieldId={`${id}-grape`} errors={errors.grapeVariety} />
         <ScanExtras id={`${id}-grapeVariety`} label="Rebsorte" scan={fieldScan('grapeVariety')} />
       </div>
       <ChoiceField
@@ -458,10 +458,10 @@ function WineForm({
           maxLength={200}
           placeholder="z. B. fruchtig, Noten von Kirsche"
           aria-invalid={!!errors.description}
-          aria-describedby={describedBy('description')}
+          aria-describedby={describedBy(`${id}-description`, errors.description, scanNoteId('description'))}
           className={cn('mt-2 h-12', scanMarkClass(!!marked.description))}
         />
-        <FieldError errors={errors.description} />
+        <FieldError fieldId={`${id}-description`} errors={errors.description} />
         <ScanExtras id={`${id}-description`} label="Beschreibung" scan={fieldScan('description')} />
       </div>
       <div className="flex gap-2 sm:col-span-2">

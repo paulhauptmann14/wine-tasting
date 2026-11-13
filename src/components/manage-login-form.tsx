@@ -3,7 +3,7 @@
 import { useActionState, useRef } from 'react'
 import { manageLoginAction } from '@/app/manage/actions'
 import { BottomBar } from '@/components/bottom-bar'
-import { FieldError } from '@/components/field-error'
+import { describedBy, FieldError } from '@/components/field-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,9 +26,10 @@ export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
           autoComplete="off"
           maxLength={6}
           aria-invalid={!!errors.code}
+          aria-describedby={describedBy('code', errors.code)}
           className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.3em] uppercase"
         />
-        <FieldError errors={errors.code} />
+        <FieldError fieldId="code" errors={errors.code} />
       </div>
       <div>
         <Label htmlFor="pin">PIN</Label>
@@ -41,10 +42,10 @@ export function ManageLoginForm({ defaultCode }: { defaultCode?: string }) {
           maxLength={12}
           autoFocus={!!defaultCode}
           aria-invalid={!!errors.pin}
-          aria-describedby="pin-hint"
+          aria-describedby={describedBy('pin', errors.pin, 'pin-hint')}
           className="mt-2 h-12 lg:bg-card font-mono text-lg tracking-[0.4em]"
         />
-        <FieldError errors={errors.pin} />
+        <FieldError fieldId="pin" errors={errors.pin} />
         <p id="pin-hint" className="mt-1.5 text-sm text-muted-foreground">
           PIN vergessen? Sie lässt sich nicht zurücksetzen. Auf dem Gerät, auf dem du das Tasting erstellt hast,
           bleibst du 7 Tage ohne PIN angemeldet.

@@ -2,7 +2,7 @@
 
 import { useActionState, useRef } from 'react'
 import { BottomBar } from '@/components/bottom-bar'
-import { FieldError } from '@/components/field-error'
+import { describedBy, FieldError } from '@/components/field-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,9 +26,10 @@ export function JoinForm({ action }: { action: FormAction }) {
         autoFocus
         maxLength={40}
         aria-invalid={!!state?.fieldErrors?.name}
+        aria-describedby={describedBy('name', state?.fieldErrors?.name)}
         className="mt-2 h-14 border-foreground/40 bg-card text-lg lg:max-w-md"
       />
-      <FieldError errors={state?.fieldErrors?.name} />
+      <FieldError fieldId="name" errors={state?.fieldErrors?.name} />
       <BottomBar>
         <Button type="submit" size="lg" className="h-14 w-full text-base lg:w-auto lg:px-10" disabled={pending}>
           Beitreten

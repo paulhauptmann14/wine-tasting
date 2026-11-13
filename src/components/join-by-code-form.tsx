@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { goToTastingAction } from '@/app/actions'
-import { FieldError } from '@/components/field-error'
+import { describedBy, FieldError } from '@/components/field-error'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,10 +40,10 @@ export function JoinByCodeForm({
           spellCheck={false}
           maxLength={6}
           aria-invalid={!!error}
-          aria-describedby={error ? 'join-code-error' : undefined}
+          aria-describedby={describedBy('join-code', error)}
           className="h-14 border-foreground/40 bg-card font-mono text-lg tracking-[0.35em] uppercase"
         />
-        <FieldError id="join-code-error" errors={error} />
+        <FieldError fieldId="join-code" errors={error} />
       </div>
       <Button
         type="submit"

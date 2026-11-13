@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Check } from 'lucide-react'
-import { FieldError } from '@/components/field-error'
+import { describedBy, FieldError } from '@/components/field-error'
 import { ScoringExplainer } from '@/components/scoring-explainer'
 import { PRESET_KEYS, PRESETS, type PresetKey } from '@/lib/tasting/presets'
 
@@ -37,9 +37,10 @@ export function PresetPicker({
   collapseExplainer?: boolean
 }) {
   const [selected, setSelected] = useState<PresetKey | null>(defaultValue)
+  const id = useId()
 
   return (
-    <fieldset>
+    <fieldset aria-describedby={describedBy(id, errors)}>
       <legend className="text-sm font-medium">{legend}</legend>
       {hint && <p className="mt-1 text-sm text-muted-foreground">{hint}</p>}
       <div className="mt-3 grid grid-cols-1 gap-2">
@@ -74,7 +75,7 @@ export function PresetPicker({
           </label>
         ))}
       </div>
-      <FieldError errors={errors} />
+      <FieldError fieldId={id} errors={errors} />
       {selected &&
         PRESETS[selected] &&
         (collapseExplainer ? (
