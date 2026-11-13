@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentParticipant, setParticipantCookie } from '@/lib/auth/participant-session'
 import { requireTasting } from '@/lib/data'
 import { rejoinTasting } from '@/server/participants'
+import { listCriteria } from '@/server/criteria'
 import { saveGuestRating } from '@/server/ratings'
 import { getWineById } from '@/server/wines'
 import { rejoinAction, saveRatingAction } from './actions'
@@ -24,7 +25,7 @@ vi.mock('@/server/criteria', () => ({ listCriteria: vi.fn(async () => [{ id: 'c1
 vi.mock('@/lib/env', () => ({ getSessionSecret: () => 'secret' }))
 vi.mock('@/server/participants', () => ({ joinTasting: vi.fn(), rejoinTasting: vi.fn() }))
 vi.mock('@/server/ratings', () => ({ saveGuestRating: vi.fn() }))
-vi.mock('@/server/wines', () => ({ countWines: vi.fn(async () => 2), getWineById: vi.fn() }))
+vi.mock('@/server/wines', () => ({ getWineById: vi.fn() }))
 
 const WINE_ID = '11111111-1111-4111-8111-111111111111'
 const tasting = (status: string) => ({ id: 't1', code: '8GXBW5', status, blindTasting: false })
@@ -45,7 +46,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(requireTasting).mockResolvedValue(tasting('active') as never)
   vi.mocked(getCurrentParticipant).mockResolvedValue({ id: 'p1', name: 'Anna' })
-  vi.mocked(saveGuestRating).mockResolvedValue({ ok: true, position: 1 })
+  vi.mocked(saveGuestRating).mockResolvedValue({ ok: true, position: 1, total: 2 })
   vi.mocked(getWineById).mockResolvedValue({ id: WINE_ID, position: 1 } as never)
 })
 
@@ -63,12 +64,15 @@ it('saves and moves on to the next wine', async () => {
 
 it('moves on from the number the wine has when saved', async () => {
   vi.mocked(getWineById).mockResolvedValue({ id: WINE_ID, position: 2 } as never)
-  vi.mocked(saveGuestRating).mockResolvedValue({ ok: true, position: 2 })
+  vi.mocked(saveGuestRating).mockResolvedValue({ ok: true, position: 2, total: 2 })
   await expect(save(WINE_ID, 2)).rejects.toThrow('redirect:/tasting/8GXBW5?saved=2')
 })
 
 it('sends visitors without a seat back to joining', async () => {
   vi.mocked(getCurrentParticipant).mockResolvedValue(null)
+  await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5')
+  // Also while paused: the seat is checked first, even though the lookups run side by side
+  vi.mocked(requireTasting).mockResolvedValue(tasting('setup') as never)
   await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5')
   expect(saveGuestRating).not.toHaveBeenCalled()
 })
@@ -80,6 +84,9 @@ it('keeps the guest calm when the host paused the tasting, and sends them to the
   // ?ended=1 lets the results page explain the jump
   await expect(save()).rejects.toThrow('redirect:/tasting/8GXBW5/results?ended=1')
   expect(saveGuestRating).not.toHaveBeenCalled()
+  // Nothing to load for a refused save
+  expect(getWineById).not.toHaveBeenCalled()
+  expect(listCriteria).not.toHaveBeenCalled()
 })
 
 it('names the criteria without stars', async () => {

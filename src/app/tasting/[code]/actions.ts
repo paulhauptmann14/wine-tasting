@@ -13,7 +13,7 @@ import { formValue, idSchema, invalid, joinSchema, parseRatingForm, positionSche
 import { listCriteria } from '@/server/criteria'
 import { joinTasting, rejoinTasting } from '@/server/participants'
 import { saveGuestRating, type GuestRatingResult } from '@/server/ratings'
-import { countWines, getWineById } from '@/server/wines'
+import { getWineById } from '@/server/wines'
 
 export async function joinAction(code: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const tasting = await requireTasting(code)
@@ -86,18 +86,24 @@ export async function saveRatingAction(
   formData: FormData,
 ): Promise<ActionState> {
   const tasting = await requireTasting(code)
-  const participant = await getCurrentParticipant(tasting)
+  const validId = idSchema.safeParse(wineId).success
+  const shown = positionSchema.safeParse(shownPosition)
+  // Seat, wine and criteria in one round trip; the checks below keep their order
+  const lookup = canRate(tasting.status) && validId && shown.success
+  const [participant, wine, criteria] = await Promise.all([
+    getCurrentParticipant(tasting),
+    lookup ? getWineById(db, tasting.id, wineId) : null,
+    lookup ? listCriteria(db, tasting.id) : [],
+  ])
   if (!participant) redirect(`/tasting/${tasting.code}`)
   // Early answers from the lookup; the transaction in saveGuestRating has the last word
   if (!canRate(tasting.status)) {
     return ratingRefused(tasting.code, tasting.status === 'finished' ? 'finished' : 'paused', null)
   }
-  if (!idSchema.safeParse(wineId).success) return ratingRefused(tasting.code, 'wine_gone', null)
-  const shown = positionSchema.safeParse(shownPosition)
+  if (!validId) return ratingRefused(tasting.code, 'wine_gone', null)
   if (!shown.success) return ratingRefused(tasting.code, 'moved', null)
   // Before the form check: a guest whose wine was moved or deleted shouldn't fix missing stars first
   // and lose them on the reload afterwards
-  const [wine, criteria] = await Promise.all([getWineById(db, tasting.id, wineId), listCriteria(db, tasting.id)])
   if (!wine) return ratingRefused(tasting.code, 'wine_gone', shown.data)
   if (wine.position !== shown.data) return ratingRefused(tasting.code, 'moved', shown.data)
 
@@ -115,10 +121,9 @@ export async function saveRatingAction(
   if (!saved.ok) return ratingRefused(tasting.code, saved.reason, shown.data)
   revalidatePath(`/tasting/${tasting.code}`, 'layout')
 
-  // Next wine in the current order
-  const total = await countWines(db, tasting.id)
+  // Next wine in the current order (counted in the saving transaction)
   redirect(
-    saved.position < total
+    saved.position < saved.total
       ? `/tasting/${tasting.code}/wine/${saved.position + 1}?saved=${saved.position}`
       : `/tasting/${tasting.code}?saved=${saved.position}`,
   )

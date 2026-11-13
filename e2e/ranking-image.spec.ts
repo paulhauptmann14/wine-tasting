@@ -45,11 +45,16 @@ test('Endergebnis lässt sich erst nach dem Ende als Bild teilen', async ({ page
   const image = await guest.request.get(imageUrl)
   expect(image.status()).toBe(200)
   expect(image.headers()['content-type']).toBe('image/png')
-  expect(image.headers()['cache-control']).toContain('no-store')
+  // The browser may keep the image, but asks every time whether the ranking changed
+  expect(image.headers()['cache-control']).toBe('private, no-cache')
   expect(image.headers()['content-disposition']).toContain('filename="e2e-bildabend-ergebnis.png"')
   const body = await image.body()
   expect(body.subarray(1, 4).toString('ascii')).toBe('PNG')
   expect(body.length).toBeGreaterThan(5_000)
+  const etag = image.headers()['etag']
+  expect(etag).toBeTruthy()
+  const unchanged = await guest.request.get(imageUrl, { headers: { 'If-None-Match': etag } })
+  expect(unchanged.status()).toBe(304)
 
   // Phones: the footer links stay reachable below the bar
   if (testInfo.project.name !== 'laptop') {

@@ -1,17 +1,15 @@
-import { Trash2 } from 'lucide-react'
-import { ConfirmSubmit } from '@/components/admin/confirm-submit'
+import { ParticipantRingShapes, ParticipantRowRest } from '@/components/admin/participant-progress'
 import { RejoinLink } from '@/components/admin/rejoin-link'
 import { AutoRefresh } from '@/components/auto-refresh'
 import { GlassRing } from '@/components/glass-ring'
 import { marginNote } from '@/components/styles'
-import { iconButtonClass } from '@/components/ui/button'
 import { db } from '@/db/client'
 import { signRejoinToken } from '@/lib/auth/rejoin-token'
 import { getJoinUrl } from '@/lib/base-url'
 import { getAdminTasting } from '@/lib/data'
 import { getSessionSecret } from '@/lib/env'
 import { duplicateNameHint, findDuplicateNames, isDuplicateName } from '@/lib/tasting/host-hints'
-import { RING_STATE_TEXT, type RingState } from '@/lib/tasting/progress'
+import type { RingState } from '@/lib/tasting/progress'
 import { cn } from '@/lib/utils'
 import { listParticipantProgress } from '@/server/participants'
 import { lockRejoinLinkAction, removeParticipantAction } from '../actions'
@@ -44,6 +42,7 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
   return (
     <>
       {tasting.status !== 'finished' && <AutoRefresh />}
+      <ParticipantRingShapes count={Math.max(...people.map((p) => p.wines.length))} />
       {firstDuplicate && <p className={cn(marginNote, 'mb-6')}>{duplicateNameHint(firstDuplicate)}</p>}
       <p className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
         <span>Ein Kreis je Wein:</span>
@@ -89,29 +88,7 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ c
   )
 }
 
-/** Delete button and progress rings of a guest's row. */
+/** Delete button and progress rings of a guest's row – drawn on the client, see <ParticipantRowRest>. */
 function RowRest({ code, person: p }: { code: string; person: { id: string; name: string; wines: RingState[] } }) {
-  return (
-    <>
-      <ConfirmSubmit
-        action={removeParticipantAction.bind(null, code, p.id)}
-        trigger={<Trash2 className="size-5" />}
-        triggerLabel={`${p.name} entfernen`}
-        triggerClassName={cn(iconButtonClass, 'shrink-0')}
-        title={`${p.name} entfernen?`}
-        description="Die Bewertungen dieser Person werden gelöscht und zählen nicht mehr im Ergebnis. Sie kann danach neu beitreten."
-        confirmLabel="Entfernen"
-      />
-      {/* One small ring per wine: who is still missing where? */}
-      <ol aria-label={`Fortschritt von ${p.name}`} className="-mt-1 flex basis-full flex-wrap gap-1 pb-1">
-        {p.wines.map((state, i) => (
-          <li key={i}>
-            <GlassRing seed={i + 1} state={state} size={28} label={`Wein #${i + 1}: ${RING_STATE_TEXT[state]}`}>
-              <span className="text-[10px] font-medium">{i + 1}</span>
-            </GlassRing>
-          </li>
-        ))}
-      </ol>
-    </>
-  )
+  return <ParticipantRowRest name={p.name} wines={p.wines} removeAction={removeParticipantAction.bind(null, code, p.id)} />
 }

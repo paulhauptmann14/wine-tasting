@@ -59,6 +59,8 @@ Die E2E-Tests bauen die App, starten sie auf Port 3100 und nutzen das installier
 
 Migrationen additiv halten – beim Deploy läuft die alte Version kurz gegen das neue Schema (siehe [DEPLOYMENT.md](DEPLOYMENT.md)).
 
+Jede neue Fremdschlüssel-Spalte braucht einen Index, in dem sie vorn steht – Postgres legt keinen an, und ohne ihn durchsucht jedes Löschen per Kaskade die ganze Tabelle. `src/db/schema.test.ts` schlägt sonst fehl.
+
 ## Projektstruktur
 
 ```

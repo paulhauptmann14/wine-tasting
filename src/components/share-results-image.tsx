@@ -26,7 +26,8 @@ function fileNameFrom(header: string | null): string {
 }
 
 async function loadFile(url: string): Promise<File> {
-  const res = await fetch(url, { cache: 'no-store' })
+  // Revalidates the browser's copy: the server answers 304 without rendering while the ranking is unchanged
+  const res = await fetch(url, { cache: 'no-cache' })
   if (!res.ok) throw new Error(`Image request failed with ${res.status}`)
   const blob = await res.blob()
   return new File([blob], fileNameFrom(res.headers.get('content-disposition')), { type: 'image/png' })
@@ -66,6 +67,7 @@ export function ShareResultsImage({ code, title }: { code: string; title: string
   const [error, setError] = useState(false)
   // Loaded before the tap: share() needs a fresh tap, and rendering the image on demand
   // (slow on a Raspberry Pi) would use it up – Safari then refuses the share sheet.
+  // Only where the share sheet takes files – a download works without a fresh tap.
   const fileRef = useRef<Promise<File> | null>(null)
 
   const prepare = useCallback(() => {
@@ -78,8 +80,10 @@ export function ShareResultsImage({ code, title }: { code: string; title: string
   }, [imageUrl])
 
   useEffect(() => {
+    if (!canShareFiles()) return
     prepare()
-    // Wines can still be edited after the end – take a fresh image whenever the page comes back
+    // Wines can still be edited after the end – check for a fresh image whenever the page comes back
+    // (cheap: an unchanged ranking is answered with 304 from the browser's copy)
     const onVisible = () => {
       if (document.visibilityState === 'visible') prepare()
     }
@@ -109,7 +113,8 @@ export function ShareResultsImage({ code, title }: { code: string; title: string
     } finally {
       setPending(false)
       // The next tap shares the current state, not this one
-      prepare()
+      if (canShareFiles()) prepare()
+      else fileRef.current = null
     }
   }
 

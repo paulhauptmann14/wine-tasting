@@ -43,34 +43,46 @@ function coreTokens(text: string): string[] {
   return tokens(text).filter((t) => !STOPWORDS.has(t) && t.length > 1)
 }
 
-function distance(a: string, b: string): number {
+/** A word with its umlaut folding, worked out once. */
+type Token = { text: string; folded: string }
+const token = (text: string): Token => ({ text, folded: fold(text) })
+
+/** Levenshtein distance; any distance above `limit` comes back as more than `limit`, not exact. */
+function distance(a: string, b: string, limit: number): number {
   if (a === b) return 0
+  if (Math.abs(a.length - b.length) > limit) return limit + 1
   const prev = Array.from({ length: b.length + 1 }, (_, i) => i)
   for (let i = 1; i <= a.length; i++) {
     let diag = prev[0]
     prev[0] = i
+    let rowMin = i
     for (let j = 1; j <= b.length; j++) {
       const tmp = prev[j]
       prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1))
+      if (prev[j] < rowMin) rowMin = prev[j]
       diag = tmp
     }
+    // A row never gets cheaper further down: the rest cannot end within the limit.
+    if (rowMin > limit) return limit + 1
   }
   return prev[b.length]
 }
 
-// 1 for equal (after umlaut folding), fuzzy for longer tokens (OCR noise), else 0.
-function tokenSimilarity(a: string, b: string): number {
-  if (a === b) return 1
-  const fa = fold(a)
-  const fb = fold(b)
-  if (fa === fb) return 1
-  const max = Math.max(fa.length, fb.length)
-  if (Math.min(fa.length, fb.length) < 5) return 0
-  const sim = 1 - distance(fa, fb) / max
+// 1 for equal (after umlaut folding), fuzzy for longer tokens (OCR noise), else 0. Fuzzy needs a
+// similarity of at least 0.8: at most one edit per five letters of the longer token.
+function tokenSimilarity(a: Token, b: Token): number {
+  if (a.text === b.text || a.folded === b.folded) return 1
+  const max = Math.max(a.folded.length, b.folded.length)
+  const min = Math.min(a.folded.length, b.folded.length)
+  if (min < 5) return 0
+  // Every letter of length difference is an edit (integer check, no rounding at the edge).
+  if (5 * (max - min) > max) return 0
+  // Distances above the limit only give a similarity below 0.8.
+  const sim = 1 - distance(a.folded, b.folded, Math.ceil(max / 5)) / max
   return sim >= 0.8 ? sim : 0
 }
 
-type Entry = { name: string; core: string[]; all: string; weight: number }
+type Entry = { name: string; core: Token[]; coreText: string; all: string; weight: number }
 const cache = new WeakMap<string[], Entry[]>()
 
 function entries(list: string[]): Entry[] {
@@ -78,7 +90,7 @@ function entries(list: string[]): Entry[] {
   if (!e) {
     e = list.map((name) => {
       const core = coreTokens(name)
-      return { name, core, all: normalize(name), weight: core.reduce((s, t) => s + t.length, 0) }
+      return { name, core: core.map(token), coreText: core.join(' '), all: normalize(name), weight: core.reduce((s, t) => s + t.length, 0) }
     })
     cache.set(list, e)
   }
@@ -86,6 +98,8 @@ function entries(list: string[]): Entry[] {
 }
 
 const THRESHOLD = 0.85
+// Leeway for rounding when an entry is skipped early.
+const EPSILON = 1e-9
 
 /**
  * Best list entry for a piece of label text (a line or a few lines), or null.
@@ -94,25 +108,45 @@ const THRESHOLD = 0.85
  */
 export function matchWinery(text: string, list: string[]): string | null {
   // "Müller-Thurgau" is a grape, not a producer called Müller.
-  const query = coreTokens(text.replace(/m(ü|ue?|u)ller[\s-]*thurgau/gi, ' ')).filter((t) => !GENERIC.has(fold(t)) || list.length === 0)
+  const query = coreTokens(text.replace(/m(ü|ue?|u)ller[\s-]*thurgau/gi, ' '))
+    .map(token)
+    .filter((t) => !GENERIC.has(t.folded) || list.length === 0)
   if (query.length === 0) return null
-  const queryWeight = query.reduce((s, t) => s + t.length, 0)
+  const queryWeight = query.reduce((s, t) => s + t.text.length, 0)
   if (queryWeight < 4) return null
 
   let best: { name: string; score: number } | null = null
+  // Similarity of each entry word (row) to each query word (column), reused for both directions.
+  let sims = new Float64Array(0)
   for (const entry of entries(list)) {
     if (entry.core.length === 0 || entry.weight < 4) continue
+    const cols = query.length
+    if (sims.length < entry.core.length * cols) sims = new Float64Array(entry.core.length * cols)
     let hit = 0
-    let qHit = 0
-    for (const ct of entry.core) {
+    let left = entry.weight
+    let possible = true
+    for (let r = 0; r < entry.core.length; r++) {
+      const ct = entry.core[r]
       let top = 0
-      for (const qt of query) top = Math.max(top, tokenSimilarity(ct, qt))
-      hit += top * ct.length
+      for (let c = 0; c < cols; c++) {
+        const sim = tokenSimilarity(ct, query[c])
+        sims[r * cols + c] = sim
+        top = Math.max(top, sim)
+      }
+      hit += top * ct.text.length
+      left -= ct.text.length
+      // The score is at most the share of the entry's words found: this entry cannot reach the threshold.
+      if ((hit + left) / entry.weight < THRESHOLD - EPSILON) {
+        possible = false
+        break
+      }
     }
-    for (const qt of query) {
+    if (!possible) continue
+    let qHit = 0
+    for (let c = 0; c < cols; c++) {
       let top = 0
-      for (const ct of entry.core) top = Math.max(top, tokenSimilarity(ct, qt))
-      qHit += top * qt.length
+      for (let r = 0; r < entry.core.length; r++) top = Math.max(top, sims[r * cols + c])
+      qHit += top * query[c].text.length
     }
     const cc = hit / entry.weight
     const qc = qHit / queryWeight
@@ -134,7 +168,7 @@ export function searchWineries(query: string, list: string[], limit = 6): string
   for (const entry of entries(list)) {
     const words = entry.all.split(' ')
     if (!q.every((t) => words.some((w) => w.startsWith(t)))) continue
-    const tier = entry.all.startsWith(typed) ? 0 : entry.core.join(' ').startsWith(typed) ? 1 : 2
+    const tier = entry.all.startsWith(typed) ? 0 : entry.coreText.startsWith(typed) ? 1 : 2
     ranked.push({ name: entry.name, tier })
   }
   ranked.sort((a, b) => a.tier - b.tier || a.name.length - b.name.length || a.name.localeCompare(b.name, 'de'))

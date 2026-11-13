@@ -1,12 +1,17 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { setStatusAction } from '@/app/tasting/[code]/admin/actions'
-import { ConfirmSubmit } from '@/components/admin/confirm-submit'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { unfinishedGuestsText } from '@/lib/tasting/host-hints'
 import { STATUS_LABELS, statusHint, type TastingStatus } from '@/lib/tasting/rules'
 import { cn } from '@/lib/utils'
+
+// The confirm dialog (Radix AlertDialog) is only needed while the tasting runs. Loaded on demand,
+// so the guest page – which shows this control to the host during setup – doesn't ship it.
+// Still rendered on the server, so the buttons are there right away.
+const ConfirmSubmit = dynamic(() => import('@/components/admin/confirm-submit').then((m) => m.ConfirmSubmit))
 
 function StatusButton({
   action,
@@ -45,6 +50,11 @@ export function StatusControl({
   openGuests?: number
 }) {
   const [state, action, pending] = useActionState(setStatusAction.bind(null, code), undefined)
+  // Only hosts see this control: fetch the dialog in the background, so starting the tasting
+  // doesn't wait for it
+  useEffect(() => {
+    void import('@/components/admin/confirm-submit')
+  }, [])
   // Without blind tasting there's nothing to reveal at the end
   const finishDescription = [
     unfinishedGuestsText(openGuests),

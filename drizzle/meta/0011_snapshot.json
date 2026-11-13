@@ -1,0 +1,735 @@
+{
+  "id": "d5c0969d-f9ac-4b22-9931-e5ccb3c2f062",
+  "prevId": "6cf18793-bdaf-463c-b648-f779738c8982",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.participant": {
+      "name": "participant",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tasting_id": {
+          "name": "tasting_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "rejoin_version": {
+          "name": "rejoin_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "participant_tasting_id_idx": {
+          "name": "participant_tasting_id_idx",
+          "columns": [
+            {
+              "expression": "tasting_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "participant_tasting_id_tasting_id_fk": {
+          "name": "participant_tasting_id_tasting_id_fk",
+          "tableFrom": "participant",
+          "tableTo": "tasting",
+          "columnsFrom": [
+            "tasting_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.rating_criteria": {
+      "name": "rating_criteria",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tasting_id": {
+          "name": "tasting_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scale_min": {
+          "name": "scale_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "scale_max": {
+          "name": "scale_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 5
+        },
+        "weight": {
+          "name": "weight",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "rating_criteria_tasting_id_idx": {
+          "name": "rating_criteria_tasting_id_idx",
+          "columns": [
+            {
+              "expression": "tasting_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "rating_criteria_tasting_id_tasting_id_fk": {
+          "name": "rating_criteria_tasting_id_tasting_id_fk",
+          "tableFrom": "rating_criteria",
+          "tableTo": "tasting",
+          "columnsFrom": [
+            "tasting_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.rating_value": {
+      "name": "rating_value",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "rating_id": {
+          "name": "rating_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "criterion_id": {
+          "name": "criterion_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "rating_value_criterion_id_idx": {
+          "name": "rating_value_criterion_id_idx",
+          "columns": [
+            {
+              "expression": "criterion_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "rating_value_rating_id_rating_id_fk": {
+          "name": "rating_value_rating_id_rating_id_fk",
+          "tableFrom": "rating_value",
+          "tableTo": "rating",
+          "columnsFrom": [
+            "rating_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "rating_value_criterion_id_rating_criteria_id_fk": {
+          "name": "rating_value_criterion_id_rating_criteria_id_fk",
+          "tableFrom": "rating_value",
+          "tableTo": "rating_criteria",
+          "columnsFrom": [
+            "criterion_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "rating_value_rating_criterion_uq": {
+          "name": "rating_value_rating_criterion_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "rating_id",
+            "criterion_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.rating": {
+      "name": "rating",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "wine_id": {
+          "name": "wine_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "rating_wine_id_idx": {
+          "name": "rating_wine_id_idx",
+          "columns": [
+            {
+              "expression": "wine_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "rating_participant_id_participant_id_fk": {
+          "name": "rating_participant_id_participant_id_fk",
+          "tableFrom": "rating",
+          "tableTo": "participant",
+          "columnsFrom": [
+            "participant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "rating_wine_id_wine_id_fk": {
+          "name": "rating_wine_id_wine_id_fk",
+          "tableFrom": "rating",
+          "tableTo": "wine",
+          "columnsFrom": [
+            "wine_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "rating_participant_wine_uq": {
+          "name": "rating_participant_wine_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "participant_id",
+            "wine_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.session": {
+      "name": "session",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "session_participant_id_idx": {
+          "name": "session_participant_id_idx",
+          "columns": [
+            {
+              "expression": "participant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "session_participant_id_participant_id_fk": {
+          "name": "session_participant_id_participant_id_fk",
+          "tableFrom": "session",
+          "tableTo": "participant",
+          "columnsFrom": [
+            "participant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "session_token_hash_unique": {
+          "name": "session_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.tasting": {
+      "name": "tasting",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "blind_tasting": {
+          "name": "blind_tasting",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "status": {
+          "name": "status",
+          "type": "tasting_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'setup'"
+        },
+        "scale": {
+          "name": "scale",
+          "type": "rating_scale",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'five'"
+        },
+        "admin_pin_hash": {
+          "name": "admin_pin_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pin_failed_attempts": {
+          "name": "pin_failed_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "pin_locked_until": {
+          "name": "pin_locked_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pin_lock_count": {
+          "name": "pin_lock_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "tasting_created_at_idx": {
+          "name": "tasting_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tasting_code_unique": {
+          "name": "tasting_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.wine": {
+      "name": "wine",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tasting_id": {
+          "name": "tasting_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "winery": {
+          "name": "winery",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vintage": {
+          "name": "vintage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grape_variety": {
+          "name": "grape_variety",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sweetness": {
+          "name": "sweetness",
+          "type": "wine_sweetness",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wine_type": {
+          "name": "wine_type",
+          "type": "wine_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alcohol": {
+          "name": "alcohol",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "wine_tasting_id_tasting_id_fk": {
+          "name": "wine_tasting_id_tasting_id_fk",
+          "tableFrom": "wine",
+          "tableTo": "tasting",
+          "columnsFrom": [
+            "tasting_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "wine_tasting_position_uq": {
+          "name": "wine_tasting_position_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tasting_id",
+            "position"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {
+    "public.rating_scale": {
+      "name": "rating_scale",
+      "schema": "public",
+      "values": [
+        "five",
+        "twenty",
+        "hundred"
+      ]
+    },
+    "public.tasting_status": {
+      "name": "tasting_status",
+      "schema": "public",
+      "values": [
+        "setup",
+        "active",
+        "finished"
+      ]
+    },
+    "public.wine_sweetness": {
+      "name": "wine_sweetness",
+      "schema": "public",
+      "values": [
+        "dry",
+        "off_dry",
+        "medium",
+        "sweet"
+      ]
+    },
+    "public.wine_type": {
+      "name": "wine_type",
+      "schema": "public",
+      "values": [
+        "red",
+        "white",
+        "rose",
+        "sparkling"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

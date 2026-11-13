@@ -494,6 +494,32 @@ describe('winery', () => {
     expect(result.winery).toBeUndefined()
     expect(result.wineryCandidates).toEqual(['San Guido'])
   })
+
+  it('asks the winery list once per text', () => {
+    const calls: string[] = []
+    const match = (text: string) => {
+      calls.push(text)
+      return /keller/i.test(text) ? 'Weingut Keller' : null
+    }
+    const result = parse([['Weingut Keller', 30], ['Riesling', 40], ['Weingut Keller', 12, 90, { gap: 60 }]], match)
+    expect(result.winery).toEqual({ value: 'Weingut Keller', sure: true })
+    expect(calls.length).toBeGreaterThan(0)
+    expect(new Set(calls).size).toBe(calls.length)
+  })
+
+  it('asks the winery list only about the most prominent keyword lines of a noisy photo', () => {
+    const calls: string[] = []
+    const match = (text: string) => {
+      calls.push(text)
+      return /zeller/i.test(text) ? 'Weingut Zeller' : null
+    }
+    const noise: LineSpec[] = Array.from({ length: 20 }, (_, i) => [`Weingut Haus${String.fromCharCode(97 + i)}`, 12])
+    const result = parse([...noise, ['Weingut Zeller', 40]], match)
+    expect(result.winery).toEqual({ value: 'Weingut Zeller', sure: true })
+    expect(calls).toContain('Weingut Zeller')
+    // At most 8 keyword lines, each alone and without the keyword
+    expect(calls.filter((c) => /^(weingut )?haus[a-z]$/i.test(c)).length).toBeLessThanOrEqual(2 * 7)
+  })
 })
 
 describe('name', () => {

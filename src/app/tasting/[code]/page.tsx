@@ -117,8 +117,8 @@ export default async function TastingPage({ params, searchParams }: Props) {
   const next = items.find((i) => i.state !== 'done')
   const allRated = items.length > 0 && doneCount === items.length
 
-  return (
-    <TastingSplit aside={<WineList items={items} savedPosition={savedPosition} />}>
+  const intro = (
+    <>
       {/* New wines and the end of the tasting appear without reloading */}
       <AutoRefresh />
       <header>
@@ -148,31 +148,41 @@ export default async function TastingPage({ params, searchParams }: Props) {
           </div>
         )}
       </header>
-
-      {items.length === 0 ? (
-        <p className="mt-8 text-muted-foreground">Noch keine Weine. Der Gastgeber fügt sie gleich hinzu.</p>
-      ) : (
-        <div className="mt-6 lg:hidden">
-          <WineList items={items} savedPosition={savedPosition} />
-        </div>
-      )}
-
-      <BottomBar>
-        <div className="grid gap-2 lg:flex">
-          {next && (
-            <Link href={next.href} className={mainAction}>
-              {doneCount === 0 ? `Mit ${next.title} anfangen` : `Weiter mit ${next.title}`}
-            </Link>
-          )}
-          {/* While wines are still open, the results are only a side path */}
-          <Link
-            href={`/tasting/${tasting.code}/results`}
-            className={next ? cn(textLink, 'justify-center lg:justify-start lg:px-4') : mainAction}
-          >
-            Ergebnisse ansehen
+    </>
+  )
+  const actions = (
+    <BottomBar>
+      <div className="grid gap-2 lg:flex">
+        {next && (
+          <Link href={next.href} className={mainAction}>
+            {doneCount === 0 ? `Mit ${next.title} anfangen` : `Weiter mit ${next.title}`}
           </Link>
-        </div>
-      </BottomBar>
+        )}
+        {/* While wines are still open, the results are only a side path */}
+        <Link
+          href={`/tasting/${tasting.code}/results`}
+          className={next ? cn(textLink, 'justify-center lg:justify-start lg:px-4') : mainAction}
+        >
+          Ergebnisse ansehen
+        </Link>
+      </div>
+    </BottomBar>
+  )
+  const list = <WineList items={items} savedPosition={savedPosition} />
+
+  if (items.length === 0) {
+    return (
+      <TastingSplit aside={list}>
+        {intro}
+        <p className="mt-8 text-muted-foreground">Noch keine Weine. Der Gastgeber fügt sie gleich hinzu.</p>
+        {actions}
+      </TastingSplit>
+    )
+  }
+  // On phones the list sits between header and buttons – one copy for both layouts, also in every refresh
+  return (
+    <TastingSplit aside={list} top={intro}>
+      {actions}
     </TastingSplit>
   )
 }

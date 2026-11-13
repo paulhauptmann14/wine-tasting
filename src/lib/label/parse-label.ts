@@ -310,6 +310,8 @@ export function yearTokens(text: string): YearToken[] {
 const FOUNDING_WORDS = 'seit|since|depuis|dal|dall|desde|est|gegr|gegrundet|founded|established|fondata|fondato|fonde|fondee|anno'
 const FOUNDED_BEFORE = new RegExp(String.raw`(?<![\p{L}])(${FOUNDING_WORDS})\.?\s*(im jahre?|en|in|nel)?\s*$`, 'u')
 const VINTAGE_WORD = /(?<![\p{L}])(jahrgang|vintage|millesime|vendemmia|cosecha|anada|annata|colheita)(?![\p{L}])/u
+// For replacing every vintage word; replace() starts a global regex from the beginning each time.
+const VINTAGE_WORDS = new RegExp(VINTAGE_WORD.source, 'gu')
 
 /**
  * A medal sticker read as separate lines ("DLG" / "2024" / "GOLD"): a line of about the same size
@@ -357,7 +359,7 @@ function findVintage(lines: Line[], layout: Line[], currentYear: number): FieldG
           continue
         }
       }
-      const rest = foldText(line.text.slice(0, t.start) + ' ' + line.text.slice(t.end)).replace(new RegExp(VINTAGE_WORD.source, 'gu'), ' ')
+      const rest = foldText(line.text.slice(0, t.start) + ' ' + line.text.slice(t.end)).replace(VINTAGE_WORDS, ' ')
       candidates.push({ year: t.year, fixed: t.fixed, strong: VINTAGE_WORD.test(line.f.folded) || letterCount(rest) === 0, line })
     }
   }
@@ -756,8 +758,10 @@ function findOrigins(lines: Line[], layout: Line[], groups: Group[], list: reado
   const afterHyphen = (above: Line | undefined) => above !== undefined && above.f.folded.trimEnd().endsWith('-')
   // A designation of its own right under the appellation: "DOGLIANI" / "Denominazione di Origine Controllata"
   const designationBelow = (l: Line) => {
-    const below = layout.find((b) => lineAbove(b, layout) === l)
-    const ws = below ? foldedWords(below.f.folded) : []
+    // Layout lines never share a spot, so only the next layout line can have this one right above it.
+    const below = layout[l.order] === l ? layout[l.order + 1] : undefined
+    if (!below || lineAbove(below, layout) !== l) return false
+    const ws = foldedWords(below.f.folded)
     return ws.length > 0 && ws.some((w) => DESIGNATION_WORDS.has(w)) && ws.every((w) => DESIGNATION_WORDS.has(w) || ORIGIN_LINKS.has(w) || w === 'e' || w === 'origine' || w === 'origen')
   }
   // A producer line counts only when it is nothing but an appellation: "Domaine" / "CHABLIS"
@@ -765,13 +769,16 @@ function findOrigins(lines: Line[], layout: Line[], groups: Group[], list: reado
 
   const found: { ref: AppellationRef; clear: boolean; lines: Line[] }[] = []
   const look = (text: string, conf: number, from: Line[], skip: (m: AppellationMatch) => boolean = () => false) => {
-    const designated = foldedWords(text).some((w) => DESIGNATION_WORDS.has(w)) || designationBelow(from[from.length - 1])
+    // Worked out only when a one-word appellation needs it, at most once per text.
+    let designated: boolean | undefined
+    const isDesignated = () =>
+      (designated ??= foldedWords(text).some((w) => DESIGNATION_WORDS.has(w)) || designationBelow(from[from.length - 1]))
     const prominent = from.some((l) => l.h >= 0.5 * largest)
     for (const m of findAppellations(text, list)) {
       if (skip(m)) continue
       const oneWord = foldedWords(m.ref.name).length === 1
       const read = conf >= SURE_CONFIDENCE && (m.exact || m.coverage >= APPELLATION_COVERAGE)
-      found.push({ ref: m.ref, clear: read && (!oneWord || prominent || designated), lines: from })
+      found.push({ ref: m.ref, clear: read && (!oneWord || prominent || isDesignated()), lines: from })
     }
   }
   for (const line of lines) {
@@ -1007,12 +1014,24 @@ const isTasteLine = (l: Line) => !!l.taste && l.words >= 2
 const usableNeighbour = (l: Line | undefined): l is Line =>
   !!l && !isTasteLine(l) && !l.legal && !l.prose && !l.address && l.conf >= NAME_CONFIDENCE && letterCount(l.text) >= 3 && !grapeOnlyText(l)
 
+const wineryTermsCache = new WeakMap<Line, Hit<WineryKeyword>[]>()
+
+/** Winery keywords on a line, looked up once per line. */
+function wineryTerms(line: Line): Hit<WineryKeyword>[] {
+  let hits = wineryTermsCache.get(line)
+  if (!hits) {
+    hits = findTerms(line.f.folded, WINERY)
+    wineryTermsCache.set(line, hits)
+  }
+  return hits
+}
+
 /** Lines with a winery keyword: "Weingut Dr. Loosen", "Château Margaux", "WEINBIET" + "MANUFAKTUR". */
 function keywordOptions(all: Line[], layout: Line[]): WineryOption[] {
   const out: WineryOption[] = []
   for (const line of all) {
     if (line.legal || line.prose || line.address) continue
-    const hits = findTerms(line.f.folded, WINERY)
+    const hits = wineryTerms(line)
     if (hits.length === 0) continue
     const keyword: WineryKeyword = hits[0].value
     const parts = [line]
@@ -1071,6 +1090,9 @@ function bottlerOptions(all: Line[]): WineryOption[] {
 /** Confidence a reading needs before a winery list hit may be filled in. */
 const WINERY_SURE_CONFIDENCE = 80
 
+/** Keyword and bottler lines asked about in the winery list, the most prominent ones. */
+const MAX_WINERY_KEYWORD_QUERIES = 8
+
 type WineryResult = {
   sure?: { value: string; used: Box[] }
   options: WineryOption[]
@@ -1088,24 +1110,27 @@ type WineryResult = {
 function findWinery(
   all: Line[],
   layout: Line[],
+  keywords: WineryOption[],
   excluded: (l: Line) => boolean,
   vocab: Set<string>,
   isReference: (text: string) => boolean,
   matchWinery?: ParseLabelOptions['matchWinery'],
 ): WineryResult {
-  const found = [...keywordOptions(all, layout), ...bottlerOptions(all)]
+  const found = [...keywords, ...bottlerOptions(all)]
   // The keyword vouches for its neighbour: "WEINGUT" (91) / "SCHMITTS KINDER" (69).
   const options = found.filter((o) => (o.used.length > 1 ? plausible(o.value, o.conf, vocab, 60, 60) : plausible(o.value, o.conf, vocab)))
   const keywordBoxes = [
     ...found.flatMap((o) => o.used),
-    ...all.filter((l) => !l.legal && !l.prose && findTerms(l.f.folded, WINERY).length > 0).map((l) => l.box),
+    ...all.filter((l) => !l.legal && !l.prose && wineryTerms(l).length > 0).map((l) => l.box),
   ]
   const listHits: string[] = []
   if (!matchWinery) return { options, listHits, keywordHits: 0, keywordBoxes }
 
   // Keyword lines go to the list even when shaky: the list hit is a real name ("CONTE pi CAMPIANO").
   type Query = { text: string; conf: number; used: Box[]; keyword: boolean; headline?: boolean }
-  const queries: Query[] = found.flatMap((o) => [
+  // A noisy photo can have dozens of keyword readings: only the most prominent go to the list.
+  const asked = new Set([...found].sort((a, b) => b.score - a.score).slice(0, MAX_WINERY_KEYWORD_QUERIES))
+  const queries: Query[] = found.filter((o) => asked.has(o)).flatMap((o) => [
     { text: o.raw, conf: o.conf, used: o.used, keyword: true },
     ...(o.value !== o.raw ? [{ text: o.value, conf: o.conf, used: o.used, keyword: true }] : []),
   ])
@@ -1129,8 +1154,14 @@ function findWinery(
   let sure: WineryResult['sure']
   let sureLetters = 0
   let keywordHits = 0
+  // The same text often comes up twice (two OCR passes, a keyword line that is also a headline).
+  const lookups = new Map<string, string | null>()
+  const lookUp = (text: string) => {
+    if (!lookups.has(text)) lookups.set(text, matchWinery(text))
+    return lookups.get(text) ?? null
+  }
   for (const q of queries) {
-    const hit = matchWinery(q.text)
+    const hit = lookUp(q.text)
     if (!hit) continue
     // An appellation, region or grape that happens to be in the list ("Bordeaux") is not the producer.
     const strength = q.conf >= WINERY_SURE_CONFIDENCE && !isReference(q.text) ? wineryMatchStrength(hit, q.text) : 'none'
@@ -1483,7 +1514,8 @@ export function parseLabel(lines: OcrLine[], options: ParseLabelOptions = {}): L
   if (sweetness) suggestion.sweetness = sweetness
 
   // A grape inside a producer's name is no grape: "Cantina Vignaioli del Morellino di Scansano".
-  const producerBoxes = keywordOptions(all, layout).flatMap((o) => o.used)
+  const keywords = keywordOptions(all, layout)
+  const producerBoxes = keywords.flatMap((o) => o.used)
   const grapeHits = findGrapeHits(all, layout).filter((h) => !producerBoxes.some((b) => sameSpot(b, h.line.box)))
   const grapes: GrapeIndex = new Map()
   for (const hit of grapeHits) grapes.set(hit.line, [...(grapes.get(hit.line) ?? []), hit])
@@ -1505,7 +1537,7 @@ export function parseLabel(lines: OcrLine[], options: ParseLabelOptions = {}): L
     for (const h of findTerms(f, GRAPE_ALIASES)) rest = mask(rest, h.start, h.end)
     return !/\p{L}{3,}/u.test(rest.replace(/\u0001/g, ' '))
   }
-  const winery = findWinery(all, layout, grapeOnly, vocab, isReference, options.matchWinery)
+  const winery = findWinery(all, layout, keywords, grapeOnly, vocab, isReference, options.matchWinery)
   const wineryBoxes = [...(winery.sure?.used ?? []), ...winery.keywordBoxes]
 
   // --- name: groups of headline lines, without the producer's lines

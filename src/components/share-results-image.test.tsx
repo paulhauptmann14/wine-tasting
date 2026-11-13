@@ -78,6 +78,46 @@ it('loads the image before the tap, so the share sheet still gets a fresh tap', 
   expect(fetchMock).toHaveBeenCalledTimes(2)
 })
 
+it('asks the server whether the image changed instead of always taking a new one', async () => {
+  const fetchMock = vi.fn(async () => imageResponse())
+  vi.stubGlobal('fetch', fetchMock)
+  stubShare({ canShare: canShareFiles, share: vi.fn(async () => {}) })
+
+  renderShare()
+
+  // no-cache: the browser revalidates its copy (ETag) – the server only renders when the ranking changed
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(IMAGE_URL, { cache: 'no-cache' }))
+})
+
+it('checks for a fresh image when the page comes back', async () => {
+  const fetchMock = vi.fn(async () => imageResponse())
+  vi.stubGlobal('fetch', fetchMock)
+  stubShare({ canShare: canShareFiles, share: vi.fn(async () => {}) })
+
+  renderShare()
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+  document.dispatchEvent(new Event('visibilitychange'))
+
+  expect(fetchMock).toHaveBeenCalledTimes(2)
+})
+
+it('loads nothing ahead on devices that download – a download needs no fresh tap', async () => {
+  const fetchMock = vi.fn(async () => imageResponse())
+  vi.stubGlobal('fetch', fetchMock)
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+  const button = renderShare('Bild herunterladen')
+  document.dispatchEvent(new Event('visibilitychange'))
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(fetchMock).not.toHaveBeenCalled()
+
+  await userEvent.click(button)
+  await userEvent.click(button)
+
+  // One request per tap, none in between
+  expect(fetchMock).toHaveBeenCalledTimes(2)
+})
+
 it('downloads the image when the share sheet refuses', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => imageResponse()))
   const share = vi.fn(async () => {

@@ -33,6 +33,19 @@ describe('matchWinery', () => {
     expect(matchWinery('Egon Müller Scharzhof', list)).toBe('Weingut Egon Müller - Scharzhof')
     expect(matchWinery('Josef Loosen', list)).toBe('Weingut Josef Loosen')
   })
+  it('allows two misread letters in ten, not more', () => {
+    const edge = ['Weingut Schwarzenberger Hohenstein']
+    // "hohnstin": two letters missing from ten, similarity exactly 0.8
+    expect(matchWinery('Schwarzenberger Hohnstin', edge)).toBe('Weingut Schwarzenberger Hohenstein')
+    expect(matchWinery('Schwarzenberger Hohnsti', edge)).toBeNull()
+    expect(matchWinery('Schwarzenberger Hxhenstexn', edge)).toBe('Weingut Schwarzenberger Hohenstein')
+    expect(matchWinery('Schwarzenberger Hxhxnstexn', edge)).toBeNull()
+  })
+  it('gives the same answer for repeated and folded queries', () => {
+    expect(matchWinery('Winzerhof Schaefer', list)).toBe('Winzerhof Schäfer')
+    expect(matchWinery('WINZERHOF SCHAFER', list)).toBe('Winzerhof Schäfer')
+    expect(matchWinery('Winzerhof Schaefer', list)).toBe('Winzerhof Schäfer')
+  })
   it('returns null for generic words and unknown names', () => {
     expect(matchWinery('Riesling trocken', list)).toBeNull()
     expect(matchWinery('Weingut', list)).toBeNull()

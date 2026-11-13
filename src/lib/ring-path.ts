@@ -13,12 +13,21 @@ function ringPoints(seed: number, { rx, ry, cx = 50, cy = 50, steps = 48 }: Oval
 
 const closedPath = (points: [number, number][]) => `M${points.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join(' L')} Z`
 
+/** One decimal, without a trailing ".0": a tenth of the 100-unit viewBox is sub-pixel even at 300 px. */
+const tenth = (value: number) => String(Math.round(value * 10) / 10)
+
+/**
+ * Same outline, written short: every ring is part of the page payload (and of each 5-s refresh).
+ * After the first point, plain coordinate pairs are implicit line-tos.
+ */
+const compactPath = (points: [number, number][]) => `M${points.map(([x, y]) => `${tenth(x)} ${tenth(y)}`).join(' ')}Z`
+
 /**
  * Slightly irregular closed circle – the stain of a wine glass.
  * Deterministic per `seed` so server and client draw the same ring.
  */
 export function ringPath(seed: number, r: number, center = 50, steps = 48): string {
-  return closedPath(ringPoints(seed, { rx: r, ry: r, cx: center, cy: center, steps }))
+  return compactPath(ringPoints(seed, { rx: r, ry: r, cx: center, cy: center, steps }))
 }
 
 /**

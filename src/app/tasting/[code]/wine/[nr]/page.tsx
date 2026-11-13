@@ -28,18 +28,20 @@ export default async function WinePage({ params, searchParams }: Props) {
   if (!Number.isInteger(position) || position < 1) notFound()
   const tasting = await requireTasting(code, `/wine/${position}`)
 
-  const participant = await getCurrentParticipant(tasting)
+  // Wine and criteria only need the tasting: load them alongside the session check, not after it
+  const [participant, wine, criteria] = await Promise.all([
+    getCurrentParticipant(tasting),
+    getWineByPosition(db, tasting.id, position),
+    listCriteria(db, tasting.id),
+  ])
   if (!participant) redirect(`/tasting/${tasting.code}`)
   // ?ended=1 lets the results page explain why the guest landed there
   if (tasting.status === 'finished') redirect(`/tasting/${tasting.code}/results?ended=1`)
   if (!canRate(tasting.status)) redirect(`/tasting/${tasting.code}`)
-
-  const wine = await getWineByPosition(db, tasting.id, position)
   if (!wine) notFound()
 
-  const [items, criteria, existing] = await Promise.all([
+  const [items, existing] = await Promise.all([
     getWineListItems(db, tasting, participant.id),
-    listCriteria(db, tasting.id),
     getRating(db, participant.id, wine.id),
   ])
   const showName = canSeeWineNames({ status: tasting.status, blindTasting: tasting.blindTasting, isAdmin: false })
