@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AdminLink } from '@/components/admin-link'
 import { TastingCode } from '@/components/tasting-code'
@@ -13,6 +14,8 @@ import { isAdmin } from '@/lib/auth/admin-session'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
 import { requireTasting } from '@/lib/data'
 import { cn } from '@/lib/utils'
+
+export const metadata: Metadata = { title: 'Ergebnisse' }
 
 type Props = { params: Promise<{ code: string }>; searchParams: Promise<{ ended?: string }> }
 

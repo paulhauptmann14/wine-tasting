@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { DeleteTasting } from '@/components/admin/delete-tasting'
 import { SettingsForm } from '@/components/admin/settings-form'
 import { HostStatusControl } from '@/components/admin/host-status-control'
@@ -6,6 +7,8 @@ import { getAdminTasting } from '@/lib/data'
 import { formatDate } from '@/lib/format-date'
 import { RETENTION_DAYS, deletionDate } from '@/lib/tasting/retention'
 import { canEditStructure } from '@/lib/tasting/rules'
+
+export const metadata: Metadata = { title: 'Allgemein · Verwaltung' }
 
 export default async function GeneralPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params

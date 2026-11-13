@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ParticipantRingShapes, ParticipantRowRest } from '@/components/admin/participant-progress'
 import { RejoinLink } from '@/components/admin/rejoin-link'
 import { AutoRefresh } from '@/components/auto-refresh'
@@ -13,6 +14,8 @@ import type { RingState } from '@/lib/tasting/progress'
 import { cn } from '@/lib/utils'
 import { listParticipantProgress } from '@/server/participants'
 import { lockRejoinLinkAction, removeParticipantAction } from '../actions'
+
+export const metadata: Metadata = { title: 'Teilnehmer · Verwaltung' }
 
 const LEGEND: { state: RingState; text: string }[] = [
   { state: 'done', text: 'bewertet' },

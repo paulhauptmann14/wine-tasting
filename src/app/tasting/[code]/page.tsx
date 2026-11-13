@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -18,11 +19,17 @@ import { WineList } from '@/components/wine-list'
 import { db } from '@/db/client'
 import { isAdmin } from '@/lib/auth/admin-session'
 import { getCurrentParticipant } from '@/lib/auth/participant-session'
-import { requireTasting } from '@/lib/data'
+import { getTasting, requireTasting } from '@/lib/data'
 import { parsePosition } from '@/lib/search-params'
 import { countDone } from '@/lib/tasting/progress'
 import { cn } from '@/lib/utils'
 import { getWineListItems } from '@/server/participant-view'
+
+/** The tasting's name – also what link previews of the invitation show. */
+export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
+  const tasting = await getTasting((await params).code)
+  return tasting ? { title: tasting.name } : {}
+}
 
 type Props = { params: Promise<{ code: string }>; searchParams: Promise<{ saved?: string }> }
 

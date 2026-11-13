@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { CriteriaManager } from '@/components/admin/criteria-manager'
 import { RatingSystem } from '@/components/admin/rating-system'
 import { ScoringExplainer } from '@/components/scoring-explainer'
@@ -7,6 +8,8 @@ import { marginNote } from '@/components/styles'
 import { canEditStructure } from '@/lib/tasting/rules'
 import { scoring } from '@/lib/tasting/scoring'
 import { countTastingRatings, listCriteria } from '@/server/criteria'
+
+export const metadata: Metadata = { title: 'Bewertung · Verwaltung' }
 
 export default async function CriteriaPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params

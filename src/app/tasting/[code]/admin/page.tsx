@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CopyLinkButton } from '@/components/admin/copy-link-button'
 import { HostStatusControl } from '@/components/admin/host-status-control'
@@ -11,6 +12,8 @@ import { getAdminTasting } from '@/lib/data'
 import { joinQrSvg } from '@/lib/qr'
 import { cn } from '@/lib/utils'
 import { countWines } from '@/server/wines'
+
+export const metadata: Metadata = { title: 'Teilen · Verwaltung' }
 
 export default async function SharePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params

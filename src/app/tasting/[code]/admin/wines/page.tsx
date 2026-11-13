@@ -1,8 +1,11 @@
+import type { Metadata } from 'next'
 import { WineManager } from '@/components/admin/wine-manager'
 import { db } from '@/db/client'
 import { getAdminTasting } from '@/lib/data'
 import { canEditStructure } from '@/lib/tasting/rules'
 import { listWines, ratedWineIds } from '@/server/wines'
+
+export const metadata: Metadata = { title: 'Weine · Verwaltung' }
 
 export default async function WinesPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params

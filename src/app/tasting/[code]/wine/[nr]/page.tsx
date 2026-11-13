@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { saveRatingAction } from '../../actions'
 import { AdminLink } from '@/components/admin-link'
@@ -20,6 +21,12 @@ import { listCriteria } from '@/server/criteria'
 import { getWineListItems } from '@/server/participant-view'
 import { getRating } from '@/server/ratings'
 import { getWineByPosition } from '@/server/wines'
+
+// The number, never the name – the tab stays blind during a blind tasting
+export async function generateMetadata({ params }: { params: Promise<{ nr: string }> }): Promise<Metadata> {
+  const { nr } = await params
+  return /^\d{1,3}$/.test(nr) ? { title: `Wein #${Number(nr)}` } : {}
+}
 
 type Props = { params: Promise<{ code: string; nr: string }>; searchParams: Promise<{ saved?: string; from?: string }> }
 
